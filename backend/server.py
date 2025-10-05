@@ -28,6 +28,14 @@ app = FastAPI(title="Task Management API")
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Security
+SECRET_KEY = "your-secret-key-change-in-production"  # In production, use environment variable
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+security = HTTPBearer()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # Enums
 class TaskStatus(str, Enum):
     PENDING = "pending"
