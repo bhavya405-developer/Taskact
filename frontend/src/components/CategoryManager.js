@@ -300,6 +300,14 @@ const CategoryManager = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        type="categories"
+        onImportComplete={fetchCategories}
+      />
     </div>
   );
 };
