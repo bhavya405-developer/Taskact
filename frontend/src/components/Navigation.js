@@ -18,12 +18,12 @@ const Navigation = () => {
   const { user, logout, isPartner } = useAuth();
   
   const navItems = [
-    { path: '/dashboard', name: 'Dashboard', icon: '📊' },
-    { path: '/tasks', name: 'Tasks', icon: '📋' },
-    { path: '/team', name: 'Team', icon: '👥', partnerOnly: true },
-    { path: '/categories', name: 'Categories', icon: '📂', partnerOnly: true },
-    { path: '/clients', name: 'Clients', icon: '🏢', partnerOnly: true },
-    { path: '/create-task', name: 'Create Task', icon: '➕' }
+    { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
+    { path: '/tasks', name: 'Tasks', icon: CheckSquare },
+    { path: '/team', name: 'Team', icon: Users, partnerOnly: true },
+    { path: '/categories', name: 'Categories', icon: FolderOpen, partnerOnly: true },
+    { path: '/clients', name: 'Clients', icon: Building2, partnerOnly: true },
+    { path: '/create-task', name: 'Create Task', icon: Plus }
   ];
 
   return (
