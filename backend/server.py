@@ -773,6 +773,320 @@ async def delete_client(client_id: str, current_user: UserResponse = Depends(get
         raise HTTPException(status_code=404, detail="Client not found")
     return {"message": "Client deleted successfully"}
 
+# Bulk Import/Export endpoints (Partners only)
+
+@api_router.get("/categories/template")
+async def download_categories_template(current_user: UserResponse = Depends(get_current_partner)):
+    """Download Excel template for bulk category import"""
+    
+    # Create sample data with headers
+    template_data = {
+        'Name': ['Legal Research', 'Contract Review', 'Client Meeting'],
+        'Description': [
+            'Research legal precedents and case law',
+            'Review and analyze legal contracts',
+            'Meetings and consultations with clients'
+        ],
+        'Color': ['#3B82F6', '#10B981', '#F59E0B']
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write data
+        df.to_excel(writer, sheet_name='Categories', index=False)
+        
+        # Get workbook and worksheet for formatting
+        workbook = writer.book
+        worksheet = writer.sheets['Categories']
+        
+        # Add formatting
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#4F46E5',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        # Format headers
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        
+        # Add instructions sheet
+        instructions_data = {
+            'Instructions': [
+                '1. Fill in the category information below',
+                '2. Name: Required field - unique category name',
+                '3. Description: Optional - brief description of the category',
+                '4. Color: Optional - hex color code (e.g., #3B82F6)',
+                '5. Save the file and upload it back to import',
+                '',
+                'Sample Colors:',
+                'Blue: #3B82F6',
+                'Green: #10B981', 
+                'Amber: #F59E0B',
+                'Red: #EF4444',
+                'Purple: #8B5CF6'
+            ]
+        }
+        instructions_df = pd.DataFrame(instructions_data)
+        instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": "attachment; filename=categories_template.xlsx"}
+    )
+
+@api_router.get("/clients/template")
+async def download_clients_template(current_user: UserResponse = Depends(get_current_partner)):
+    """Download Excel template for bulk client import"""
+    
+    # Create sample data with headers
+    template_data = {
+        'Name': ['TechCorp Inc.', 'Global Manufacturing Ltd.', 'Healthcare Solutions Group'],
+        'Company Type': ['Corporation', 'Corporation', 'LLC'],
+        'Industry': ['Technology', 'Manufacturing', 'Healthcare'],
+        'Contact Person': ['John Smith', 'Maria Rodriguez', 'Dr. James Wilson'],
+        'Email': ['john@techcorp.com', 'maria@global.com', 'james@healthcare.com'],
+        'Phone': ['+1 (555) 123-4567', '+1 (555) 987-6543', '+1 (555) 456-7890'],
+        'Address': [
+            '123 Tech Street, Silicon Valley, CA 94000',
+            '456 Industrial Blvd, Detroit, MI 48000',
+            '789 Medical Center Dr, Boston, MA 02000'
+        ],
+        'Notes': [
+            'Major technology client',
+            'Large manufacturing company',
+            'Healthcare consulting firm'
+        ]
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write data
+        df.to_excel(writer, sheet_name='Clients', index=False)
+        
+        # Get workbook and worksheet for formatting
+        workbook = writer.book
+        worksheet = writer.sheets['Clients']
+        
+        # Add formatting
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#059669',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        # Format headers
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        
+        # Add instructions sheet
+        instructions_data = {
+            'Instructions': [
+                '1. Fill in the client information below',
+                '2. Name: Required field - unique client name',
+                '3. Company Type: Corporation, LLC, Partnership, Individual, etc.',
+                '4. Industry: Technology, Healthcare, Finance, Manufacturing, etc.',
+                '5. Contact Person: Primary contact name',
+                '6. Email: Client email address',
+                '7. Phone: Client phone number',
+                '8. Address: Full address including city, state, zip',
+                '9. Notes: Additional information about the client',
+                '10. Save the file and upload it back to import'
+            ]
+        }
+        instructions_df = pd.DataFrame(instructions_data)
+        instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": "attachment; filename=clients_template.xlsx"}
+    )
+
+@api_router.post("/categories/bulk-import", response_model=BulkImportResult)
+async def bulk_import_categories(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Bulk import categories from Excel/CSV file"""
+    
+    if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
+        raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Parse file based on extension
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(content.decode('utf-8')))
+        else:
+            df = pd.read_excel(io.BytesIO(content), sheet_name='Categories')
+        
+        # Validate required columns
+        required_columns = ['Name']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing required columns: {', '.join(missing_columns)}"
+            )
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        created_items = []
+        
+        # Process each row
+        for index, row in df.iterrows():
+            try:
+                # Skip empty rows
+                if pd.isna(row['Name']) or row['Name'].strip() == '':
+                    continue
+                
+                category_name = row['Name'].strip()
+                
+                # Check if category already exists
+                existing = await db.categories.find_one({"name": category_name, "active": True})
+                if existing:
+                    errors.append(f"Row {index + 2}: Category '{category_name}' already exists")
+                    error_count += 1
+                    continue
+                
+                # Create category
+                category_data = {
+                    "name": category_name,
+                    "description": row.get('Description', '').strip() if pd.notna(row.get('Description')) else None,
+                    "color": row.get('Color', '#3B82F6').strip() if pd.notna(row.get('Color')) else '#3B82F6'
+                }
+                
+                category_dict = category_data.copy()
+                category_dict["id"] = str(uuid.uuid4())
+                category_dict["created_by"] = current_user.id
+                category_dict["created_at"] = datetime.now(timezone.utc)
+                category_dict["active"] = True
+                
+                category_dict = prepare_for_mongo(category_dict)
+                await db.categories.insert_one(category_dict)
+                
+                success_count += 1
+                created_items.append(category_name)
+                
+            except Exception as e:
+                error_count += 1
+                errors.append(f"Row {index + 2}: {str(e)}")
+        
+        return BulkImportResult(
+            success_count=success_count,
+            error_count=error_count,
+            errors=errors,
+            created_items=created_items
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
+
+@api_router.post("/clients/bulk-import", response_model=BulkImportResult)
+async def bulk_import_clients(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Bulk import clients from Excel/CSV file"""
+    
+    if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
+        raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Parse file based on extension
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(content.decode('utf-8')))
+        else:
+            df = pd.read_excel(io.BytesIO(content), sheet_name='Clients')
+        
+        # Validate required columns
+        required_columns = ['Name']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing required columns: {', '.join(missing_columns)}"
+            )
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        created_items = []
+        
+        # Process each row
+        for index, row in df.iterrows():
+            try:
+                # Skip empty rows
+                if pd.isna(row['Name']) or row['Name'].strip() == '':
+                    continue
+                
+                client_name = row['Name'].strip()
+                
+                # Check if client already exists
+                existing = await db.clients.find_one({"name": client_name, "active": True})
+                if existing:
+                    errors.append(f"Row {index + 2}: Client '{client_name}' already exists")
+                    error_count += 1
+                    continue
+                
+                # Create client
+                client_data = {
+                    "name": client_name,
+                    "company_type": row.get('Company Type', '').strip() if pd.notna(row.get('Company Type')) else None,
+                    "industry": row.get('Industry', '').strip() if pd.notna(row.get('Industry')) else None,
+                    "contact_person": row.get('Contact Person', '').strip() if pd.notna(row.get('Contact Person')) else None,
+                    "email": row.get('Email', '').strip() if pd.notna(row.get('Email')) else None,
+                    "phone": row.get('Phone', '').strip() if pd.notna(row.get('Phone')) else None,
+                    "address": row.get('Address', '').strip() if pd.notna(row.get('Address')) else None,
+                    "notes": row.get('Notes', '').strip() if pd.notna(row.get('Notes')) else None
+                }
+                
+                client_dict = client_data.copy()
+                client_dict["id"] = str(uuid.uuid4())
+                client_dict["created_by"] = current_user.id
+                client_dict["created_at"] = datetime.now(timezone.utc)
+                client_dict["active"] = True
+                
+                client_dict = prepare_for_mongo(client_dict)
+                await db.clients.insert_one(client_dict)
+                
+                success_count += 1
+                created_items.append(client_name)
+                
+            except Exception as e:
+                error_count += 1
+                errors.append(f"Row {index + 2}: {str(e)}")
+        
+        return BulkImportResult(
+            success_count=success_count,
+            error_count=error_count,
+            errors=errors,
+            created_items=created_items
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
+
 # Get unique clients and categories for filtering
 @api_router.get("/filters")
 async def get_filters(current_user: UserResponse = Depends(get_current_user)):
