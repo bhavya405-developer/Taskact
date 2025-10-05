@@ -12,6 +12,7 @@ const ClientManager = () => {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     company_type: '',
