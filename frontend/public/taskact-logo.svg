@@ -1,0 +1,36 @@
+<svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- TaskAct Icon -->
+  <g transform="translate(20,20)">
+    <!-- Central power button circle with blue fill -->
+    <circle cx="0" cy="0" r="6" fill="none" stroke="#2563EB" stroke-width="2"/>
+    <!-- Central vertical line -->
+    <line x1="0" y1="-3" x2="0" y2="3" stroke="#2563EB" stroke-width="2"/>
+    
+    <!-- Outer connecting nodes -->
+    <circle cx="-12" cy="0" r="2" fill="#2563EB"/>
+    <circle cx="12" cy="0" r="2" fill="#2563EB"/>
+    <circle cx="0" cy="-12" r="2" fill="#2563EB"/>
+    <circle cx="0" cy="12" r="2" fill="#2563EB"/>
+    
+    <!-- Connecting lines -->
+    <line x1="-6" y1="0" x2="-10" y2="0" stroke="#2563EB" stroke-width="1.5" opacity="0.8"/>
+    <line x1="6" y1="0" x2="10" y2="0" stroke="#2563EB" stroke-width="1.5" opacity="0.8"/>
+    <line x1="0" y1="-6" x2="0" y2="-10" stroke="#2563EB" stroke-width="1.5" opacity="0.8"/>
+    <line x1="0" y1="6" x2="0" y2="10" stroke="#2563EB" stroke-width="1.5" opacity="0.8"/>
+    
+    <!-- Diagonal nodes -->
+    <circle cx="-8.5" cy="-8.5" r="1.5" fill="#2563EB" opacity="0.7"/>
+    <circle cx="8.5" cy="-8.5" r="1.5" fill="#2563EB" opacity="0.7"/>
+    <circle cx="-8.5" cy="8.5" r="1.5" fill="#2563EB" opacity="0.7"/>
+    <circle cx="8.5" cy="8.5" r="1.5" fill="#2563EB" opacity="0.7"/>
+    
+    <!-- Diagonal connecting lines -->
+    <line x1="-4.2" y1="-4.2" x2="-7" y2="-7" stroke="#2563EB" stroke-width="1.2" opacity="0.6"/>
+    <line x1="4.2" y1="-4.2" x2="7" y2="-7" stroke="#2563EB" stroke-width="1.2" opacity="0.6"/>
+    <line x1="-4.2" y1="4.2" x2="-7" y2="7" stroke="#2563EB" stroke-width="1.2" opacity="0.6"/>
+    <line x1="4.2" y1="4.2" x2="7" y2="7" stroke="#2563EB" stroke-width="1.2" opacity="0.6"/>
+  </g>
+  
+  <!-- TaskAct Text -->
+  <text x="50" y="28" font-family="Inter, sans-serif" font-weight="600" font-size="20" fill="#1F2937">TaskAct</text>
+</svg>
