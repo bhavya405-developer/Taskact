@@ -244,6 +244,14 @@ const Dashboard = ({ users, tasks }) => {
           </div>
         </div>
       </div>
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={showTaskDetail}
+        onClose={handleCloseTaskDetail}
+        onEdit={isPartner() ? handleEditTask : null}
+      />
     </div>
   );
 };
