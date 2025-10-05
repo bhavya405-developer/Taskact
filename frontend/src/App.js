@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import Tasks from "./components/Tasks";
 import TeamMembers from "./components/TeamMembers";
