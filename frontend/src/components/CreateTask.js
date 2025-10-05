@@ -144,19 +144,29 @@ const CreateTask = ({ users, onTaskCreated }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="client_name" className="form-label">
-                Client Name *
+                Client *
               </label>
-              <input
-                type="text"
+              <select
                 id="client_name"
                 name="client_name"
                 value={formData.client_name}
                 onChange={handleChange}
-                placeholder="Enter client name..."
                 className="form-input"
-                data-testid="client-name-input"
+                data-testid="client-select"
                 required
-              />
+              >
+                <option value="">Select client...</option>
+                {clients.map(client => (
+                  <option key={client.id} value={client.name}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+              {clients.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  No clients available. Ask a partner to add clients.
+                </p>
+              )}
             </div>
 
             <div>
@@ -173,17 +183,17 @@ const CreateTask = ({ users, onTaskCreated }) => {
                 required
               >
                 <option value="">Select category...</option>
-                <option value="Legal Research">Legal Research</option>
-                <option value="Contract Review">Contract Review</option>
-                <option value="Client Meeting">Client Meeting</option>
-                <option value="Court Filing">Court Filing</option>
-                <option value="Document Preparation">Document Preparation</option>
-                <option value="Case Analysis">Case Analysis</option>
-                <option value="Negotiation">Negotiation</option>
-                <option value="Due Diligence">Due Diligence</option>
-                <option value="Compliance Review">Compliance Review</option>
-                <option value="Other">Other</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
+              {categories.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  No categories available. Ask a partner to add categories.
+                </p>
+              )}
             </div>
           </div>
 
