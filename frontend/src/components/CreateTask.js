@@ -35,6 +35,16 @@ const CreateTask = ({ users, onTaskCreated }) => {
       return;
     }
     
+    if (!formData.client_name.trim()) {
+      alert('Please enter a client name');
+      return;
+    }
+    
+    if (!formData.category.trim()) {
+      alert('Please select a task category');
+      return;
+    }
+    
     if (!formData.assignee_id) {
       alert('Please select an assignee');
       return;
