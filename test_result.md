@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Test the team member creation functionality in TaskAct to verify the bug fix for the '[object Object]' error: Issue occurred during form submission after filling mandatory fields. Problem identified: Missing password validation and poor error handling. Bug fix applied: Added proper form validation for required fields, enhanced error message handling, added password length validation, improved user experience with better error messages."
+## user_problem_statement: "Test the updated task status system in TaskAct with the new 4-status workflow and completed task immutability: Updated Task Status System with 4 statuses (Pending, On Hold, Overdue, Completed), new task creation starting with Pending status, status transitions, overdue auto-update, and completed task immutability features."
 
 ## backend:
   - task: "Excel template download endpoints for categories"
