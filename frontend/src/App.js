@@ -8,6 +8,8 @@ import Dashboard from "./components/Dashboard";
 import Tasks from "./components/Tasks";
 import TeamMembers from "./components/TeamMembers";
 import CreateTask from "./components/CreateTask";
+import CategoryManager from "./components/CategoryManager";
+import ClientManager from "./components/ClientManager";
 import Navigation from "./components/Navigation";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
