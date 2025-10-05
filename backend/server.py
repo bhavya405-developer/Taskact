@@ -465,7 +465,7 @@ async def get_filters():
 
 # Dashboard endpoint
 @api_router.get("/dashboard")
-async def get_dashboard():
+async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     # Get counts by status
     pending_count = await db.tasks.count_documents({"status": TaskStatus.PENDING})
     in_progress_count = await db.tasks.count_documents({"status": TaskStatus.IN_PROGRESS})
