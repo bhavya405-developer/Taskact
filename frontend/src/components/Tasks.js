@@ -61,8 +61,14 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = filter === 'all' || task.status === filter;
     const matchesAssignee = assigneeFilter === 'all' || task.assignee_id === assigneeFilter;
-    return matchesStatus && matchesAssignee;
+    const matchesClient = clientFilter === 'all' || (task.client_name && task.client_name.toLowerCase().includes(clientFilter.toLowerCase()));
+    const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter;
+    return matchesStatus && matchesAssignee && matchesClient && matchesCategory;
   });
+
+  // Get unique clients and categories for filter options
+  const uniqueClients = [...new Set(tasks.map(task => task.client_name).filter(Boolean))].sort();
+  const uniqueCategories = [...new Set(tasks.map(task => task.category).filter(Boolean))].sort();
 
   return (
     <div className="space-y-6 animate-fade-in">
