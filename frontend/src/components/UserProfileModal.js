@@ -72,15 +72,32 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
 
     try {
       if (isCreate) {
+        // Validate required fields for creating new user
+        if (!formData.name.trim()) {
+          alert('Please enter the full name');
+          setLoading(false);
+          return;
+        }
+        if (!formData.email.trim()) {
+          alert('Please enter the email address');
+          setLoading(false);
+          return;
+        }
+        if (!formData.password.trim()) {
+          alert('Please enter an initial password for the new team member');
+          setLoading(false);
+          return;
+        }
+        if (formData.password.length < 6) {
+          alert('Password must be at least 6 characters long');
+          setLoading(false);
+          return;
+        }
+        
         // Create new user
         const userData = { ...formData };
         if (userData.hire_date) {
           userData.hire_date = new Date(userData.hire_date).toISOString();
-        }
-        
-        // Ensure password is provided - use default if empty
-        if (!userData.password || userData.password.trim() === '') {
-          userData.password = 'password123'; // Default password that user can change later
         }
         
         await axios.post(`${API}/users`, userData);
