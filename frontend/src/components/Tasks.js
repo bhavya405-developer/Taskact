@@ -91,7 +91,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="form-label">Filter by Status</label>
             <select
@@ -119,6 +119,38 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               {users.map(user => (
                 <option key={user.id} value={user.id}>
                   {user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Filter by Client</label>
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="form-input"
+              data-testid="client-filter"
+            >
+              <option value="all">All Clients</option>
+              {uniqueClients.map(client => (
+                <option key={client} value={client}>
+                  {client}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Filter by Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="form-input"
+              data-testid="category-filter"
+            >
+              <option value="all">All Categories</option>
+              {uniqueCategories.map(category => (
+                <option key={category} value={category}>
+                  {category}
                 </option>
               ))}
             </select>
