@@ -15,6 +15,22 @@ import Navigation from "./components/Navigation";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Component to handle dashboard redirect on login
+const DashboardRedirect = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  useEffect(() => {
+    // If user just logged in and not already on dashboard, redirect to dashboard
+    if (user && location.pathname === '/') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate, location.pathname]);
+  
+  return null;
+};
+
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
