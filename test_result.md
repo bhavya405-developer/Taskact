@@ -166,3 +166,5 @@
 ## agent_communication:
     - agent: "main"
       message: "Starting investigation of Excel template download 404/403 errors. Backend routes are defined correctly, authentication system works for other endpoints. Suspect issue with frontend authentication headers or backend route registration timing."
+    - agent: "testing"
+      message: "ISSUE IDENTIFIED AND FIXED: The problem was FastAPI route ordering. The specific routes /categories/download-template and /clients/download-template were being matched by the parameterized routes /categories/{category_id} and /clients/{client_id} because they were defined later. FastAPI was treating 'download-template' as a path parameter. I moved the template download routes before the parameterized routes and removed duplicates. Both endpoints now work correctly with proper authentication and return valid Excel files. All tests passing (100% success rate)."
