@@ -127,7 +127,14 @@ const CategoryManager = () => {
           <h2 className="text-3xl font-bold text-gray-900">Task Categories</h2>
           <p className="mt-2 text-gray-600">Manage task categories for better organization</p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex space-x-3">
+          <button
+            onClick={() => setShowBulkImport(true)}
+            className="btn-secondary"
+            data-testid="bulk-import-categories-button"
+          >
+            📤 Bulk Import
+          </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="btn-primary"
