@@ -7,7 +7,11 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const TeamMembers = ({ users, tasks, onUserAdded }) => {
+  const { isPartner } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isCreateMode, setIsCreateMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
