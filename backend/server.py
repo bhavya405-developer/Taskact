@@ -925,7 +925,7 @@ async def delete_client(client_id: str, current_user: UserResponse = Depends(get
     return {"message": "Client deleted successfully"}
 
 # Client Template and Bulk Import endpoints (Partners only) - Must come after CRUD
-@api_router.get("/clients/template")
+@api_router.get("/clients/download-template")
 async def download_clients_template(current_user: UserResponse = Depends(get_current_partner)):
     """Download Excel template for bulk client import"""
     
