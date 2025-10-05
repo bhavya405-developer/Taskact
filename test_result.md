@@ -101,3 +101,62 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+## user_problem_statement: "Fix Excel Template Download: The current bulk import/export feature is incomplete as downloading the Excel templates for categories and clients is failing with 404/403 errors. Investigate why the `/api/categories/download-template` endpoint returns 403/404 by inspecting the FastAPI application's actual route handling and middleware."
+
+## backend:
+  - task: "Excel template download endpoints for categories"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Template download endpoints defined at lines 708 and 928 but returning 404/403 errors. Need to investigate authentication headers and route registration."
+
+  - task: "Excel template download endpoints for clients"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Template download endpoints defined at lines 928-1000 but returning 404/403 errors. Need to investigate authentication headers and route registration."
+
+## frontend:
+  - task: "Bulk import modal template download functionality"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/components/BulkImportModal.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Download template function exists at line 56-77 but may be missing authentication headers or have timing issues with token setup."
+
+## metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+## test_plan:
+  current_focus:
+    - "Excel template download endpoints for categories"
+    - "Excel template download endpoints for clients"
+    - "Bulk import modal template download functionality"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication:
+    - agent: "main"
+      message: "Starting investigation of Excel template download 404/403 errors. Backend routes are defined correctly, authentication system works for other endpoints. Suspect issue with frontend authentication headers or backend route registration timing."
