@@ -451,12 +451,17 @@ async def get_unread_notification_count(current_user: UserResponse = Depends(get
 
 # Get unique clients and categories for filtering
 @api_router.get("/filters")
-async def get_filters():
+async def get_filters(current_user: UserResponse = Depends(get_current_user)):
+    # Build query based on user role
+    query = {}
+    if current_user.role != UserRole.PARTNER:
+        query["assignee_id"] = current_user.id
+    
     # Get unique client names
-    clients = await db.tasks.distinct("client_name")
+    clients = await db.tasks.distinct("client_name", query)
     
     # Get unique categories
-    categories = await db.tasks.distinct("category")
+    categories = await db.tasks.distinct("category", query)
     
     return {
         "clients": sorted([client for client in clients if client]),
