@@ -157,12 +157,21 @@ async def create_task(task_data: TaskCreate):
     return task
 
 @api_router.get("/tasks", response_model=List[Task])
-async def get_tasks(status: Optional[TaskStatus] = None, assignee_id: Optional[str] = None):
+async def get_tasks(
+    status: Optional[TaskStatus] = None, 
+    assignee_id: Optional[str] = None,
+    client_name: Optional[str] = None,
+    category: Optional[str] = None
+):
     query = {}
     if status:
         query["status"] = status
     if assignee_id:
         query["assignee_id"] = assignee_id
+    if client_name:
+        query["client_name"] = {"$regex": client_name, "$options": "i"}  # Case-insensitive search
+    if category:
+        query["category"] = category
     
     tasks = await db.tasks.find(query).sort("created_at", -1).to_list(length=None)
     return [Task(**parse_from_mongo(task)) for task in tasks]
