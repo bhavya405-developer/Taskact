@@ -136,6 +136,18 @@
           comment: "FIXED: Route ordering issue resolved. Moved /clients/download-template route before /clients/{client_id} to prevent FastAPI from treating 'download-template' as a client_id parameter. Authentication working correctly with partner role. Excel file generation successful (6776 bytes, proper MIME type)."
 
 ## frontend:
+  - task: "Team member creation '[object Object]' error bug fix"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/UserProfileModal.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "BUG FIX SUCCESSFUL: ✅ '[object Object]' error completely resolved - proper error messages now displayed (e.g., 'Email already registered'). ✅ Form validation working correctly - JavaScript validation executes and shows proper alerts for missing name, email, password, and short password validation. ✅ User creation functionality working perfectly - new team members are created successfully and appear in team list. ✅ Enhanced error handling implemented - Pydantic validation errors properly parsed and displayed. ✅ Empty field handling fixed - empty strings converted to null to prevent API validation errors. ✅ Password validation working - minimum 6 characters enforced. TECHNICAL FIXES: Added noValidate to form, removed HTML5 validation attributes, improved error message parsing for different error types including Pydantic validation error arrays, fixed hire_date field handling. All test scenarios passed successfully."
+
   - task: "Bulk import modal template download functionality"
     implemented: true
     working: false
