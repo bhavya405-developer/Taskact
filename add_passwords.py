@@ -45,7 +45,7 @@ async def add_passwords():
         else:
             print(f"❌ Could not update password for {email}")
     
-    await client.close()
+    client.close()
 
 if __name__ == "__main__":
     asyncio.run(add_passwords())
