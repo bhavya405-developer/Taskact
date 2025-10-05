@@ -11,6 +11,8 @@ const Navigation = () => {
     { path: '/dashboard', name: 'Dashboard', icon: '📊' },
     { path: '/tasks', name: 'Tasks', icon: '📋' },
     { path: '/team', name: 'Team', icon: '👥', partnerOnly: true },
+    { path: '/categories', name: 'Categories', icon: '📂', partnerOnly: true },
+    { path: '/clients', name: 'Clients', icon: '🏢', partnerOnly: true },
     { path: '/create-task', name: 'Create Task', icon: '➕' }
   ];
 
