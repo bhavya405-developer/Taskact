@@ -144,7 +144,7 @@ const Dashboard = ({ users, tasks }) => {
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{task.title}</h4>
                           <p className="text-sm text-gray-600 mt-1">
-                            Assigned to: {task.assignee_name}
+                            Client: {task.client_name} • Assigned to: {task.assignee_name}
                           </p>
                           <div className="flex items-center space-x-2 mt-2">
                             <span className={`badge ${status.class}`}>
@@ -152,6 +152,9 @@ const Dashboard = ({ users, tasks }) => {
                             </span>
                             <span className={`badge ${priority.class}`}>
                               {priority.label}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              {task.category}
                             </span>
                           </div>
                         </div>
