@@ -47,6 +47,10 @@ const Dashboard = ({ users, tasks }) => {
   }
 
   const { task_counts, recent_tasks, team_stats } = dashboardData;
+  
+  // Filter tasks by status for priority sections
+  const overdue_tasks = recent_tasks.filter(task => task.status === 'overdue');
+  const pending_tasks = recent_tasks.filter(task => task.status === 'pending');
 
   const StatusCard = ({ title, count, status, icon }) => (
     <div className={`stats-card animate-fade-in`} data-testid={`status-card-${status}`}>
