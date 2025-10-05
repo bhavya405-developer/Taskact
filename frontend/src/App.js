@@ -107,6 +107,14 @@ const AppContent = () => {
               } 
             />
             <Route 
+              path="/categories" 
+              element={<CategoryManager />} 
+            />
+            <Route 
+              path="/clients" 
+              element={<ClientManager />} 
+            />
+            <Route 
               path="/create-task" 
               element={
                 <CreateTask 
