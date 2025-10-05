@@ -131,16 +131,18 @@ const CategoryManager = () => {
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button
             onClick={() => setShowBulkImport(true)}
-            className="btn-secondary"
+            className="btn-secondary flex items-center"
             data-testid="bulk-import-categories-button"
           >
-            📤 Bulk Import
+            <Upload size={16} className="mr-2" />
+            Bulk Import
           </button>
           <button
             onClick={() => setShowAddForm(true)}
-            className="btn-primary"
+            className="btn-primary flex items-center"
             data-testid="add-category-button"
           >
+            <Plus size={16} className="mr-2" />
             Add Category
           </button>
         </div>
