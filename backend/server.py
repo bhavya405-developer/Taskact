@@ -239,12 +239,27 @@ async def get_current_user_info(current_user: UserResponse = Depends(get_current
     return current_user
 
 # Users endpoints
-@api_router.post("/users", response_model=User)
-async def create_user(user_data: UserCreate):
-    user = User(**user_data.dict())
-    user_dict = prepare_for_mongo(user.dict())
+@api_router.post("/users", response_model=UserResponse)
+async def create_user(user_data: UserCreate, current_user: UserResponse = Depends(get_current_partner)):
+    # Hash the password
+    password_hash = get_password_hash(user_data.password)
+    
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": user_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_dict = user_data.dict()
+    user_dict.pop("password")  # Remove plain password
+    user_dict["password_hash"] = password_hash
+    user_dict["id"] = str(uuid.uuid4())
+    user_dict["created_at"] = datetime.now(timezone.utc)
+    user_dict["active"] = True
+    
+    user_dict = prepare_for_mongo(user_dict)
     await db.users.insert_one(user_dict)
-    return user
+    
+    return UserResponse(**parse_from_mongo(user_dict))
 
 @api_router.get("/users", response_model=List[User])
 async def get_users():
