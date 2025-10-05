@@ -49,12 +49,12 @@ const Navigation = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`nav-link ${
+                    className={`nav-link flex items-center ${
                       location.pathname === item.path ? 'active' : ''
                     }`}
                     data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
                   >
-                    <span className="mr-2">{item.icon}</span>
+                    <item.icon size={16} className="mr-2" />
                     {item.name}
                   </Link>
                 );
