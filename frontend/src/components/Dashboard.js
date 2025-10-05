@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import TaskDetailModal from './TaskDetailModal';
 import { useAuth } from '../contexts/AuthContext';
+import { 
+  BarChart3, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle, 
+  Calendar,
+  TrendingUp,
+  Users,
+  Building2
+} from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
