@@ -71,6 +71,16 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
     }
   };
 
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetail(true);
+  };
+
+  const handleCloseTaskDetail = () => {
+    setSelectedTask(null);
+    setShowTaskDetail(false);
+  };
+
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = filter === 'all' || task.status === filter;
     const matchesAssignee = assigneeFilter === 'all' || task.assignee_id === assigneeFilter;
