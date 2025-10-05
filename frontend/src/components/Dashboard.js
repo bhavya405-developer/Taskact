@@ -104,7 +104,7 @@ const Dashboard = ({ users, tasks }) => {
       {/* Header */}
       <div className="text-center lg:text-left">
         <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-        <p className="mt-2 text-gray-600">Overview of your team's task management</p>
+        <p className="mt-2 text-gray-600">Overview of your team's productivity</p>
       </div>
 
       {/* Stats Cards */}
