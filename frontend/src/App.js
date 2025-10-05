@@ -13,7 +13,8 @@ import Navigation from "./components/Navigation";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-function App() {
+const AppContent = () => {
+  const { user, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,14 +38,16 @@ function App() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([fetchUsers(), fetchTasks()]);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
+    if (user) {
+      const loadData = async () => {
+        await Promise.all([fetchUsers(), fetchTasks()]);
+        setLoading(false);
+      };
+      loadData();
+    }
+  }, [user]);
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -55,51 +58,74 @@ function App() {
     );
   }
 
+  if (!user) {
+    return <Login />;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route 
+              path="/dashboard" 
+              element={<Dashboard users={users} tasks={tasks} />} 
+            />
+            <Route 
+              path="/tasks" 
+              element={
+                <Tasks 
+                  tasks={tasks} 
+                  users={users} 
+                  onTaskUpdate={fetchTasks} 
+                />
+              } 
+            />
+            <Route 
+              path="/team" 
+              element={
+                <TeamMembers 
+                  users={users} 
+                  tasks={tasks} 
+                  onUserAdded={fetchUsers} 
+                />
+              } 
+            />
+            <Route 
+              path="/create-task" 
+              element={
+                <CreateTask 
+                  users={users} 
+                  onTaskCreated={fetchTasks} 
+                />
+              } 
+            />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+};
+
+function App() {
   return (
     <div className="App">
-      <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
-          <Navigation />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route 
-                path="/dashboard" 
-                element={<Dashboard users={users} tasks={tasks} />} 
-              />
-              <Route 
-                path="/tasks" 
-                element={
-                  <Tasks 
-                    tasks={tasks} 
-                    users={users} 
-                    onTaskUpdate={fetchTasks} 
-                  />
-                } 
-              />
-              <Route 
-                path="/team" 
-                element={
-                  <TeamMembers 
-                    users={users} 
-                    tasks={tasks} 
-                    onUserAdded={fetchUsers} 
-                  />
-                } 
-              />
-              <Route 
-                path="/create-task" 
-                element={
-                  <CreateTask 
-                    users={users} 
-                    onTaskCreated={fetchTasks} 
-                  />
-                } 
-              />
-            </Routes>
-          </main>
-        </div>
-      </BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </div>
   );
 }
