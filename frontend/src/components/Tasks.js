@@ -8,6 +8,8 @@ const API = `${BACKEND_URL}/api`;
 const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const [filter, setFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [clientFilter, setClientFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [updating, setUpdating] = useState({});
 
   const getStatusDisplay = (status) => {
