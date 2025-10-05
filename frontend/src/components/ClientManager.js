@@ -421,6 +421,14 @@ const ClientManager = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        type="clients"
+        onImportComplete={fetchClients}
+      />
     </div>
   );
 };
