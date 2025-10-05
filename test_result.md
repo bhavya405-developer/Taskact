@@ -180,8 +180,7 @@
 
 ## test_plan:
   current_focus:
-    - "Excel template download endpoints for categories"
-    - "Excel template download endpoints for clients"
+    - "Team member creation '[object Object]' error bug fix"
     - "Bulk import modal template download functionality"
   stuck_tasks: []
   test_all: false
