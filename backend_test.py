@@ -414,7 +414,7 @@ class TaskActTester:
                             {'response': update_response.text}
                         )
                 
-                if transition_success >= 2:
+                if transition_success >= 3:
                     self.log_test(
                         "Status Transitions", 
                         True, 
