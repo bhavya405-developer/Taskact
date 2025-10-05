@@ -12,6 +12,7 @@ const CategoryManager = () => {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
