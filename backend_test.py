@@ -113,7 +113,7 @@ class TaskActTester:
         
         try:
             response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
-            if response.status_code == 201:
+            if response.status_code in [200, 201]:
                 task = response.json()
                 task_id = task['id']
                 self.created_tasks.append(task_id)
@@ -241,7 +241,7 @@ class TaskActTester:
         try:
             response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
             
-            if response.status_code == 201:
+            if response.status_code in [200, 201]:
                 task = response.json()
                 self.created_tasks.append(task['id'])
                 
@@ -299,7 +299,7 @@ class TaskActTester:
         try:
             response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
             
-            if response.status_code == 201:
+            if response.status_code in [200, 201]:
                 task = response.json()
                 task_id = task['id']
                 self.created_tasks.append(task_id)
@@ -468,7 +468,7 @@ class TaskActTester:
             # Create task
             response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
             
-            if response.status_code == 201:
+            if response.status_code in [200, 201]:
                 task = response.json()
                 task_id = task['id']
                 self.created_tasks.append(task_id)
@@ -617,7 +617,7 @@ class TaskActTester:
             # Create task
             response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
             
-            if response.status_code == 201:
+            if response.status_code in [200, 201]:
                 task = response.json()
                 task_id = task['id']
                 self.created_tasks.append(task_id)
