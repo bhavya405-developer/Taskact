@@ -305,12 +305,18 @@ async def create_task(task_data: TaskCreate, current_user: UserResponse = Depend
 
 @api_router.get("/tasks", response_model=List[Task])
 async def get_tasks(
+    current_user: UserResponse = Depends(get_current_user),
     status: Optional[TaskStatus] = None, 
     assignee_id: Optional[str] = None,
     client_name: Optional[str] = None,
     category: Optional[str] = None
 ):
     query = {}
+    
+    # Non-partners can only see their own tasks unless they're partners
+    if current_user.role != UserRole.PARTNER:
+        query["assignee_id"] = current_user.id
+    
     if status:
         query["status"] = status
     if assignee_id:
