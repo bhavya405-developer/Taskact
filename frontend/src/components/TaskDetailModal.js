@@ -154,7 +154,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit }) => {
             </p>
           </div>
           <div className="flex space-x-3">
-            {onEdit && (
+            {onEdit && task.status !== 'completed' && (
               <button
                 onClick={() => onEdit(task)}
                 className="btn-secondary"
@@ -162,6 +162,11 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit }) => {
               >
                 Edit Task
               </button>
+            )}
+            {task.status === 'completed' && (
+              <div className="text-sm text-gray-500 italic">
+                ✓ This task is completed and cannot be edited
+              </div>
             )}
             <button
               onClick={onClose}
