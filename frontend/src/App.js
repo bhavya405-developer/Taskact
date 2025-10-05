@@ -140,6 +140,8 @@ const AppContent = () => {
                 />
               } 
             />
+            {/* Catch-all route - redirect any unmatched routes to dashboard */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
