@@ -6,7 +6,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit }) => {
   const getStatusDisplay = (status) => {
     const statusConfig = {
       pending: { label: 'Pending', class: 'status-pending' },
-      in_progress: { label: 'In Progress', class: 'status-in_progress' },
+      on_hold: { label: 'On Hold', class: 'status-on_hold' },
       completed: { label: 'Completed', class: 'status-completed' },
       overdue: { label: 'Overdue', class: 'status-overdue' }
     };
