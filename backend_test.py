@@ -797,25 +797,35 @@ class TaskActTester:
         print(f"Cleaned up {cleaned_count}/{len(self.created_tasks)} test tasks")
     
     def run_all_tests(self):
-        """Run all tests"""
-        print(f"🚀 Starting Backend API Tests")
+        """Run all comprehensive 4-status system tests"""
+        print(f"🚀 Starting TaskAct 4-Status System Tests")
         print(f"📍 Testing against: {API_BASE_URL}")
-        print("=" * 60)
+        print("=" * 80)
         
         # Test authentication first
         auth_success = self.test_authentication()
         
-        # Test route registration
-        self.test_route_registration()
+        if not auth_success:
+            print("❌ Authentication failed - cannot proceed with other tests")
+            return False
         
-        # Test template downloads
-        categories_success = self.test_categories_template_download()
-        clients_success = self.test_clients_template_download()
+        # Run comprehensive 4-status system tests
+        test_results = []
+        
+        test_results.append(self.test_status_enum_verification())
+        test_results.append(self.test_task_creation_default_status())
+        test_results.append(self.test_status_transitions())
+        test_results.append(self.test_completed_task_immutability())
+        test_results.append(self.test_overdue_auto_update())
+        test_results.append(self.test_dashboard_counts())
+        
+        # Clean up test tasks
+        self.cleanup_test_tasks()
         
         # Summary
-        print("\n" + "=" * 60)
-        print("📊 TEST SUMMARY")
-        print("=" * 60)
+        print("\n" + "=" * 80)
+        print("📊 TASKACT 4-STATUS SYSTEM TEST SUMMARY")
+        print("=" * 80)
         
         passed = sum(1 for result in self.test_results if result['success'])
         total = len(self.test_results)
@@ -831,24 +841,67 @@ class TaskActTester:
             print(f"\n❌ FAILED TESTS ({len(failed_tests)}):")
             for test in failed_tests:
                 print(f"  • {test['test']}: {test['message']}")
+                if test.get('details'):
+                    print(f"    Details: {test['details']}")
+        
+        # Show successful tests summary
+        successful_tests = [result for result in self.test_results if result['success']]
+        if successful_tests:
+            print(f"\n✅ SUCCESSFUL TESTS ({len(successful_tests)}):")
+            for test in successful_tests:
+                print(f"  • {test['test']}")
         
         # Show critical issues
         critical_issues = []
-        if not auth_success:
-            critical_issues.append("Authentication system not working")
-        if not categories_success:
-            critical_issues.append("Categories template download failing")
-        if not clients_success:
-            critical_issues.append("Clients template download failing")
+        
+        # Check for critical 4-status system issues
+        status_enum_failed = not any(r['test'] == 'Status Enum Verification' and r['success'] for r in self.test_results)
+        task_creation_failed = not any(r['test'] == 'Task Creation Default Status' and r['success'] for r in self.test_results)
+        transitions_failed = not any(r['test'] == 'Status Transitions' and r['success'] for r in self.test_results)
+        immutability_failed = not any(r['test'] == 'Completed Task Immutability' and r['success'] for r in self.test_results)
+        overdue_failed = not any(r['test'] == 'Overdue Auto-Update' and r['success'] for r in self.test_results)
+        dashboard_failed = not any(r['test'] == 'Dashboard Status Counts' and r['success'] for r in self.test_results)
+        
+        if status_enum_failed:
+            critical_issues.append("Status enum validation not working - invalid statuses may be accepted")
+        if task_creation_failed:
+            critical_issues.append("New tasks not defaulting to 'pending' status")
+        if transitions_failed:
+            critical_issues.append("Status transitions not working properly")
+        if immutability_failed:
+            critical_issues.append("Completed task immutability not enforced")
+        if overdue_failed:
+            critical_issues.append("Overdue auto-update system not working")
+        if dashboard_failed:
+            critical_issues.append("Dashboard not showing correct status counts")
         
         if critical_issues:
-            print(f"\n🚨 CRITICAL ISSUES:")
+            print(f"\n🚨 CRITICAL 4-STATUS SYSTEM ISSUES:")
             for issue in critical_issues:
                 print(f"  • {issue}")
+        
+        # Overall assessment
+        core_features_working = sum([
+            not status_enum_failed,
+            not task_creation_failed, 
+            not transitions_failed,
+            not immutability_failed,
+            not overdue_failed,
+            not dashboard_failed
+        ])
+        
+        print(f"\n📈 4-STATUS SYSTEM HEALTH: {core_features_working}/6 core features working")
+        
+        if core_features_working == 6:
+            print("🎉 All 4-status system features are working correctly!")
+        elif core_features_working >= 4:
+            print("⚠️  Most 4-status system features working, some issues need attention")
+        else:
+            print("🚨 Major issues with 4-status system - requires immediate attention")
         
         return passed == total
 
 if __name__ == "__main__":
-    tester = BackendTester()
+    tester = TaskActTester()
     success = tester.run_all_tests()
     sys.exit(0 if success else 1)
