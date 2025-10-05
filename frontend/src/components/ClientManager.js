@@ -154,9 +154,12 @@ const ClientManager = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Client Management</h2>
-          <p className="mt-2 text-gray-600">Manage your client database</p>
+        <div className="flex items-center">
+          <Building2 size={32} className="text-blue-600 mr-3" />
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Client Management</h2>
+            <p className="mt-2 text-gray-600">Manage your client database</p>
+          </div>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button
