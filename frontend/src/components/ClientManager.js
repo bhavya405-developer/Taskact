@@ -157,7 +157,14 @@ const ClientManager = () => {
           <h2 className="text-3xl font-bold text-gray-900">Client Management</h2>
           <p className="mt-2 text-gray-600">Manage your client database</p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex space-x-3">
+          <button
+            onClick={() => setShowBulkImport(true)}
+            className="btn-secondary"
+            data-testid="bulk-import-clients-button"
+          >
+            📤 Bulk Import
+          </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="btn-primary"
