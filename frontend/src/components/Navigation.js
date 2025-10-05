@@ -4,11 +4,12 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Navigation = () => {
   const location = useLocation();
+  const { user, logout, isPartner } = useAuth();
   
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: '📊' },
     { path: '/tasks', name: 'Tasks', icon: '📋' },
-    { path: '/team', name: 'Team', icon: '👥' },
+    { path: '/team', name: 'Team', icon: '👥', partnerOnly: true },
     { path: '/create-task', name: 'Create Task', icon: '➕' }
   ];
 
