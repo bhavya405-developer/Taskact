@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationPanel from './NotificationPanel';
@@ -10,7 +10,9 @@ import {
   Building2, 
   Plus,
   LogOut,
-  User
+  User,
+  Menu,
+  X
 } from 'lucide-react';
 
 const Navigation = () => {
