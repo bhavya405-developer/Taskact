@@ -413,6 +413,13 @@ class TaskActTester:
                             f"Direct completion failed with status {update_response.status_code}",
                             {'response': update_response.text}
                         )
+                else:
+                    self.log_test(
+                        "Second Task Creation", 
+                        False, 
+                        f"Failed to create second test task: {response2.status_code}",
+                        {'response': response2.text}
+                    )
                 
                 if transition_success >= 3:
                     self.log_test(
