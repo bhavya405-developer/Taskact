@@ -167,13 +167,15 @@ const ClientManager = () => {
             className="btn-secondary"
             data-testid="bulk-import-clients-button"
           >
-            📤 Bulk Import
+            <Upload size={16} className="mr-2" />
+            Bulk Import
           </button>
           <button
             onClick={() => setShowAddForm(true)}
-            className="btn-primary"
+            className="btn-primary flex items-center"
             data-testid="add-client-button"
           >
+            <Plus size={16} className="mr-2" />
             Add Client
           </button>
         </div>
