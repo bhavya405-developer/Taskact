@@ -11,6 +11,8 @@ const CreateTask = ({ users, onTaskCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    client_name: '',
+    category: '',
     assignee_id: '',
     creator_id: users.find(u => u.role === 'partner')?.id || users[0]?.id || '',
     priority: 'medium',
