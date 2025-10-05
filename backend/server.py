@@ -314,6 +314,86 @@ async def get_user(user_id: str, current_user: UserResponse = Depends(get_curren
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse(**parse_from_mongo(user))
 
+@api_router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user_profile(
+    user_id: str, 
+    profile_update: UserProfileUpdate, 
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    # Get existing user
+    existing_user = await db.users.find_one({"id": user_id, "active": True})
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prepare update data
+    update_data = {k: v for k, v in profile_update.dict().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    # Check if email is being changed and if it already exists
+    if "email" in update_data and update_data["email"] != existing_user["email"]:
+        existing_email = await db.users.find_one({"email": update_data["email"]})
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already exists")
+    
+    # Convert datetime fields to ISO strings
+    update_data = prepare_for_mongo(update_data)
+    
+    # Update the user
+    result = await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"id": user_id})
+    
+    # Create notification for user about profile update
+    if user_id != current_user.id:
+        await create_notification(
+            user_id=user_id,
+            title="Profile Updated",
+            message=f"Your profile has been updated by {current_user.name}",
+            task_id=None
+        )
+    
+    return UserResponse(**parse_from_mongo(updated_user))
+
+@api_router.put("/users/{user_id}/password")
+async def reset_user_password(
+    user_id: str,
+    password_data: PasswordResetRequest,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    # Verify the user exists
+    user = await db.users.find_one({"id": user_id, "active": True})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Hash the new password
+    new_password_hash = get_password_hash(password_data.new_password)
+    
+    # Update the password
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Create notification for user about password reset
+    if user_id != current_user.id:
+        await create_notification(
+            user_id=user_id,
+            title="Password Reset",
+            message=f"Your password has been reset by {current_user.name}. Please use your new credentials to log in.",
+            task_id=None
+        )
+    
+    return {"message": "Password updated successfully"}
+
 # Tasks endpoints
 @api_router.post("/tasks", response_model=Task)
 async def create_task(task_data: TaskCreate, current_user: UserResponse = Depends(get_current_user)):
