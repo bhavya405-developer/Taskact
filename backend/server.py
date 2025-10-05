@@ -320,23 +320,35 @@ async def update_overdue_tasks():
     """Automatically update tasks to overdue status if past due date"""
     current_time = datetime.now(timezone.utc)
     
-    # Find tasks that are pending or on_hold and past their due date
-    overdue_query = {
+    # Get all pending and on_hold tasks with due dates
+    tasks = await db.tasks.find({
         "status": {"$in": [TaskStatus.PENDING, TaskStatus.ON_HOLD]},
-        "due_date": {"$lt": current_time.isoformat()},
         "due_date": {"$ne": None}
-    }
+    }).to_list(length=None)
     
-    # Update these tasks to overdue status
-    result = await db.tasks.update_many(
-        overdue_query,
-        {"$set": {
-            "status": TaskStatus.OVERDUE,
-            "updated_at": current_time.isoformat()
-        }}
-    )
+    updated_count = 0
+    for task in tasks:
+        due_date_str = task.get('due_date')
+        if due_date_str:
+            try:
+                # Parse the due date string to datetime object
+                due_date = datetime.fromisoformat(due_date_str)
+                
+                # Check if task is actually overdue
+                if due_date < current_time:
+                    await db.tasks.update_one(
+                        {"id": task["id"]},
+                        {"$set": {
+                            "status": TaskStatus.OVERDUE,
+                            "updated_at": current_time.isoformat()
+                        }}
+                    )
+                    updated_count += 1
+            except Exception as e:
+                # Log error but continue processing other tasks
+                print(f"Error processing overdue task {task.get('id', 'unknown')}: {e}")
     
-    return result.modified_count
+    return updated_count
 
 # API Routes
 
