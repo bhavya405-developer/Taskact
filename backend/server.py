@@ -33,7 +33,7 @@ app = FastAPI(title="TaskAct API")
 api_router = APIRouter(prefix="/api")
 
 # Security
-SECRET_KEY = "your-secret-key-change-in-production"  # In production, use environment variable
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
