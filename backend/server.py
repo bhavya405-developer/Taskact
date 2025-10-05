@@ -1184,7 +1184,7 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
 # Health check
 @api_router.get("/")
 async def root():
-    return {"message": "Task Management API is running"}
+    return {"message": "TaskAct API is running"}
 
 # Include the router in the main app
 app.include_router(api_router)
