@@ -62,6 +62,14 @@ class User(BaseModel):
     email: str
     role: UserRole
     password_hash: Optional[str] = None  # Don't return in API responses
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    hire_date: Optional[datetime] = None
+    profile_picture_url: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    skills: Optional[str] = None
+    bio: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
 
@@ -70,14 +78,47 @@ class UserCreate(BaseModel):
     email: str
     role: UserRole
     password: str
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    hire_date: Optional[datetime] = None
+    profile_picture_url: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    skills: Optional[str] = None
+    bio: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: str
     name: str
     email: str
     role: UserRole
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    hire_date: Optional[datetime] = None
+    profile_picture_url: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    skills: Optional[str] = None
+    bio: Optional[str] = None
     created_at: datetime
     active: bool
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[UserRole] = None
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    hire_date: Optional[datetime] = None
+    profile_picture_url: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    skills: Optional[str] = None
+    bio: Optional[str] = None
+
+class PasswordResetRequest(BaseModel):
+    user_id: str
+    new_password: str
 
 class LoginRequest(BaseModel):
     email: str
