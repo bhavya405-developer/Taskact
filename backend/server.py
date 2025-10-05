@@ -420,11 +420,34 @@ async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserR
     return Task(**parse_from_mongo(updated_task))
 
 @api_router.delete("/tasks/{task_id}")
-async def delete_task(task_id: str):
+async def delete_task(task_id: str, current_user: UserResponse = Depends(get_current_partner)):
     result = await db.tasks.delete_one({"id": task_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
+
+# Notification endpoints
+@api_router.get("/notifications", response_model=List[Notification])
+async def get_user_notifications(current_user: UserResponse = Depends(get_current_user)):
+    notifications = await db.notifications.find(
+        {"user_id": current_user.id}
+    ).sort("created_at", -1).limit(20).to_list(length=None)
+    return [Notification(**parse_from_mongo(notification)) for notification in notifications]
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: UserResponse = Depends(get_current_user)):
+    result = await db.notifications.update_one(
+        {"id": notification_id, "user_id": current_user.id},
+        {"$set": {"read": True}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"message": "Notification marked as read"}
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_notification_count(current_user: UserResponse = Depends(get_current_user)):
+    count = await db.notifications.count_documents({"user_id": current_user.id, "read": False})
+    return {"unread_count": count}
 
 # Get unique clients and categories for filtering
 @api_router.get("/filters")
