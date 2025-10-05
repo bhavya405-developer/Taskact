@@ -62,8 +62,8 @@ class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: Optional[str] = None
-    client_name: str
-    category: str
+    client_name: Optional[str] = None
+    category: Optional[str] = None
     assignee_id: str
     assignee_name: str
     creator_id: str
