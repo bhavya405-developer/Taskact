@@ -464,7 +464,6 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
                       onChange={handleChange}
                       className="form-input"
                       data-testid="new-password-input"
-                      minLength={6}
                       placeholder="Enter new password (min 6 characters)"
                     />
                   </div>
