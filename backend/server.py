@@ -61,6 +61,7 @@ class User(BaseModel):
     name: str
     email: str
     role: UserRole
+    password_hash: Optional[str] = None  # Don't return in API responses
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
 
@@ -68,6 +69,33 @@ class UserCreate(BaseModel):
     name: str
     email: str
     role: UserRole
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: UserRole
+    created_at: datetime
+    active: bool
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+class Notification(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    title: str
+    message: str
+    task_id: Optional[str] = None
+    read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
