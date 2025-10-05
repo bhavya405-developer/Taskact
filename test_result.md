@@ -216,8 +216,12 @@
 
 ## test_plan:
   current_focus:
-    - "Team member creation '[object Object]' error bug fix"
-    - "Bulk import modal template download functionality"
+    - "4-Status Task System Implementation"
+    - "New Task Creation with Pending Status"
+    - "Status Transitions and Workflow"
+    - "Completed Task Immutability"
+    - "Overdue Auto-Update System"
+    - "UI/UX Status Colors and Icons"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
