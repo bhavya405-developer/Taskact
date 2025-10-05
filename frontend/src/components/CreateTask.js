@@ -8,6 +8,8 @@ const API = `${BACKEND_URL}/api`;
 const CreateTask = ({ users, onTaskCreated }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [clients, setClients] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -18,6 +20,24 @@ const CreateTask = ({ users, onTaskCreated }) => {
     priority: 'medium',
     due_date: ''
   });
+
+  // Fetch categories and clients
+  useEffect(() => {
+    const fetchCategoriesAndClients = async () => {
+      try {
+        const [categoriesRes, clientsRes] = await Promise.all([
+          axios.get(`${API}/categories`),
+          axios.get(`${API}/clients`)
+        ]);
+        setCategories(categoriesRes.data);
+        setClients(clientsRes.data);
+      } catch (error) {
+        console.error('Error fetching categories/clients:', error);
+      }
+    };
+    
+    fetchCategoriesAndClients();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
