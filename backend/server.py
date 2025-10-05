@@ -873,6 +873,81 @@ async def create_client(client_data: ClientCreate, current_user: UserResponse = 
     await db.clients.insert_one(client_dict)
     return client
 
+# Client Template and Bulk Import endpoints (Partners only) - Must come before parameterized routes
+@api_router.get("/clients/download-template")
+async def download_clients_template(current_user: UserResponse = Depends(get_current_partner)):
+    """Download Excel template for bulk client import"""
+    
+    # Create sample data with headers
+    template_data = {
+        'Name': ['TechCorp Inc.', 'Global Manufacturing Ltd.', 'Healthcare Solutions Group'],
+        'Company Type': ['Corporation', 'Corporation', 'LLC'],
+        'Industry': ['Technology', 'Manufacturing', 'Healthcare'],
+        'Contact Person': ['John Smith', 'Maria Rodriguez', 'Dr. James Wilson'],
+        'Email': ['john@techcorp.com', 'maria@global.com', 'james@healthcare.com'],
+        'Phone': ['+1 (555) 123-4567', '+1 (555) 987-6543', '+1 (555) 456-7890'],
+        'Address': [
+            '123 Tech Street, Silicon Valley, CA 94000',
+            '456 Industrial Blvd, Detroit, MI 48000',
+            '789 Medical Center Dr, Boston, MA 02000'
+        ],
+        'Notes': [
+            'Major technology client',
+            'Large manufacturing company',
+            'Healthcare consulting firm'
+        ]
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write data
+        df.to_excel(writer, sheet_name='Clients', index=False)
+        
+        # Get workbook and worksheet for formatting
+        workbook = writer.book
+        worksheet = writer.sheets['Clients']
+        
+        # Add formatting
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#059669',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        # Format headers
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        
+        # Add instructions sheet
+        instructions_data = {
+            'Instructions': [
+                '1. Fill in the client information below',
+                '2. Name: Required field - unique client name',
+                '3. Company Type: Corporation, LLC, Partnership, Individual, etc.',
+                '4. Industry: Technology, Healthcare, Finance, Manufacturing, etc.',
+                '5. Contact Person: Primary contact name',
+                '6. Email: Client email address',
+                '7. Phone: Client phone number',
+                '8. Address: Full address including city, state, zip',
+                '9. Notes: Additional information about the client',
+                '10. Save the file and upload it back to import'
+            ]
+        }
+        instructions_df = pd.DataFrame(instructions_data)
+        instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": "attachment; filename=clients_template.xlsx"}
+    )
+
 @api_router.get("/clients", response_model=List[Client])
 async def get_clients(current_user: UserResponse = Depends(get_current_user)):
     clients = await db.clients.find({"active": True}).sort("name", 1).to_list(length=None)
