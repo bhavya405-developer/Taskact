@@ -218,6 +218,20 @@ async def delete_task(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
 
+# Get unique clients and categories for filtering
+@api_router.get("/filters")
+async def get_filters():
+    # Get unique client names
+    clients = await db.tasks.distinct("client_name")
+    
+    # Get unique categories
+    categories = await db.tasks.distinct("category")
+    
+    return {
+        "clients": sorted([client for client in clients if client]),
+        "categories": sorted([category for category in categories if category])
+    }
+
 # Dashboard endpoint
 @api_router.get("/dashboard")
 async def get_dashboard():
