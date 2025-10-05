@@ -261,10 +261,10 @@ async def create_user(user_data: UserCreate, current_user: UserResponse = Depend
     
     return UserResponse(**parse_from_mongo(user_dict))
 
-@api_router.get("/users", response_model=List[User])
-async def get_users():
+@api_router.get("/users", response_model=List[UserResponse])
+async def get_users(current_user: UserResponse = Depends(get_current_user)):
     users = await db.users.find({"active": True}).to_list(length=None)
-    return [User(**parse_from_mongo(user)) for user in users]
+    return [UserResponse(**parse_from_mongo(user)) for user in users]
 
 @api_router.get("/users/{user_id}", response_model=User)
 async def get_user(user_id: str):
