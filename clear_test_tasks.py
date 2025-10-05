@@ -46,11 +46,6 @@ async def clear_all_tasks():
 
 if __name__ == "__main__":
     print("=== TaskAct Test Data Cleanup ===")
-    print("This will delete ALL tasks from the database")
-    
-    confirm = input("Are you sure you want to proceed? (yes/no): ")
-    if confirm.lower() == 'yes':
-        asyncio.run(clear_all_tasks())
-        print("✅ Task cleanup completed!")
-    else:
-        print("❌ Operation cancelled")
+    print("Clearing ALL test tasks from the database...")
+    asyncio.run(clear_all_tasks())
+    print("✅ Task cleanup completed!")
