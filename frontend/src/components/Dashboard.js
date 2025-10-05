@@ -132,13 +132,13 @@ const Dashboard = ({ users, tasks }) => {
           title="Pending"
           count={task_counts.pending}
           status="pending"
-          icon={<Clock size={20} className="text-amber-600" />}
+          icon={<Clock size={20} className="text-yellow-600" />}
         />
         <StatusCard
-          title="In Progress"
-          count={task_counts.in_progress}
-          status="in_progress"
-          icon={<TrendingUp size={20} className="text-blue-600" />}
+          title="On Hold"
+          count={task_counts.on_hold}
+          status="on_hold"
+          icon={<Pause size={20} className="text-gray-600" />}
         />
         <StatusCard
           title="Completed"
