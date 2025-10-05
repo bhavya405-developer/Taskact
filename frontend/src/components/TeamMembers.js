@@ -259,26 +259,69 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
               <div key={user.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 card-hover" data-testid={`team-member-card-${user.id}`}>
                 {/* Member Header */}
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-blue-600 font-semibold text-lg">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 overflow-hidden">
+                    {user.profile_picture_url ? (
+                      <img src={user.profile_picture_url} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-blue-600 font-semibold text-lg">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                        {user.phone && (
+                          <p className="text-xs text-gray-500">{user.phone}</p>
+                        )}
+                      </div>
+                      {isPartner() && (
+                        <button
+                          onClick={() => handleEditProfile(user)}
+                          className="text-gray-400 hover:text-blue-600 p-1"
+                          data-testid={`edit-profile-${user.id}`}
+                          title="Edit Profile"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-2xl">
                     {getRoleIcon(user.role)}
                   </div>
                 </div>
 
-                {/* Role Badge */}
-                <div className="mb-4">
-                  <span className={`badge ${getRoleColor(user.role)} capitalize`}>
-                    {user.role}
-                  </span>
+                {/* Role and Department */}
+                <div className="mb-4 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className={`badge ${getRoleColor(user.role)} capitalize`}>
+                      {user.role}
+                    </span>
+                    {user.department && (
+                      <span className="badge bg-gray-100 text-gray-700 border-gray-200">
+                        {user.department}
+                      </span>
+                    )}
+                  </div>
+                  {user.hire_date && (
+                    <p className="text-xs text-gray-500">
+                      Joined: {formatDate(user.hire_date)}
+                    </p>
+                  )}
                 </div>
+
+                {/* Skills */}
+                {user.skills && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-gray-700 mb-1">Skills</p>
+                    <p className="text-xs text-gray-600 line-clamp-2">{user.skills}</p>
+                  </div>
+                )}
 
                 {/* Task Statistics */}
                 <div className="space-y-3">
