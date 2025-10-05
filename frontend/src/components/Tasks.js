@@ -42,6 +42,13 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
+    // Find the task to check if it's completed
+    const task = tasks.find(t => t.id === taskId);
+    if (task && task.status === 'completed') {
+      alert('Cannot edit completed tasks. Completed tasks are immutable.');
+      return;
+    }
+    
     setUpdating(prev => ({ ...prev, [taskId]: true }));
     
     try {
@@ -52,7 +59,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
       await onTaskUpdate();
     } catch (error) {
       console.error('Error updating task status:', error);
-      alert('Failed to update task status');
+      alert(error.response?.data?.detail || 'Failed to update task status');
     } finally {
       setUpdating(prev => ({ ...prev, [taskId]: false }));
     }
