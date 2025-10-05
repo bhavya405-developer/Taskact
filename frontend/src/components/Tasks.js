@@ -183,6 +183,8 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="table-header">Task</th>
+                  <th className="table-header">Client</th>
+                  <th className="table-header">Category</th>
                   <th className="table-header">Assignee</th>
                   <th className="table-header">Status</th>
                   <th className="table-header">Priority</th>
