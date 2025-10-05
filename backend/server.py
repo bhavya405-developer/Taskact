@@ -261,6 +261,31 @@ async def get_dashboard():
             "completion_rate": (completed_tasks / user_tasks * 100) if user_tasks > 0 else 0
         })
     
+    # Get client analytics
+    client_stats = []
+    clients = await db.tasks.distinct("client_name")
+    for client in clients[:5]:  # Top 5 clients
+        if client:
+            client_tasks = await db.tasks.count_documents({"client_name": client})
+            completed_client_tasks = await db.tasks.count_documents({"client_name": client, "status": TaskStatus.COMPLETED})
+            client_stats.append({
+                "client_name": client,
+                "total_tasks": client_tasks,
+                "completed_tasks": completed_client_tasks,
+                "completion_rate": (completed_client_tasks / client_tasks * 100) if client_tasks > 0 else 0
+            })
+    
+    # Get category analytics
+    category_stats = []
+    categories = await db.tasks.distinct("category")
+    for category in categories:
+        if category:
+            category_tasks = await db.tasks.count_documents({"category": category})
+            category_stats.append({
+                "category": category,
+                "task_count": category_tasks
+            })
+    
     return {
         "task_counts": {
             "pending": pending_count,
@@ -270,7 +295,9 @@ async def get_dashboard():
             "total": pending_count + in_progress_count + completed_count + overdue_count
         },
         "recent_tasks": [Task(**parse_from_mongo(task)) for task in recent_tasks],
-        "team_stats": team_stats
+        "team_stats": team_stats,
+        "client_stats": sorted(client_stats, key=lambda x: x["total_tasks"], reverse=True),
+        "category_stats": sorted(category_stats, key=lambda x: x["task_count"], reverse=True)
     }
 
 # Health check
