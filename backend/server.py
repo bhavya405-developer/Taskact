@@ -275,21 +275,32 @@ async def get_user(user_id: str, current_user: UserResponse = Depends(get_curren
 
 # Tasks endpoints
 @api_router.post("/tasks", response_model=Task)
-async def create_task(task_data: TaskCreate):
+async def create_task(task_data: TaskCreate, current_user: UserResponse = Depends(get_current_user)):
     # Get assignee and creator names
     assignee = await db.users.find_one({"id": task_data.assignee_id})
-    creator = await db.users.find_one({"id": task_data.creator_id})
+    creator = await db.users.find_one({"id": current_user.id})  # Use current user as creator
     
     if not assignee or not creator:
         raise HTTPException(status_code=404, detail="Assignee or creator not found")
     
     task_dict = task_data.dict()
+    task_dict["creator_id"] = current_user.id  # Set current user as creator
     task_dict["assignee_name"] = assignee["name"]
     task_dict["creator_name"] = creator["name"]
     
     task = Task(**task_dict)
     task_dict = prepare_for_mongo(task.dict())
     await db.tasks.insert_one(task_dict)
+    
+    # Create notification for assignee if not assigning to self
+    if task_data.assignee_id != current_user.id:
+        await create_notification(
+            user_id=task_data.assignee_id,
+            title="New Task Assigned",
+            message=f"You have been assigned a new task: {task.title}",
+            task_id=task.id
+        )
+    
     return task
 
 @api_router.get("/tasks", response_model=List[Task])
