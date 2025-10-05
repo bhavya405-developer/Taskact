@@ -404,6 +404,15 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
           </div>
         </div>
       )}
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        user={selectedUser}
+        isOpen={showProfileModal}
+        onClose={handleCloseProfileModal}
+        onUserUpdated={onUserAdded}
+        isCreate={isCreateMode}
+      />
     </div>
   );
 };
