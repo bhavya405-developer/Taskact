@@ -704,6 +704,157 @@ async def delete_category(category_id: str, current_user: UserResponse = Depends
         raise HTTPException(status_code=404, detail="Category not found")
     return {"message": "Category deleted successfully"}
 
+# Category Template and Bulk Import endpoints (Partners only) - Must come after CRUD
+@api_router.get("/categories/template")
+async def download_categories_template(current_user: UserResponse = Depends(get_current_partner)):
+    """Download Excel template for bulk category import"""
+    
+    # Create sample data with headers
+    template_data = {
+        'Name': ['Legal Research', 'Contract Review', 'Client Meeting'],
+        'Description': [
+            'Research legal precedents and case law',
+            'Review and analyze legal contracts',
+            'Meetings and consultations with clients'
+        ],
+        'Color': ['#3B82F6', '#10B981', '#F59E0B']
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write data
+        df.to_excel(writer, sheet_name='Categories', index=False)
+        
+        # Get workbook and worksheet for formatting
+        workbook = writer.book
+        worksheet = writer.sheets['Categories']
+        
+        # Add formatting
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#4F46E5',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        # Format headers
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        
+        # Add instructions sheet
+        instructions_data = {
+            'Instructions': [
+                '1. Fill in the category information below',
+                '2. Name: Required field - unique category name',
+                '3. Description: Optional - brief description of the category',
+                '4. Color: Optional - hex color code (e.g., #3B82F6)',
+                '5. Save the file and upload it back to import',
+                '',
+                'Sample Colors:',
+                'Blue: #3B82F6',
+                'Green: #10B981', 
+                'Amber: #F59E0B',
+                'Red: #EF4444',
+                'Purple: #8B5CF6'
+            ]
+        }
+        instructions_df = pd.DataFrame(instructions_data)
+        instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": "attachment; filename=categories_template.xlsx"}
+    )
+
+@api_router.post("/categories/bulk-import", response_model=BulkImportResult)
+async def bulk_import_categories(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Bulk import categories from Excel/CSV file"""
+    
+    if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
+        raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Parse file based on extension
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(content.decode('utf-8')))
+        else:
+            df = pd.read_excel(io.BytesIO(content), sheet_name='Categories')
+        
+        # Validate required columns
+        required_columns = ['Name']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing required columns: {', '.join(missing_columns)}"
+            )
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        created_items = []
+        
+        # Process each row
+        for index, row in df.iterrows():
+            try:
+                # Skip empty rows
+                if pd.isna(row['Name']) or row['Name'].strip() == '':
+                    continue
+                
+                category_name = row['Name'].strip()
+                
+                # Check if category already exists
+                existing = await db.categories.find_one({"name": category_name, "active": True})
+                if existing:
+                    errors.append(f"Row {index + 2}: Category '{category_name}' already exists")
+                    error_count += 1
+                    continue
+                
+                # Create category
+                category_data = {
+                    "name": category_name,
+                    "description": row.get('Description', '').strip() if pd.notna(row.get('Description')) else None,
+                    "color": row.get('Color', '#3B82F6').strip() if pd.notna(row.get('Color')) else '#3B82F6'
+                }
+                
+                category_dict = category_data.copy()
+                category_dict["id"] = str(uuid.uuid4())
+                category_dict["created_by"] = current_user.id
+                category_dict["created_at"] = datetime.now(timezone.utc)
+                category_dict["active"] = True
+                
+                category_dict = prepare_for_mongo(category_dict)
+                await db.categories.insert_one(category_dict)
+                
+                success_count += 1
+                created_items.append(category_name)
+                
+            except Exception as e:
+                error_count += 1
+                errors.append(f"Row {index + 2}: {str(e)}")
+        
+        return BulkImportResult(
+            success_count=success_count,
+            error_count=error_count,
+            errors=errors,
+            created_items=created_items
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
+
 # Client Management endpoints (Partners only)
 @api_router.post("/clients", response_model=Client)
 async def create_client(client_data: ClientCreate, current_user: UserResponse = Depends(get_current_partner)):
