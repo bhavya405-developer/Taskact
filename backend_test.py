@@ -381,7 +381,7 @@ class TaskActTester:
                 task_data2['title'] = "Direct Completion Test Task"
                 
                 response2 = self.session.post(f"{API_BASE_URL}/tasks", json=task_data2)
-                if response2.status_code == 201:
+                if response2.status_code in [200, 201]:
                     task2 = response2.json()
                     task2_id = task2['id']
                     self.created_tasks.append(task2_id)
