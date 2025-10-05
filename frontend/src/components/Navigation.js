@@ -23,7 +23,7 @@ const Navigation = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <h1 className="text-xl font-bold text-gray-900">
-                Task Manager Pro
+                TaskAct
               </h1>
             </div>
           </div>
