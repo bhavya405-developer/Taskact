@@ -132,8 +132,9 @@ body {
 
 /* Form styles */
 .form-input {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400;
+  @apply w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400;
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  min-height: 44px; /* Ensure mobile touch targets are at least 44px */
   transition: all 0.2s ease-in-out;
 }
 
