@@ -82,6 +82,23 @@ const Dashboard = ({ users, tasks }) => {
     return priorityConfig[priority] || priorityConfig.medium;
   };
 
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetail(true);
+  };
+
+  const handleCloseTaskDetail = () => {
+    setShowTaskDetail(false);
+    setSelectedTask(null);
+  };
+
+  const handleEditTask = (task) => {
+    // For now, just close the modal. In a full implementation, 
+    // this would open an edit form
+    handleCloseTaskDetail();
+    // TODO: Implement task editing
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
