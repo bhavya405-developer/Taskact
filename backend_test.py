@@ -91,248 +91,710 @@ class TaskActTester:
         
         return False
     
-    def test_categories_template_download(self):
-        """Test categories template download endpoint"""
-        print("\n=== Testing Categories Template Download ===")
+    def test_status_enum_verification(self):
+        """Test that only 4 valid statuses are accepted"""
+        print("\n=== Testing Status Enum Verification ===")
         
-        # Test without authentication first
-        session_no_auth = requests.Session()
-        try:
-            response = session_no_auth.get(f"{API_BASE_URL}/categories/download-template")
-            if response.status_code in [401, 403]:
-                self.log_test(
-                    "Categories Template (No Auth)", 
-                    True, 
-                    f"Correctly rejected unauthenticated request with {response.status_code}"
-                )
-            else:
-                self.log_test(
-                    "Categories Template (No Auth)", 
-                    False, 
-                    f"Should reject unauthenticated request but got {response.status_code}",
-                    {'response_text': response.text[:200]}
-                )
-        except Exception as e:
-            self.log_test(
-                "Categories Template (No Auth)", 
-                False, 
-                f"Request failed: {str(e)}"
-            )
-        
-        # Test with authentication
         if not self.auth_token:
-            self.log_test(
-                "Categories Template (With Auth)", 
-                False, 
-                "Cannot test - no authentication token available"
-            )
+            self.log_test("Status Enum Verification", False, "Cannot test - no authentication token")
             return False
         
+        # First create a test task
+        task_data = {
+            "title": "Status Enum Test Task",
+            "description": "Testing status enum validation",
+            "client_name": "TechCorp Solutions",
+            "category": "Legal Research",
+            "assignee_id": self.current_user['id'],
+            "creator_id": self.current_user['id'],
+            "priority": "medium",
+            "due_date": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        }
+        
         try:
-            response = self.session.get(f"{API_BASE_URL}/categories/download-template")
-            
-            if response.status_code == 200:
-                # Check if it's an Excel file
-                content_type = response.headers.get('content-type', '')
-                content_disposition = response.headers.get('content-disposition', '')
+            response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
+            if response.status_code == 201:
+                task = response.json()
+                task_id = task['id']
+                self.created_tasks.append(task_id)
                 
-                is_excel = (
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' in content_type or
-                    'categories_template.xlsx' in content_disposition
-                )
+                # Test valid statuses
+                valid_statuses = ["pending", "on_hold", "overdue", "completed"]
+                valid_count = 0
                 
-                if is_excel and len(response.content) > 0:
+                for status in valid_statuses:
+                    try:
+                        update_response = self.session.put(
+                            f"{API_BASE_URL}/tasks/{task_id}", 
+                            json={"status": status}
+                        )
+                        if update_response.status_code == 200:
+                            valid_count += 1
+                            updated_task = update_response.json()
+                            if updated_task['status'] == status:
+                                self.log_test(
+                                    f"Valid Status: {status}", 
+                                    True, 
+                                    f"Status '{status}' accepted and applied correctly"
+                                )
+                            else:
+                                self.log_test(
+                                    f"Valid Status: {status}", 
+                                    False, 
+                                    f"Status '{status}' accepted but not applied correctly"
+                                )
+                        else:
+                            self.log_test(
+                                f"Valid Status: {status}", 
+                                False, 
+                                f"Valid status '{status}' rejected with {update_response.status_code}",
+                                {'response': update_response.text}
+                            )
+                    except Exception as e:
+                        self.log_test(
+                            f"Valid Status: {status}", 
+                            False, 
+                            f"Error testing status '{status}': {str(e)}"
+                        )
+                
+                # Test invalid statuses
+                invalid_statuses = ["in_progress", "cancelled", "draft", "invalid_status"]
+                invalid_rejected = 0
+                
+                for status in invalid_statuses:
+                    try:
+                        update_response = self.session.put(
+                            f"{API_BASE_URL}/tasks/{task_id}", 
+                            json={"status": status}
+                        )
+                        if update_response.status_code in [400, 422]:
+                            invalid_rejected += 1
+                            self.log_test(
+                                f"Invalid Status: {status}", 
+                                True, 
+                                f"Invalid status '{status}' correctly rejected with {update_response.status_code}"
+                            )
+                        else:
+                            self.log_test(
+                                f"Invalid Status: {status}", 
+                                False, 
+                                f"Invalid status '{status}' should be rejected but got {update_response.status_code}",
+                                {'response': update_response.text}
+                            )
+                    except Exception as e:
+                        self.log_test(
+                            f"Invalid Status: {status}", 
+                            False, 
+                            f"Error testing invalid status '{status}': {str(e)}"
+                        )
+                
+                # Overall status enum test result
+                if valid_count == 4 and invalid_rejected == 4:
                     self.log_test(
-                        "Categories Template (With Auth)", 
+                        "Status Enum Verification", 
                         True, 
-                        f"Successfully downloaded Excel template ({len(response.content)} bytes)",
-                        {
-                            'content_type': content_type,
-                            'content_disposition': content_disposition,
-                            'file_size': len(response.content)
-                        }
+                        "All 4 valid statuses accepted, all invalid statuses rejected"
                     )
                     return True
                 else:
                     self.log_test(
-                        "Categories Template (With Auth)", 
+                        "Status Enum Verification", 
                         False, 
-                        "Response received but not a valid Excel file",
-                        {
-                            'content_type': content_type,
-                            'content_disposition': content_disposition,
-                            'response_size': len(response.content),
-                            'response_preview': response.text[:200] if response.text else 'Binary content'
-                        }
+                        f"Expected 4 valid and 4 rejected, got {valid_count} valid and {invalid_rejected} rejected"
                     )
+                    
             else:
                 self.log_test(
-                    "Categories Template (With Auth)", 
+                    "Status Enum Verification", 
                     False, 
-                    f"Request failed with status {response.status_code}",
-                    {'response_text': response.text[:200]}
+                    f"Failed to create test task: {response.status_code}",
+                    {'response': response.text}
                 )
         except Exception as e:
             self.log_test(
-                "Categories Template (With Auth)", 
+                "Status Enum Verification", 
                 False, 
-                f"Request failed: {str(e)}"
+                f"Error in status enum verification: {str(e)}"
             )
         
         return False
     
-    def test_clients_template_download(self):
-        """Test clients template download endpoint"""
-        print("\n=== Testing Clients Template Download ===")
+    def test_task_creation_default_status(self):
+        """Test that new tasks default to 'pending' status"""
+        print("\n=== Testing Task Creation Default Status ===")
         
-        # Test without authentication first
-        session_no_auth = requests.Session()
-        try:
-            response = session_no_auth.get(f"{API_BASE_URL}/clients/download-template")
-            if response.status_code in [401, 403]:
-                self.log_test(
-                    "Clients Template (No Auth)", 
-                    True, 
-                    f"Correctly rejected unauthenticated request with {response.status_code}"
-                )
-            else:
-                self.log_test(
-                    "Clients Template (No Auth)", 
-                    False, 
-                    f"Should reject unauthenticated request but got {response.status_code}",
-                    {'response_text': response.text[:200]}
-                )
-        except Exception as e:
-            self.log_test(
-                "Clients Template (No Auth)", 
-                False, 
-                f"Request failed: {str(e)}"
-            )
-        
-        # Test with authentication
         if not self.auth_token:
-            self.log_test(
-                "Clients Template (With Auth)", 
-                False, 
-                "Cannot test - no authentication token available"
-            )
+            self.log_test("Task Creation Default Status", False, "Cannot test - no authentication token")
             return False
         
+        task_data = {
+            "title": "Default Status Test Task",
+            "description": "Testing that new tasks start with pending status",
+            "client_name": "Global Manufacturing Ltd",
+            "category": "Contract Review",
+            "assignee_id": self.current_user['id'],
+            "creator_id": self.current_user['id'],
+            "priority": "high",
+            "due_date": (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+        }
+        
         try:
-            response = self.session.get(f"{API_BASE_URL}/clients/download-template")
+            response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
             
-            if response.status_code == 200:
-                # Check if it's an Excel file
-                content_type = response.headers.get('content-type', '')
-                content_disposition = response.headers.get('content-disposition', '')
+            if response.status_code == 201:
+                task = response.json()
+                self.created_tasks.append(task['id'])
                 
-                is_excel = (
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' in content_type or
-                    'clients_template.xlsx' in content_disposition
-                )
-                
-                if is_excel and len(response.content) > 0:
+                if task.get('status') == 'pending':
                     self.log_test(
-                        "Clients Template (With Auth)", 
+                        "Task Creation Default Status", 
                         True, 
-                        f"Successfully downloaded Excel template ({len(response.content)} bytes)",
-                        {
-                            'content_type': content_type,
-                            'content_disposition': content_disposition,
-                            'file_size': len(response.content)
-                        }
+                        f"New task correctly defaults to 'pending' status",
+                        {'task_id': task['id'], 'status': task['status']}
                     )
                     return True
                 else:
                     self.log_test(
-                        "Clients Template (With Auth)", 
+                        "Task Creation Default Status", 
                         False, 
-                        "Response received but not a valid Excel file",
-                        {
-                            'content_type': content_type,
-                            'content_disposition': content_disposition,
-                            'response_size': len(response.content),
-                            'response_preview': response.text[:200] if response.text else 'Binary content'
-                        }
+                        f"New task has status '{task.get('status')}' instead of 'pending'",
+                        {'task_id': task['id'], 'status': task.get('status')}
                     )
             else:
                 self.log_test(
-                    "Clients Template (With Auth)", 
+                    "Task Creation Default Status", 
                     False, 
-                    f"Request failed with status {response.status_code}",
-                    {'response_text': response.text[:200]}
+                    f"Failed to create task: {response.status_code}",
+                    {'response': response.text}
                 )
         except Exception as e:
             self.log_test(
-                "Clients Template (With Auth)", 
+                "Task Creation Default Status", 
                 False, 
-                f"Request failed: {str(e)}"
+                f"Error creating task: {str(e)}"
             )
         
         return False
     
-    def test_route_registration(self):
-        """Test if routes are properly registered"""
-        print("\n=== Testing Route Registration ===")
+    def test_status_transitions(self):
+        """Test status transitions and workflow"""
+        print("\n=== Testing Status Transitions ===")
         
-        # Test basic API health check
+        if not self.auth_token:
+            self.log_test("Status Transitions", False, "Cannot test - no authentication token")
+            return False
+        
+        # Create a test task
+        task_data = {
+            "title": "Status Transition Test Task",
+            "description": "Testing status transitions workflow",
+            "client_name": "Healthcare Solutions Group",
+            "category": "Client Meeting",
+            "assignee_id": self.current_user['id'],
+            "creator_id": self.current_user['id'],
+            "priority": "medium",
+            "due_date": (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
+        }
+        
         try:
-            response = self.session.get(f"{API_BASE_URL}/")
-            if response.status_code == 200:
-                self.log_test(
-                    "API Root Endpoint", 
-                    True, 
-                    "API root endpoint accessible",
-                    {'response': response.json()}
+            response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
+            
+            if response.status_code == 201:
+                task = response.json()
+                task_id = task['id']
+                self.created_tasks.append(task_id)
+                
+                # Test transition: pending → on_hold
+                transition_success = 0
+                
+                update_response = self.session.put(
+                    f"{API_BASE_URL}/tasks/{task_id}", 
+                    json={"status": "on_hold"}
                 )
+                if update_response.status_code == 200:
+                    updated_task = update_response.json()
+                    if updated_task['status'] == 'on_hold':
+                        transition_success += 1
+                        self.log_test(
+                            "Transition: pending → on_hold", 
+                            True, 
+                            "Successfully transitioned from pending to on_hold"
+                        )
+                    else:
+                        self.log_test(
+                            "Transition: pending → on_hold", 
+                            False, 
+                            f"Transition accepted but status is '{updated_task['status']}'"
+                        )
+                else:
+                    self.log_test(
+                        "Transition: pending → on_hold", 
+                        False, 
+                        f"Transition failed with status {update_response.status_code}",
+                        {'response': update_response.text}
+                    )
+                
+                # Test transition: on_hold → completed
+                update_response = self.session.put(
+                    f"{API_BASE_URL}/tasks/{task_id}", 
+                    json={"status": "completed"}
+                )
+                if update_response.status_code == 200:
+                    updated_task = update_response.json()
+                    if updated_task['status'] == 'completed':
+                        transition_success += 1
+                        self.log_test(
+                            "Transition: on_hold → completed", 
+                            True, 
+                            "Successfully transitioned from on_hold to completed"
+                        )
+                        
+                        # Check if completed_at is set
+                        if updated_task.get('completed_at'):
+                            self.log_test(
+                                "Completed Task Timestamp", 
+                                True, 
+                                "completed_at timestamp set when task marked as completed"
+                            )
+                        else:
+                            self.log_test(
+                                "Completed Task Timestamp", 
+                                False, 
+                                "completed_at timestamp not set when task marked as completed"
+                            )
+                    else:
+                        self.log_test(
+                            "Transition: on_hold → completed", 
+                            False, 
+                            f"Transition accepted but status is '{updated_task['status']}'"
+                        )
+                else:
+                    self.log_test(
+                        "Transition: on_hold → completed", 
+                        False, 
+                        f"Transition failed with status {update_response.status_code}",
+                        {'response': update_response.text}
+                    )
+                
+                # Create another task to test pending → completed
+                task_data2 = task_data.copy()
+                task_data2['title'] = "Direct Completion Test Task"
+                
+                response2 = self.session.post(f"{API_BASE_URL}/tasks", json=task_data2)
+                if response2.status_code == 201:
+                    task2 = response2.json()
+                    task2_id = task2['id']
+                    self.created_tasks.append(task2_id)
+                    
+                    # Test transition: pending → completed
+                    update_response = self.session.put(
+                        f"{API_BASE_URL}/tasks/{task2_id}", 
+                        json={"status": "completed"}
+                    )
+                    if update_response.status_code == 200:
+                        updated_task = update_response.json()
+                        if updated_task['status'] == 'completed':
+                            transition_success += 1
+                            self.log_test(
+                                "Transition: pending → completed", 
+                                True, 
+                                "Successfully transitioned directly from pending to completed"
+                            )
+                        else:
+                            self.log_test(
+                                "Transition: pending → completed", 
+                                False, 
+                                f"Transition accepted but status is '{updated_task['status']}'"
+                            )
+                    else:
+                        self.log_test(
+                            "Transition: pending → completed", 
+                            False, 
+                            f"Direct completion failed with status {update_response.status_code}",
+                            {'response': update_response.text}
+                        )
+                
+                if transition_success >= 2:
+                    self.log_test(
+                        "Status Transitions", 
+                        True, 
+                        f"Status transitions working correctly ({transition_success}/3 transitions successful)"
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "Status Transitions", 
+                        False, 
+                        f"Only {transition_success}/3 status transitions successful"
+                    )
+                    
             else:
                 self.log_test(
-                    "API Root Endpoint", 
+                    "Status Transitions", 
                     False, 
-                    f"API root endpoint returned {response.status_code}",
-                    {'response_text': response.text}
+                    f"Failed to create test task: {response.status_code}",
+                    {'response': response.text}
                 )
         except Exception as e:
             self.log_test(
-                "API Root Endpoint", 
+                "Status Transitions", 
                 False, 
-                f"API root endpoint failed: {str(e)}"
+                f"Error in status transitions test: {str(e)}"
             )
         
-        # Test if template endpoints exist (should return 401/403 without auth)
-        endpoints_to_test = [
-            "/categories/download-template",
-            "/clients/download-template"
-        ]
+        return False
+    
+    def test_completed_task_immutability(self):
+        """Test that completed tasks cannot be edited"""
+        print("\n=== Testing Completed Task Immutability ===")
         
-        session_no_auth = requests.Session()
-        for endpoint in endpoints_to_test:
+        if not self.auth_token:
+            self.log_test("Completed Task Immutability", False, "Cannot test - no authentication token")
+            return False
+        
+        # Create and complete a task
+        task_data = {
+            "title": "Immutability Test Task",
+            "description": "Testing completed task immutability",
+            "client_name": "Legal Consulting Firm",
+            "category": "Legal Research",
+            "assignee_id": self.current_user['id'],
+            "creator_id": self.current_user['id'],
+            "priority": "low",
+            "due_date": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        }
+        
+        try:
+            # Create task
+            response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
+            
+            if response.status_code == 201:
+                task = response.json()
+                task_id = task['id']
+                self.created_tasks.append(task_id)
+                
+                # Complete the task
+                complete_response = self.session.put(
+                    f"{API_BASE_URL}/tasks/{task_id}", 
+                    json={"status": "completed"}
+                )
+                
+                if complete_response.status_code == 200:
+                    # Now try to edit the completed task
+                    immutability_tests = 0
+                    immutability_passed = 0
+                    
+                    # Test 1: Try to change status
+                    edit_response = self.session.put(
+                        f"{API_BASE_URL}/tasks/{task_id}", 
+                        json={"status": "pending"}
+                    )
+                    immutability_tests += 1
+                    if edit_response.status_code == 403:
+                        immutability_passed += 1
+                        response_data = edit_response.json() if edit_response.headers.get('content-type', '').startswith('application/json') else {}
+                        expected_message = "Cannot edit completed tasks. Completed tasks are immutable."
+                        if expected_message in edit_response.text:
+                            self.log_test(
+                                "Immutability: Status Change", 
+                                True, 
+                                "Completed task status change correctly rejected with 403 and proper message"
+                            )
+                        else:
+                            self.log_test(
+                                "Immutability: Status Change", 
+                                True, 
+                                "Completed task status change correctly rejected with 403 (message format may vary)"
+                            )
+                    else:
+                        self.log_test(
+                            "Immutability: Status Change", 
+                            False, 
+                            f"Completed task status change should be rejected with 403, got {edit_response.status_code}",
+                            {'response': edit_response.text}
+                        )
+                    
+                    # Test 2: Try to change title
+                    edit_response = self.session.put(
+                        f"{API_BASE_URL}/tasks/{task_id}", 
+                        json={"title": "Modified Title"}
+                    )
+                    immutability_tests += 1
+                    if edit_response.status_code == 403:
+                        immutability_passed += 1
+                        self.log_test(
+                            "Immutability: Title Change", 
+                            True, 
+                            "Completed task title change correctly rejected with 403"
+                        )
+                    else:
+                        self.log_test(
+                            "Immutability: Title Change", 
+                            False, 
+                            f"Completed task title change should be rejected with 403, got {edit_response.status_code}",
+                            {'response': edit_response.text}
+                        )
+                    
+                    # Test 3: Try to change description
+                    edit_response = self.session.put(
+                        f"{API_BASE_URL}/tasks/{task_id}", 
+                        json={"description": "Modified description"}
+                    )
+                    immutability_tests += 1
+                    if edit_response.status_code == 403:
+                        immutability_passed += 1
+                        self.log_test(
+                            "Immutability: Description Change", 
+                            True, 
+                            "Completed task description change correctly rejected with 403"
+                        )
+                    else:
+                        self.log_test(
+                            "Immutability: Description Change", 
+                            False, 
+                            f"Completed task description change should be rejected with 403, got {edit_response.status_code}",
+                            {'response': edit_response.text}
+                        )
+                    
+                    if immutability_passed == immutability_tests:
+                        self.log_test(
+                            "Completed Task Immutability", 
+                            True, 
+                            f"All {immutability_tests} immutability tests passed - completed tasks are properly protected"
+                        )
+                        return True
+                    else:
+                        self.log_test(
+                            "Completed Task Immutability", 
+                            False, 
+                            f"Only {immutability_passed}/{immutability_tests} immutability tests passed"
+                        )
+                else:
+                    self.log_test(
+                        "Completed Task Immutability", 
+                        False, 
+                        f"Failed to complete task for immutability test: {complete_response.status_code}",
+                        {'response': complete_response.text}
+                    )
+            else:
+                self.log_test(
+                    "Completed Task Immutability", 
+                    False, 
+                    f"Failed to create task for immutability test: {response.status_code}",
+                    {'response': response.text}
+                )
+        except Exception as e:
+            self.log_test(
+                "Completed Task Immutability", 
+                False, 
+                f"Error in immutability test: {str(e)}"
+            )
+        
+        return False
+    
+    def test_overdue_auto_update(self):
+        """Test automatic overdue functionality"""
+        print("\n=== Testing Overdue Auto-Update ===")
+        
+        if not self.auth_token:
+            self.log_test("Overdue Auto-Update", False, "Cannot test - no authentication token")
+            return False
+        
+        # Create a task with past due date
+        past_due_date = datetime.now(timezone.utc) - timedelta(days=2)
+        task_data = {
+            "title": "Overdue Test Task",
+            "description": "Testing overdue auto-update functionality",
+            "client_name": "Past Due Client",
+            "category": "Contract Review",
+            "assignee_id": self.current_user['id'],
+            "creator_id": self.current_user['id'],
+            "priority": "urgent",
+            "due_date": past_due_date.isoformat()
+        }
+        
+        try:
+            # Create task
+            response = self.session.post(f"{API_BASE_URL}/tasks", json=task_data)
+            
+            if response.status_code == 201:
+                task = response.json()
+                task_id = task['id']
+                self.created_tasks.append(task_id)
+                
+                # Task should start as pending
+                if task['status'] == 'pending':
+                    self.log_test(
+                        "Overdue Task Creation", 
+                        True, 
+                        "Task with past due date correctly created as 'pending'"
+                    )
+                    
+                    # Trigger overdue update by calling GET /tasks (which calls update_overdue_tasks)
+                    tasks_response = self.session.get(f"{API_BASE_URL}/tasks")
+                    
+                    if tasks_response.status_code == 200:
+                        # Get the specific task to check if it's now overdue
+                        task_response = self.session.get(f"{API_BASE_URL}/tasks/{task_id}")
+                        
+                        if task_response.status_code == 200:
+                            updated_task = task_response.json()
+                            
+                            if updated_task['status'] == 'overdue':
+                                self.log_test(
+                                    "Overdue Auto-Update", 
+                                    True, 
+                                    "Task with past due date automatically updated to 'overdue' status",
+                                    {'original_status': 'pending', 'updated_status': 'overdue', 'due_date': past_due_date.isoformat()}
+                                )
+                                return True
+                            else:
+                                self.log_test(
+                                    "Overdue Auto-Update", 
+                                    False, 
+                                    f"Task with past due date should be 'overdue' but is '{updated_task['status']}'",
+                                    {'due_date': past_due_date.isoformat(), 'current_time': datetime.now(timezone.utc).isoformat()}
+                                )
+                        else:
+                            self.log_test(
+                                "Overdue Auto-Update", 
+                                False, 
+                                f"Failed to retrieve task after overdue update: {task_response.status_code}"
+                            )
+                    else:
+                        self.log_test(
+                            "Overdue Auto-Update", 
+                            False, 
+                            f"Failed to trigger overdue update via GET /tasks: {tasks_response.status_code}"
+                        )
+                else:
+                    self.log_test(
+                        "Overdue Task Creation", 
+                        False, 
+                        f"Task with past due date has unexpected initial status: '{task['status']}'"
+                    )
+            else:
+                self.log_test(
+                    "Overdue Auto-Update", 
+                    False, 
+                    f"Failed to create overdue test task: {response.status_code}",
+                    {'response': response.text}
+                )
+        except Exception as e:
+            self.log_test(
+                "Overdue Auto-Update", 
+                False, 
+                f"Error in overdue auto-update test: {str(e)}"
+            )
+        
+        return False
+    
+    def test_dashboard_counts(self):
+        """Test dashboard returns correct counts for all 4 statuses"""
+        print("\n=== Testing Dashboard Status Counts ===")
+        
+        if not self.auth_token:
+            self.log_test("Dashboard Status Counts", False, "Cannot test - no authentication token")
+            return False
+        
+        try:
+            # Get dashboard data
+            response = self.session.get(f"{API_BASE_URL}/dashboard")
+            
+            if response.status_code == 200:
+                dashboard_data = response.json()
+                task_counts = dashboard_data.get('task_counts', {})
+                
+                # Check if all 4 status counts are present
+                required_statuses = ['pending', 'on_hold', 'completed', 'overdue']
+                status_counts_present = 0
+                
+                for status in required_statuses:
+                    if status in task_counts and isinstance(task_counts[status], int):
+                        status_counts_present += 1
+                        self.log_test(
+                            f"Dashboard Count: {status}", 
+                            True, 
+                            f"Status '{status}' count present: {task_counts[status]}"
+                        )
+                    else:
+                        self.log_test(
+                            f"Dashboard Count: {status}", 
+                            False, 
+                            f"Status '{status}' count missing or invalid"
+                        )
+                
+                # Check total count calculation
+                if 'total' in task_counts:
+                    calculated_total = sum(task_counts.get(status, 0) for status in required_statuses)
+                    reported_total = task_counts['total']
+                    
+                    if calculated_total == reported_total:
+                        self.log_test(
+                            "Dashboard Total Count", 
+                            True, 
+                            f"Total count correctly calculated: {reported_total}"
+                        )
+                    else:
+                        self.log_test(
+                            "Dashboard Total Count", 
+                            False, 
+                            f"Total count mismatch: calculated {calculated_total}, reported {reported_total}"
+                        )
+                else:
+                    self.log_test(
+                        "Dashboard Total Count", 
+                        False, 
+                        "Total count missing from dashboard response"
+                    )
+                
+                if status_counts_present == 4:
+                    self.log_test(
+                        "Dashboard Status Counts", 
+                        True, 
+                        "Dashboard correctly returns counts for all 4 statuses",
+                        {'counts': task_counts}
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "Dashboard Status Counts", 
+                        False, 
+                        f"Only {status_counts_present}/4 status counts present in dashboard"
+                    )
+            else:
+                self.log_test(
+                    "Dashboard Status Counts", 
+                    False, 
+                    f"Dashboard request failed with status {response.status_code}",
+                    {'response': response.text}
+                )
+        except Exception as e:
+            self.log_test(
+                "Dashboard Status Counts", 
+                False, 
+                f"Error in dashboard counts test: {str(e)}"
+            )
+        
+        return False
+    
+    def cleanup_test_tasks(self):
+        """Clean up created test tasks"""
+        print("\n=== Cleaning Up Test Tasks ===")
+        
+        if not self.created_tasks or not self.auth_token:
+            return
+        
+        cleaned_count = 0
+        for task_id in self.created_tasks:
             try:
-                response = session_no_auth.get(f"{API_BASE_URL}{endpoint}")
-                if response.status_code in [401, 403]:
-                    self.log_test(
-                        f"Route Registration {endpoint}", 
-                        True, 
-                        f"Route exists and properly protected (status {response.status_code})"
-                    )
-                elif response.status_code == 404:
-                    self.log_test(
-                        f"Route Registration {endpoint}", 
-                        False, 
-                        "Route not found - may not be properly registered"
-                    )
-                else:
-                    self.log_test(
-                        f"Route Registration {endpoint}", 
-                        True, 
-                        f"Route exists (status {response.status_code})"
-                    )
+                response = self.session.delete(f"{API_BASE_URL}/tasks/{task_id}")
+                if response.status_code == 200:
+                    cleaned_count += 1
             except Exception as e:
-                self.log_test(
-                    f"Route Registration {endpoint}", 
-                    False, 
-                    f"Route test failed: {str(e)}"
-                )
+                print(f"Failed to clean up task {task_id}: {str(e)}")
+        
+        print(f"Cleaned up {cleaned_count}/{len(self.created_tasks)} test tasks")
     
     def run_all_tests(self):
         """Run all tests"""
