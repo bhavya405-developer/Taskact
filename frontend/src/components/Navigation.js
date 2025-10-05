@@ -76,9 +76,10 @@ const Navigation = () => {
             </div>
             <button
               onClick={logout}
-              className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+              className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md flex items-center"
               data-testid="logout-button"
             >
+              <LogOut size={16} className="mr-1" />
               Logout
             </button>
           </div>
