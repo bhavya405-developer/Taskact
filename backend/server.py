@@ -212,6 +212,32 @@ async def create_notification(user_id: str, title: str, message: str, task_id: s
 
 # API Routes
 
+# Authentication endpoints
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def login(login_data: LoginRequest):
+    user = await db.users.find_one({"email": login_data.email, "active": True})
+    if not user or not verify_password(login_data.password, user.get("password_hash", "")):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["id"]}, expires_delta=access_token_expires
+    )
+    
+    user_response = UserResponse(**parse_from_mongo(user))
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_response
+    )
+
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: UserResponse = Depends(get_current_user)):
+    return current_user
+
 # Users endpoints
 @api_router.post("/users", response_model=User)
 async def create_user(user_data: UserCreate):
