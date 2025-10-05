@@ -267,7 +267,7 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="px-6 py-4">
+        <form onSubmit={handleSubmit} className="px-6 py-4" noValidate>
           {activeTab === 'profile' && (
             <div className="space-y-6 max-h-96 overflow-y-auto">
               {/* Basic Information */}
