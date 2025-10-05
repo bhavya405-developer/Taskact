@@ -102,7 +102,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
+              <option value="on_hold">On Hold</option>
               <option value="completed">Completed</option>
               <option value="overdue">Overdue</option>
             </select>
