@@ -88,6 +88,8 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    client_name: Optional[str] = None
+    category: Optional[str] = None
     assignee_id: Optional[str] = None
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
