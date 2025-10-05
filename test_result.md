@@ -107,27 +107,33 @@
 ## backend:
   - task: "Excel template download endpoints for categories"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
           agent: "main"
           comment: "Template download endpoints defined at lines 708 and 928 but returning 404/403 errors. Need to investigate authentication headers and route registration."
+        - working: true
+          agent: "testing"
+          comment: "FIXED: Route ordering issue resolved. Moved /categories/download-template route before /categories/{category_id} to prevent FastAPI from treating 'download-template' as a category_id parameter. Authentication working correctly with partner role. Excel file generation successful (6425 bytes, proper MIME type)."
 
   - task: "Excel template download endpoints for clients"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
           agent: "main"
           comment: "Template download endpoints defined at lines 928-1000 but returning 404/403 errors. Need to investigate authentication headers and route registration."
+        - working: true
+          agent: "testing"
+          comment: "FIXED: Route ordering issue resolved. Moved /clients/download-template route before /clients/{client_id} to prevent FastAPI from treating 'download-template' as a client_id parameter. Authentication working correctly with partner role. Excel file generation successful (6776 bytes, proper MIME type)."
 
 ## frontend:
   - task: "Bulk import modal template download functionality"
