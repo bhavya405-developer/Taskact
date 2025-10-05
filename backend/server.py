@@ -266,12 +266,12 @@ async def get_users(current_user: UserResponse = Depends(get_current_user)):
     users = await db.users.find({"active": True}).to_list(length=None)
     return [UserResponse(**parse_from_mongo(user)) for user in users]
 
-@api_router.get("/users/{user_id}", response_model=User)
-async def get_user(user_id: str):
+@api_router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: str, current_user: UserResponse = Depends(get_current_user)):
     user = await db.users.find_one({"id": user_id, "active": True})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return User(**parse_from_mongo(user))
+    return UserResponse(**parse_from_mongo(user))
 
 # Tasks endpoints
 @api_router.post("/tasks", response_model=Task)
