@@ -43,9 +43,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Enums
 class TaskStatus(str, Enum):
     PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
+    ON_HOLD = "on_hold"
     OVERDUE = "overdue"
+    COMPLETED = "completed"
 
 class TaskPriority(str, Enum):
     LOW = "low"
