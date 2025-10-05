@@ -321,12 +321,11 @@
 
 ## test_plan:
   current_focus:
-    - "4-Status Task System Implementation"
-    - "New Task Creation with Pending Status"
-    - "Status Transitions and Workflow"
-    - "Completed Task Immutability"
-    - "Overdue Auto-Update System"
-    - "UI/UX Status Colors and Icons"
+    - "4-Status Task System Backend API"
+    - "Task Status Transitions and Workflow"
+    - "Completed Task Immutability Backend"
+    - "Overdue Auto-Update System Backend"
+    - "Dashboard API with 4-Status Counts"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
