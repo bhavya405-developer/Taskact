@@ -120,6 +120,53 @@ const CreateTask = ({ users, onTaskCreated }) => {
             />
           </div>
 
+          {/* Client Name and Category Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="client_name" className="form-label">
+                Client Name *
+              </label>
+              <input
+                type="text"
+                id="client_name"
+                name="client_name"
+                value={formData.client_name}
+                onChange={handleChange}
+                placeholder="Enter client name..."
+                className="form-input"
+                data-testid="client-name-input"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="category" className="form-label">
+                Task Category *
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="form-input"
+                data-testid="category-select"
+                required
+              >
+                <option value="">Select category...</option>
+                <option value="Legal Research">Legal Research</option>
+                <option value="Contract Review">Contract Review</option>
+                <option value="Client Meeting">Client Meeting</option>
+                <option value="Court Filing">Court Filing</option>
+                <option value="Document Preparation">Document Preparation</option>
+                <option value="Case Analysis">Case Analysis</option>
+                <option value="Negotiation">Negotiation</option>
+                <option value="Due Diligence">Due Diligence</option>
+                <option value="Compliance Review">Compliance Review</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
           {/* Assignee and Creator Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
