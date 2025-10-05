@@ -164,7 +164,7 @@ async def seed_categories_and_clients():
         else:
             print(f"⚠️  Client already exists: {client['name']}")
     
-    await client.close()
+    mongo_client.close()
     print("\n🎉 Seeding completed!")
 
 if __name__ == "__main__":
