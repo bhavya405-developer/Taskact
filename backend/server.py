@@ -1202,10 +1202,10 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     return {
         "task_counts": {
             "pending": pending_count,
-            "in_progress": in_progress_count,
+            "on_hold": on_hold_count,
             "completed": completed_count,
             "overdue": overdue_count,
-            "total": pending_count + in_progress_count + completed_count + overdue_count
+            "total": pending_count + on_hold_count + completed_count + overdue_count
         },
         "recent_tasks": [Task(**parse_from_mongo(task)) for task in recent_tasks],
         "team_stats": team_stats,
