@@ -312,9 +312,31 @@ async def create_notification(user_id: str, title: str, message: str, task_id: s
         message=message,
         task_id=task_id
     )
-    notification_dict = prepare_for_mongo(notification.dict())
+    notification_dict = prepare_for_mongo(notification_dict)
     await db.notifications.insert_one(notification_dict)
     return notification
+
+async def update_overdue_tasks():
+    """Automatically update tasks to overdue status if past due date"""
+    current_time = datetime.now(timezone.utc)
+    
+    # Find tasks that are pending or on_hold and past their due date
+    overdue_query = {
+        "status": {"$in": [TaskStatus.PENDING, TaskStatus.ON_HOLD]},
+        "due_date": {"$lt": current_time.isoformat()},
+        "due_date": {"$ne": None}
+    }
+    
+    # Update these tasks to overdue status
+    result = await db.tasks.update_many(
+        overdue_query,
+        {"$set": {
+            "status": TaskStatus.OVERDUE,
+            "updated_at": current_time.isoformat()
+        }}
+    )
+    
+    return result.modified_count
 
 # API Routes
 
