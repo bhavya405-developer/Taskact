@@ -78,6 +78,11 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
           userData.hire_date = new Date(userData.hire_date).toISOString();
         }
         
+        // Ensure password is provided - use default if empty
+        if (!userData.password || userData.password.trim() === '') {
+          userData.password = 'password123'; // Default password that user can change later
+        }
+        
         await axios.post(`${API}/users`, userData);
       } else {
         // Update existing user profile
