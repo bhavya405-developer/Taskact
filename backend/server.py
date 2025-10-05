@@ -62,6 +62,8 @@ class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: Optional[str] = None
+    client_name: str
+    category: str
     assignee_id: str
     assignee_name: str
     creator_id: str
@@ -76,6 +78,8 @@ class Task(BaseModel):
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    client_name: str
+    category: str
     assignee_id: str
     creator_id: str
     priority: TaskPriority = TaskPriority.MEDIUM
