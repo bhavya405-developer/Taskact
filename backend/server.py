@@ -466,14 +466,19 @@ async def get_filters():
 # Dashboard endpoint
 @api_router.get("/dashboard")
 async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
+    # Build query based on user role
+    task_query = {}
+    if current_user.role != UserRole.PARTNER:
+        task_query["assignee_id"] = current_user.id
+    
     # Get counts by status
-    pending_count = await db.tasks.count_documents({"status": TaskStatus.PENDING})
-    in_progress_count = await db.tasks.count_documents({"status": TaskStatus.IN_PROGRESS})
-    completed_count = await db.tasks.count_documents({"status": TaskStatus.COMPLETED})
-    overdue_count = await db.tasks.count_documents({"status": TaskStatus.OVERDUE})
+    pending_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.PENDING})
+    in_progress_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.IN_PROGRESS})
+    completed_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.COMPLETED})
+    overdue_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.OVERDUE})
     
     # Get recent tasks
-    recent_tasks = await db.tasks.find().sort("created_at", -1).limit(5).to_list(length=None)
+    recent_tasks = await db.tasks.find(task_query).sort("created_at", -1).limit(5).to_list(length=None)
     
     # Get team performance
     users = await db.users.find({"active": True}).to_list(length=None)
