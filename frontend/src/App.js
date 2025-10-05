@@ -1,51 +1,102 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
+import Dashboard from "./components/Dashboard";
+import Tasks from "./components/Tasks";
+import TeamMembers from "./components/TeamMembers";
+import CreateTask from "./components/CreateTask";
+import Navigation from "./components/Navigation";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
+function App() {
+  const [users, setUsers] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+      const response = await axios.get(`${API}/users`);
+      setUsers(response.data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get(`${API}/tasks`);
+      setTasks(response.data);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
     }
   };
 
   useEffect(() => {
-    helloWorldApi();
+    const loadData = async () => {
+      await Promise.all([fetchUsers(), fetchTasks()]);
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Task Management System...</p>
+        </div>
+      </div>
+    );
+  }
 
-function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route 
+                path="/dashboard" 
+                element={<Dashboard users={users} tasks={tasks} />} 
+              />
+              <Route 
+                path="/tasks" 
+                element={
+                  <Tasks 
+                    tasks={tasks} 
+                    users={users} 
+                    onTaskUpdate={fetchTasks} 
+                  />
+                } 
+              />
+              <Route 
+                path="/team" 
+                element={
+                  <TeamMembers 
+                    users={users} 
+                    tasks={tasks} 
+                    onUserAdded={fetchUsers} 
+                  />
+                } 
+              />
+              <Route 
+                path="/create-task" 
+                element={
+                  <CreateTask 
+                    users={users} 
+                    onTaskCreated={fetchTasks} 
+                  />
+                } 
+              />
+            </Routes>
+          </main>
+        </div>
       </BrowserRouter>
     </div>
   );
