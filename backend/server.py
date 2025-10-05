@@ -694,6 +694,75 @@ async def delete_category(category_id: str, current_user: UserResponse = Depends
         raise HTTPException(status_code=404, detail="Category not found")
     return {"message": "Category deleted successfully"}
 
+# Client Management endpoints (Partners only)
+@api_router.post("/clients", response_model=Client)
+async def create_client(client_data: ClientCreate, current_user: UserResponse = Depends(get_current_partner)):
+    # Check if client name already exists
+    existing_client = await db.clients.find_one({"name": client_data.name, "active": True})
+    if existing_client:
+        raise HTTPException(status_code=400, detail="Client name already exists")
+    
+    client_dict = client_data.dict()
+    client_dict["created_by"] = current_user.id
+    client = Client(**client_dict)
+    
+    client_dict = prepare_for_mongo(client.dict())
+    await db.clients.insert_one(client_dict)
+    return client
+
+@api_router.get("/clients", response_model=List[Client])
+async def get_clients(current_user: UserResponse = Depends(get_current_user)):
+    clients = await db.clients.find({"active": True}).sort("name", 1).to_list(length=None)
+    return [Client(**parse_from_mongo(client)) for client in clients]
+
+@api_router.get("/clients/{client_id}", response_model=Client)
+async def get_client(client_id: str, current_user: UserResponse = Depends(get_current_user)):
+    client = await db.clients.find_one({"id": client_id, "active": True})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return Client(**parse_from_mongo(client))
+
+@api_router.put("/clients/{client_id}", response_model=Client)
+async def update_client(
+    client_id: str, 
+    client_update: ClientUpdate, 
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    existing_client = await db.clients.find_one({"id": client_id, "active": True})
+    if not existing_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    update_data = {k: v for k, v in client_update.dict().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    # Check if name is being changed and if it already exists
+    if "name" in update_data and update_data["name"] != existing_client["name"]:
+        existing_name = await db.clients.find_one({"name": update_data["name"], "active": True})
+        if existing_name:
+            raise HTTPException(status_code=400, detail="Client name already exists")
+    
+    result = await db.clients.update_one({"id": client_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    updated_client = await db.clients.find_one({"id": client_id})
+    return Client(**parse_from_mongo(updated_client))
+
+@api_router.delete("/clients/{client_id}")
+async def delete_client(client_id: str, current_user: UserResponse = Depends(get_current_partner)):
+    # Check if client is in use by any tasks
+    tasks_using_client = await db.tasks.count_documents({"client_name": client_id})
+    if tasks_using_client > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete client that is in use by tasks")
+    
+    result = await db.clients.update_one({"id": client_id}, {"$set": {"active": False}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return {"message": "Client deleted successfully"}
+
 # Get unique clients and categories for filtering
 @api_router.get("/filters")
 async def get_filters(current_user: UserResponse = Depends(get_current_user)):
