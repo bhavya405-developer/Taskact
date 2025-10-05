@@ -705,7 +705,7 @@ async def delete_category(category_id: str, current_user: UserResponse = Depends
     return {"message": "Category deleted successfully"}
 
 # Category Template and Bulk Import endpoints (Partners only) - Must come after CRUD
-@api_router.get("/categories/template")
+@api_router.get("/categories/download-template")
 async def download_categories_template(current_user: UserResponse = Depends(get_current_partner)):
     """Download Excel template for bulk category import"""
     
