@@ -342,11 +342,29 @@ async def get_task(task_id: str, current_user: UserResponse = Depends(get_curren
     return Task(**parse_from_mongo(task))
 
 @api_router.put("/tasks/{task_id}", response_model=Task)
-async def update_task(task_id: str, task_update: TaskUpdate):
+async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserResponse = Depends(get_current_user)):
+    # Get the existing task
+    existing_task = await db.tasks.find_one({"id": task_id})
+    if not existing_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Check permissions: partners can edit any task, others can only update status of their own tasks
+    if current_user.role != UserRole.PARTNER:
+        if existing_task["assignee_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only update your own tasks")
+        # Non-partners can only update status
+        allowed_fields = {"status"}
+        update_fields = set(k for k, v in task_update.dict().items() if v is not None)
+        if not update_fields.issubset(allowed_fields):
+            raise HTTPException(status_code=403, detail="You can only update task status")
+    
     update_data = {k: v for k, v in task_update.dict().items() if v is not None}
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
+    
+    # Store original assignee for notification comparison
+    original_assignee_id = existing_task["assignee_id"]
     
     # Update assignee name if assignee_id is changed
     if "assignee_id" in update_data:
@@ -367,6 +385,38 @@ async def update_task(task_id: str, task_update: TaskUpdate):
         raise HTTPException(status_code=404, detail="Task not found")
     
     updated_task = await db.tasks.find_one({"id": task_id})
+    
+    # Create notifications
+    if current_user.role == UserRole.PARTNER:
+        # If assignee changed, notify both old and new assignee
+        if "assignee_id" in update_data and update_data["assignee_id"] != original_assignee_id:
+            # Notify new assignee
+            if update_data["assignee_id"] != current_user.id:
+                await create_notification(
+                    user_id=update_data["assignee_id"],
+                    title="Task Reassigned to You",
+                    message=f"You have been assigned to task: {updated_task['title']}",
+                    task_id=task_id
+                )
+            
+            # Notify old assignee (if different from partner and new assignee)
+            if original_assignee_id != current_user.id and original_assignee_id != update_data["assignee_id"]:
+                await create_notification(
+                    user_id=original_assignee_id,
+                    title="Task Reassigned",
+                    message=f"Task '{updated_task['title']}' has been reassigned",
+                    task_id=task_id
+                )
+        else:
+            # Task was edited but assignee didn't change, notify current assignee
+            if updated_task["assignee_id"] != current_user.id:
+                await create_notification(
+                    user_id=updated_task["assignee_id"],
+                    title="Task Updated",
+                    message=f"Task '{updated_task['title']}' has been updated by {current_user.name}",
+                    task_id=task_id
+                )
+    
     return Task(**parse_from_mongo(updated_task))
 
 @api_router.delete("/tasks/{task_id}")
