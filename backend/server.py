@@ -312,7 +312,7 @@ async def create_notification(user_id: str, title: str, message: str, task_id: s
         message=message,
         task_id=task_id
     )
-    notification_dict = prepare_for_mongo(notification_dict)
+    notification_dict = prepare_for_mongo(notification.dict())
     await db.notifications.insert_one(notification_dict)
     return notification
 
