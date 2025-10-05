@@ -179,6 +179,12 @@ class ClientUpdate(BaseModel):
     notes: Optional[str] = None
     active: Optional[bool] = None
 
+class BulkImportResult(BaseModel):
+    success_count: int
+    error_count: int
+    errors: List[str]
+    created_items: List[str]
+
 class LoginRequest(BaseModel):
     email: str
     password: str
