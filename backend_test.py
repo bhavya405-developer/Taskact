@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for Task Management Application
-Tests Excel template download endpoints with authentication
+Backend API Testing Script for TaskAct 4-Status Task System
+Comprehensive testing of the updated task status system with 4 statuses and immutability
 """
 
 import requests
 import json
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -16,11 +17,13 @@ load_dotenv('frontend/.env')
 BACKEND_URL = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
 API_BASE_URL = f"{BACKEND_URL}/api"
 
-class BackendTester:
+class TaskActTester:
     def __init__(self):
         self.session = requests.Session()
         self.auth_token = None
+        self.current_user = None
         self.test_results = []
+        self.created_tasks = []  # Track created tasks for cleanup
         
     def log_test(self, test_name, success, message, details=None):
         """Log test results"""
@@ -52,17 +55,17 @@ class BackendTester:
             if response.status_code == 200:
                 data = response.json()
                 self.auth_token = data.get('access_token')
-                user_info = data.get('user', {})
+                self.current_user = data.get('user', {})
                 
-                if self.auth_token and user_info.get('role') == 'partner':
+                if self.auth_token and self.current_user.get('role') == 'partner':
                     self.session.headers.update({
                         'Authorization': f'Bearer {self.auth_token}'
                     })
                     self.log_test(
                         "Partner Authentication", 
                         True, 
-                        f"Successfully authenticated as {user_info.get('name')} (partner)",
-                        {'token_length': len(self.auth_token), 'user_role': user_info.get('role')}
+                        f"Successfully authenticated as {self.current_user.get('name')} (partner)",
+                        {'token_length': len(self.auth_token), 'user_role': self.current_user.get('role')}
                     )
                     return True
                 else:
