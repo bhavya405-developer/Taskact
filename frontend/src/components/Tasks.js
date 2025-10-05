@@ -410,7 +410,6 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
             </div>
           </>
         )}
-        )}
       </div>
 
       {/* Summary */}
