@@ -18,6 +18,7 @@ import {
 const Navigation = () => {
   const location = useLocation();
   const { user, logout, isPartner } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
