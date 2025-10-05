@@ -96,9 +96,20 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         
         // Create new user
         const userData = { ...formData };
-        if (userData.hire_date) {
+        
+        // Handle empty date fields - convert empty strings to null
+        if (userData.hire_date && userData.hire_date.trim()) {
           userData.hire_date = new Date(userData.hire_date).toISOString();
+        } else {
+          userData.hire_date = null;
         }
+        
+        // Clean up empty string fields
+        Object.keys(userData).forEach(key => {
+          if (userData[key] === '') {
+            userData[key] = null;
+          }
+        });
         
         await axios.post(`${API}/users`, userData);
       } else {
@@ -106,9 +117,19 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         const updateData = { ...formData };
         delete updateData.password; // Don't include password in profile updates
         
-        if (updateData.hire_date) {
+        // Handle empty date fields - convert empty strings to null
+        if (updateData.hire_date && updateData.hire_date.trim()) {
           updateData.hire_date = new Date(updateData.hire_date).toISOString();
+        } else {
+          updateData.hire_date = null;
         }
+        
+        // Clean up empty string fields
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key] === '') {
+            updateData[key] = null;
+          }
+        });
         
         await axios.put(`${API}/users/${user.id}`, updateData);
       }
@@ -118,11 +139,26 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
     } catch (error) {
       console.error('Error saving user:', error);
       
-      // Better error message handling
+      // Enhanced error message handling for different error types
       let errorMessage = 'Failed to save user profile';
       
       if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
+        // Handle string error messages
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } 
+        // Handle Pydantic validation error arrays
+        else if (Array.isArray(error.response.data.detail)) {
+          const validationErrors = error.response.data.detail.map(err => {
+            const field = err.loc ? err.loc.join('.') : 'field';
+            return `${field}: ${err.msg}`;
+          }).join('\n');
+          errorMessage = `Validation errors:\n${validationErrors}`;
+        }
+        // Handle other object types
+        else {
+          errorMessage = JSON.stringify(error.response.data.detail);
+        }
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
