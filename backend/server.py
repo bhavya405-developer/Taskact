@@ -1145,9 +1145,12 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     if current_user.role != UserRole.PARTNER:
         task_query["assignee_id"] = current_user.id
     
+    # Update overdue tasks before getting counts
+    await update_overdue_tasks()
+    
     # Get counts by status
     pending_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.PENDING})
-    in_progress_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.IN_PROGRESS})
+    on_hold_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.ON_HOLD})
     completed_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.COMPLETED})
     overdue_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.OVERDUE})
     
