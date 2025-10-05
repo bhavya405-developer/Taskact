@@ -534,6 +534,10 @@ async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserR
     if not existing_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
+    # Prevent editing completed tasks (immutable once completed)
+    if existing_task.get("status") == TaskStatus.COMPLETED:
+        raise HTTPException(status_code=403, detail="Cannot edit completed tasks. Completed tasks are immutable.")
+    
     # Check permissions: partners can edit any task, others can only update status of their own tasks
     if current_user.role != UserRole.PARTNER:
         if existing_task["assignee_id"] != current_user.id:
