@@ -55,7 +55,7 @@ const BulkImportModal = ({ isOpen, onClose, type, onImportComplete }) => {
 
   const downloadTemplate = async () => {
     try {
-      const endpoint = type === 'categories' ? '/categories/template' : '/clients/template';
+      const endpoint = type === 'categories' ? '/categories/download-template' : '/clients/download-template';
       const filename = type === 'categories' ? 'categories_template.xlsx' : 'clients_template.xlsx';
       
       const response = await axios.get(`${API}${endpoint}`, {
