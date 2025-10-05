@@ -26,19 +26,26 @@ const Navigation = () => {
           </div>
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`nav-link ${
-                    location.pathname === item.path ? 'active' : ''
-                  }`}
-                  data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
-                >
-                  <span className="mr-2">{item.icon}</span>
-                  {item.name}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                // Hide partner-only items for non-partners
+                if (item.partnerOnly && !isPartner()) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`nav-link ${
+                      location.pathname === item.path ? 'active' : ''
+                    }`}
+                    data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+                  >
+                    <span className="mr-2">{item.icon}</span>
+                    {item.name}
+                  </Link>
+                );
+              })}
             </div>
           </div>
           <div className="flex items-center space-x-4">
