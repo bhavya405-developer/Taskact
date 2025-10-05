@@ -519,6 +519,9 @@ async def get_tasks(
     client_name: Optional[str] = None,
     category: Optional[str] = None
 ):
+    # Update overdue tasks before fetching
+    await update_overdue_tasks()
+    
     query = {}
     
     # Non-partners can only see their own tasks unless they're partners
