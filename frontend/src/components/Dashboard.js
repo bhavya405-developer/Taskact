@@ -124,6 +124,131 @@ const Dashboard = ({ users, tasks }) => {
         </div>
       </div>
 
+      {/* Priority Tasks Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Overdue Tasks */}
+        <div className="bg-white rounded-lg shadow-sm border border-red-200">
+          <div className="px-6 py-4 border-b border-red-200 bg-red-50">
+            <div className="flex items-center">
+              <AlertCircle size={20} className="text-red-600 mr-2" />
+              <h3 className="text-lg font-semibold text-red-900" data-testid="overdue-tasks-title">
+                Overdue Tasks ({overdue_tasks.length})
+              </h3>
+            </div>
+          </div>
+          <div className="p-6">
+            {overdue_tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No overdue tasks! 🎉</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {overdue_tasks.map((task) => {
+                  const priority = getPriorityDisplay(task.priority);
+                  
+                  return (
+                    <div 
+                      key={task.id} 
+                      className="border border-red-200 rounded-lg p-4 card-hover cursor-pointer bg-red-50" 
+                      onClick={() => handleTaskClick(task)}
+                      data-testid={`overdue-task-${task.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{task.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {task.client_name ? `Client: ${task.client_name} • ` : ''}Assigned to: {task.assignee_name}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <span className="badge status-overdue">
+                              Overdue
+                            </span>
+                            <span className={`badge ${priority.class}`}>
+                              {priority.label}
+                            </span>
+                            {task.category && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                {task.category}
+                              </span>
+                            )}
+                          </div>
+                          {task.due_date && (
+                            <p className="text-xs text-red-600 mt-1 font-medium">
+                              Due: {new Date(task.due_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pending Tasks */}
+        <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
+          <div className="px-6 py-4 border-b border-yellow-200 bg-yellow-50">
+            <div className="flex items-center">
+              <Clock size={20} className="text-yellow-600 mr-2" />
+              <h3 className="text-lg font-semibold text-yellow-900" data-testid="pending-tasks-title">
+                Pending Tasks ({pending_tasks.length})
+              </h3>
+            </div>
+          </div>
+          <div className="p-6">
+            {pending_tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No pending tasks</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {pending_tasks.map((task) => {
+                  const priority = getPriorityDisplay(task.priority);
+                  
+                  return (
+                    <div 
+                      key={task.id} 
+                      className="border border-yellow-200 rounded-lg p-4 card-hover cursor-pointer bg-yellow-50" 
+                      onClick={() => handleTaskClick(task)}
+                      data-testid={`pending-task-${task.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{task.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {task.client_name ? `Client: ${task.client_name} • ` : ''}Assigned to: {task.assignee_name}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <span className="badge status-pending">
+                              Pending
+                            </span>
+                            <span className={`badge ${priority.class}`}>
+                              {priority.label}
+                            </span>
+                            {task.category && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                {task.category}
+                              </span>
+                            )}
+                          </div>
+                          {task.due_date && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              Due: {new Date(task.due_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatusCard
