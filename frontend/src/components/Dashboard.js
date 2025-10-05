@@ -126,31 +126,31 @@ const Dashboard = ({ users, tasks }) => {
           title="Total Tasks"
           count={task_counts.total}
           status="total"
-          icon="📊"
+          icon={<BarChart3 size={20} className="text-blue-600" />}
         />
         <StatusCard
           title="Pending"
           count={task_counts.pending}
           status="pending"
-          icon="⏳"
+          icon={<Clock size={20} className="text-amber-600" />}
         />
         <StatusCard
           title="In Progress"
           count={task_counts.in_progress}
           status="in_progress"
-          icon="🔄"
+          icon={<TrendingUp size={20} className="text-blue-600" />}
         />
         <StatusCard
           title="Completed"
           count={task_counts.completed}
           status="completed"
-          icon="✅"
+          icon={<CheckCircle size={20} className="text-green-600" />}
         />
         <StatusCard
           title="Overdue"
           count={task_counts.overdue}
           status="overdue"
-          icon="⚠️"
+          icon={<AlertCircle size={20} className="text-red-600" />}
         />
       </div>
 
