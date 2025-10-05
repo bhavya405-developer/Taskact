@@ -124,9 +124,12 @@ const CategoryManager = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Task Categories</h2>
-          <p className="mt-2 text-gray-600">Manage task categories for better organization</p>
+        <div className="flex items-center">
+          <FolderOpen size={32} className="text-blue-600 mr-3" />
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Task Categories</h2>
+            <p className="mt-2 text-gray-600">Manage task categories for better organization</p>
+          </div>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button
