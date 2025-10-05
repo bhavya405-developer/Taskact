@@ -625,6 +625,75 @@ async def get_unread_notification_count(current_user: UserResponse = Depends(get
     count = await db.notifications.count_documents({"user_id": current_user.id, "read": False})
     return {"unread_count": count}
 
+# Category Management endpoints (Partners only)
+@api_router.post("/categories", response_model=Category)
+async def create_category(category_data: CategoryCreate, current_user: UserResponse = Depends(get_current_partner)):
+    # Check if category name already exists
+    existing_category = await db.categories.find_one({"name": category_data.name, "active": True})
+    if existing_category:
+        raise HTTPException(status_code=400, detail="Category name already exists")
+    
+    category_dict = category_data.dict()
+    category_dict["created_by"] = current_user.id
+    category = Category(**category_dict)
+    
+    category_dict = prepare_for_mongo(category.dict())
+    await db.categories.insert_one(category_dict)
+    return category
+
+@api_router.get("/categories", response_model=List[Category])
+async def get_categories(current_user: UserResponse = Depends(get_current_user)):
+    categories = await db.categories.find({"active": True}).sort("name", 1).to_list(length=None)
+    return [Category(**parse_from_mongo(category)) for category in categories]
+
+@api_router.get("/categories/{category_id}", response_model=Category)
+async def get_category(category_id: str, current_user: UserResponse = Depends(get_current_user)):
+    category = await db.categories.find_one({"id": category_id, "active": True})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return Category(**parse_from_mongo(category))
+
+@api_router.put("/categories/{category_id}", response_model=Category)
+async def update_category(
+    category_id: str, 
+    category_update: CategoryUpdate, 
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    existing_category = await db.categories.find_one({"id": category_id, "active": True})
+    if not existing_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    update_data = {k: v for k, v in category_update.dict().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    # Check if name is being changed and if it already exists
+    if "name" in update_data and update_data["name"] != existing_category["name"]:
+        existing_name = await db.categories.find_one({"name": update_data["name"], "active": True})
+        if existing_name:
+            raise HTTPException(status_code=400, detail="Category name already exists")
+    
+    result = await db.categories.update_one({"id": category_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    updated_category = await db.categories.find_one({"id": category_id})
+    return Category(**parse_from_mongo(updated_category))
+
+@api_router.delete("/categories/{category_id}")
+async def delete_category(category_id: str, current_user: UserResponse = Depends(get_current_partner)):
+    # Check if category is in use by any tasks
+    tasks_using_category = await db.tasks.count_documents({"category": category_id})
+    if tasks_using_category > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete category that is in use by tasks")
+    
+    result = await db.categories.update_one({"id": category_id}, {"$set": {"active": False}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"message": "Category deleted successfully"}
+
 # Get unique clients and categories for filtering
 @api_router.get("/filters")
 async def get_filters(current_user: UserResponse = Depends(get_current_user)):
