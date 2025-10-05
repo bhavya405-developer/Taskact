@@ -50,6 +50,7 @@ const Navigation = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <NotificationPanel />
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-blue-600 font-medium text-sm">
