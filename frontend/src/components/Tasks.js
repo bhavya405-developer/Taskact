@@ -279,11 +279,11 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
             <div className="text-2xl font-bold text-gray-900">{filteredTasks.length}</div>
             <div className="text-sm text-gray-600">Total Shown</div>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
-              {filteredTasks.filter(t => t.status === 'in_progress').length}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="text-2xl font-bold text-gray-600">
+              {filteredTasks.filter(t => t.status === 'on_hold').length}
             </div>
-            <div className="text-sm text-gray-600">In Progress</div>
+            <div className="text-sm text-gray-600">On Hold</div>
           </div>
           <div className="p-3 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">
