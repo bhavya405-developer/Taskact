@@ -254,8 +254,10 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
                         <select
                           value={task.status}
                           onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                          disabled={updating[task.id]}
-                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={updating[task.id] || task.status === 'completed'}
+                          className={`text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                            task.status === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''
+                          }`}
                           data-testid={`status-select-${task.id}`}
                         >
                           <option value="pending">Pending</option>
