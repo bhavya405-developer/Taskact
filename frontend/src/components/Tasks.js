@@ -204,13 +204,21 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
                           <div className="font-medium text-gray-900">{task.title}</div>
                           {task.description && (
                             <div className="text-sm text-gray-600 mt-1">
-                              {task.description.length > 50 
-                                ? `${task.description.substring(0, 50)}...`
+                              {task.description.length > 40 
+                                ? `${task.description.substring(0, 40)}...`
                                 : task.description
                               }
                             </div>
                           )}
                         </div>
+                      </td>
+                      <td className="table-cell">
+                        <div className="font-medium text-gray-900">{task.client_name}</div>
+                      </td>
+                      <td className="table-cell">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {task.category}
+                        </span>
                       </td>
                       <td className="table-cell">
                         <div className="flex items-center">
