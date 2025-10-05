@@ -1087,9 +1087,7 @@ async def bulk_import_clients(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
 
-# Bulk Import/Export endpoints (Partners only)
-
-@api_router.get("/categories/template")
+# REMOVED: Duplicate bulk import endpoints (moved to after CRUD endpoints)
 async def download_categories_template(current_user: UserResponse = Depends(get_current_partner)):
     """Download Excel template for bulk category import"""
     
