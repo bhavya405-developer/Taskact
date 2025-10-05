@@ -139,13 +139,15 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
           <p className="mt-2 text-gray-600">Manage your team and track their performance</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn-primary"
-            data-testid="add-team-member-button"
-          >
-            {showAddForm ? 'Cancel' : 'Add Team Member'}
-          </button>
+          {isPartner() && (
+            <button
+              onClick={handleAddTeamMember}
+              className="btn-primary"
+              data-testid="add-team-member-button"
+            >
+              Add Team Member
+            </button>
+          )}
         </div>
       </div>
 
