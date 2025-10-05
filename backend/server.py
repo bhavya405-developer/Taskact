@@ -772,73 +772,7 @@ async def delete_category(category_id: str, current_user: UserResponse = Depends
         raise HTTPException(status_code=404, detail="Category not found")
     return {"message": "Category deleted successfully"}
 
-# Category Template and Bulk Import endpoints (Partners only) - Must come after CRUD
-@api_router.get("/categories/download-template")
-async def download_categories_template(current_user: UserResponse = Depends(get_current_partner)):
-    """Download Excel template for bulk category import"""
-    
-    # Create sample data with headers
-    template_data = {
-        'Name': ['Legal Research', 'Contract Review', 'Client Meeting'],
-        'Description': [
-            'Research legal precedents and case law',
-            'Review and analyze legal contracts',
-            'Meetings and consultations with clients'
-        ],
-        'Color': ['#3B82F6', '#10B981', '#F59E0B']
-    }
-    
-    df = pd.DataFrame(template_data)
-    
-    # Create Excel file in memory
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        # Write data
-        df.to_excel(writer, sheet_name='Categories', index=False)
-        
-        # Get workbook and worksheet for formatting
-        workbook = writer.book
-        worksheet = writer.sheets['Categories']
-        
-        # Add formatting
-        header_format = workbook.add_format({
-            'bold': True,
-            'bg_color': '#4F46E5',
-            'font_color': 'white',
-            'border': 1
-        })
-        
-        # Format headers
-        for col_num, value in enumerate(df.columns.values):
-            worksheet.write(0, col_num, value, header_format)
-        
-        # Add instructions sheet
-        instructions_data = {
-            'Instructions': [
-                '1. Fill in the category information below',
-                '2. Name: Required field - unique category name',
-                '3. Description: Optional - brief description of the category',
-                '4. Color: Optional - hex color code (e.g., #3B82F6)',
-                '5. Save the file and upload it back to import',
-                '',
-                'Sample Colors:',
-                'Blue: #3B82F6',
-                'Green: #10B981', 
-                'Amber: #F59E0B',
-                'Red: #EF4444',
-                'Purple: #8B5CF6'
-            ]
-        }
-        instructions_df = pd.DataFrame(instructions_data)
-        instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
-    
-    output.seek(0)
-    
-    return StreamingResponse(
-        io.BytesIO(output.read()),
-        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={"Content-Disposition": "attachment; filename=categories_template.xlsx"}
-    )
+# Duplicate removed - template download moved earlier to fix routing
 
 @api_router.post("/categories/bulk-import", response_model=BulkImportResult)
 async def bulk_import_categories(
