@@ -66,6 +66,33 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
     });
   };
 
+  const handleAddTeamMember = () => {
+    setSelectedUser(null);
+    setIsCreateMode(true);
+    setShowProfileModal(true);
+  };
+
+  const handleEditProfile = (user) => {
+    setSelectedUser(user);
+    setIsCreateMode(false);
+    setShowProfileModal(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setShowProfileModal(false);
+    setSelectedUser(null);
+    setIsCreateMode(false);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not specified';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const getUserTaskStats = (userId) => {
     const userTasks = tasks.filter(task => task.assignee_id === userId);
     const completedTasks = userTasks.filter(task => task.status === 'completed');
