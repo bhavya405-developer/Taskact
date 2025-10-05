@@ -440,6 +440,14 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
           </div>
         </div>
       </div>
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={showTaskDetail}
+        onClose={handleCloseTaskDetail}
+        onEdit={isPartner() ? null : null} // Edit handled through status dropdown
+      />
     </div>
   );
 };
