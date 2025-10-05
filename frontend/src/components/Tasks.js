@@ -201,80 +201,196 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="table-header">Task</th>
-                  <th className="table-header">Client</th>
-                  <th className="table-header">Category</th>
-                  <th className="table-header">Assignee</th>
-                  <th className="table-header">Status</th>
-                  <th className="table-header">Priority</th>
-                  <th className="table-header">Due Date</th>
-                  <th className="table-header">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.map((task) => {
-                  const status = getStatusDisplay(task.status);
-                  const priority = getPriorityDisplay(task.priority);
-                  
-                  return (
-                    <tr key={task.id} className="hover:bg-gray-50 transition-colors" data-testid={`task-row-${task.id}`}>
-                      <td className="table-cell">
-                        <div>
-                          <div className="font-medium text-gray-900">{task.title}</div>
-                          {task.description && (
-                            <div className="text-sm text-gray-600 mt-1">
-                              {task.description.length > 40 
-                                ? `${task.description.substring(0, 40)}...`
-                                : task.description
-                              }
+          <>
+            {/* Desktop Table View - Hidden on Mobile */}
+            <div className="hidden md:block overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="table-header">Task</th>
+                    <th className="table-header">Client</th>
+                    <th className="table-header">Category</th>
+                    <th className="table-header">Assignee</th>
+                    <th className="table-header">Status</th>
+                    <th className="table-header">Priority</th>
+                    <th className="table-header">Due Date</th>
+                    <th className="table-header">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredTasks.map((task) => {
+                    const status = getStatusDisplay(task.status);
+                    const priority = getPriorityDisplay(task.priority);
+                    
+                    return (
+                      <tr 
+                        key={task.id} 
+                        className="hover:bg-gray-50 transition-colors cursor-pointer" 
+                        data-testid={`task-row-${task.id}`}
+                        onClick={() => handleTaskClick(task)}
+                      >
+                        <td className="table-cell">
+                          <div>
+                            <div className="font-medium text-gray-900">{task.title}</div>
+                            {task.description && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {task.description.length > 40 
+                                  ? `${task.description.substring(0, 40)}...`
+                                  : task.description
+                                }
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <div className="font-medium text-gray-900">{task.client_name}</div>
+                        </td>
+                        <td className="table-cell">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {task.category}
+                          </span>
+                        </td>
+                        <td className="table-cell">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                              <span className="text-blue-600 font-medium text-sm">
+                                {task.assignee_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>{task.assignee_name}</div>
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <span className={`badge ${status.class}`}>
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="table-cell">
+                          <span className={`badge ${priority.class}`}>
+                            {priority.label}
+                          </span>
+                        </td>
+                        <td className="table-cell text-gray-600">
+                          {formatDate(task.due_date)}
+                        </td>
+                        <td className="table-cell" onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                            disabled={updating[task.id] || task.status === 'completed'}
+                            className={`text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                              task.status === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
+                            data-testid={`status-select-${task.id}`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="on_hold">On Hold</option>
+                            <option value="completed">Completed</option>
+                            <option value="overdue">Overdue</option>
+                          </select>
+                          {updating[task.id] && (
+                            <div className="ml-2 inline-block">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                             </div>
                           )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View - Visible on Mobile */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {filteredTasks.map((task) => {
+                const status = getStatusDisplay(task.status);
+                const priority = getPriorityDisplay(task.priority);
+                
+                return (
+                  <div 
+                    key={task.id} 
+                    className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    data-testid={`mobile-task-${task.id}`}
+                    onClick={() => handleTaskClick(task)}
+                  >
+                    <div className="space-y-3">
+                      {/* Task Header */}
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 truncate">{task.title}</h3>
+                          {task.description && (
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
                         </div>
-                      </td>
-                      <td className="table-cell">
-                        <div className="font-medium text-gray-900">{task.client_name}</div>
-                      </td>
-                      <td className="table-cell">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {task.category}
-                        </span>
-                      </td>
-                      <td className="table-cell">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                            <span className="text-blue-600 font-medium text-sm">
-                              {task.assignee_name.charAt(0).toUpperCase()}
-                            </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTaskClick(task);
+                          }}
+                          className="ml-2 p-2 text-gray-400 hover:text-blue-600"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      </div>
+
+                      {/* Task Meta */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Client:</span>
+                          <span className="text-sm font-medium text-gray-900">{task.client_name}</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Category:</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {task.category}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Assignee:</span>
+                          <div className="flex items-center">
+                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                              <span className="text-blue-600 font-medium text-xs">
+                                {task.assignee_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">{task.assignee_name}</span>
                           </div>
-                          <div>{task.assignee_name}</div>
                         </div>
-                      </td>
-                      <td className="table-cell">
-                        <span className={`badge ${status.class}`}>
-                          {status.label}
-                        </span>
-                      </td>
-                      <td className="table-cell">
-                        <span className={`badge ${priority.class}`}>
-                          {priority.label}
-                        </span>
-                      </td>
-                      <td className="table-cell text-gray-600">
-                        {formatDate(task.due_date)}
-                      </td>
-                      <td className="table-cell">
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Due Date:</span>
+                          <span className="text-sm text-gray-900">{formatDate(task.due_date)}</span>
+                        </div>
+                      </div>
+
+                      {/* Status and Priority */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className={`badge ${status.class}`}>
+                            {status.label}
+                          </span>
+                          <span className={`badge ${priority.class}`}>
+                            {priority.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Status Update */}
+                      <div className="pt-2" onClick={(e) => e.stopPropagation()}>
                         <select
                           value={task.status}
                           onChange={(e) => handleStatusChange(task.id, e.target.value)}
                           disabled={updating[task.id] || task.status === 'completed'}
-                          className={`text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                          className={`w-full text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                             task.status === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''
                           }`}
-                          data-testid={`status-select-${task.id}`}
+                          style={{ minHeight: '44px' }}
+                          data-testid={`mobile-status-select-${task.id}`}
                         >
                           <option value="pending">Pending</option>
                           <option value="on_hold">On Hold</option>
@@ -282,17 +398,18 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
                           <option value="overdue">Overdue</option>
                         </select>
                         {updating[task.id] && (
-                          <div className="ml-2 inline-block">
+                          <div className="flex items-center justify-center mt-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                           </div>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
         )}
       </div>
 
