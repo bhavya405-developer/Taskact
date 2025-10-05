@@ -1,4 +1,36 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
   <rect width="32" height="32" rx="8" fill="#2563EB"/>
-  <text x="16" y="22" font-family="Inter, sans-serif" font-weight="700" font-size="14" fill="white" text-anchor="middle">TA</text>
+  
+  <!-- TaskAct icon - inspired by the uploaded logo -->
+  <g transform="translate(16,16)">
+    <!-- Central power button circle -->
+    <circle cx="0" cy="0" r="4" fill="none" stroke="white" stroke-width="1.5"/>
+    <!-- Central vertical line -->
+    <line x1="0" y1="-2" x2="0" y2="2" stroke="white" stroke-width="1.5"/>
+    
+    <!-- Outer connecting nodes -->
+    <circle cx="-8" cy="0" r="1.5" fill="white"/>
+    <circle cx="8" cy="0" r="1.5" fill="white"/>
+    <circle cx="0" cy="-8" r="1.5" fill="white"/>
+    <circle cx="0" cy="8" r="1.5" fill="white"/>
+    
+    <!-- Connecting lines -->
+    <line x1="-4" y1="0" x2="-6.5" y2="0" stroke="white" stroke-width="1" opacity="0.8"/>
+    <line x1="4" y1="0" x2="6.5" y2="0" stroke="white" stroke-width="1" opacity="0.8"/>
+    <line x1="0" y1="-4" x2="0" y2="-6.5" stroke="white" stroke-width="1" opacity="0.8"/>
+    <line x1="0" y1="4" x2="0" y2="6.5" stroke="white" stroke-width="1" opacity="0.8"/>
+    
+    <!-- Diagonal nodes -->
+    <circle cx="-5.7" cy="-5.7" r="1" fill="white" opacity="0.7"/>
+    <circle cx="5.7" cy="-5.7" r="1" fill="white" opacity="0.7"/>
+    <circle cx="-5.7" cy="5.7" r="1" fill="white" opacity="0.7"/>
+    <circle cx="5.7" cy="5.7" r="1" fill="white" opacity="0.7"/>
+    
+    <!-- Diagonal connecting lines -->
+    <line x1="-2.8" y1="-2.8" x2="-4.7" y2="-4.7" stroke="white" stroke-width="0.8" opacity="0.6"/>
+    <line x1="2.8" y1="-2.8" x2="4.7" y2="-4.7" stroke="white" stroke-width="0.8" opacity="0.6"/>
+    <line x1="-2.8" y1="2.8" x2="-4.7" y2="4.7" stroke="white" stroke-width="0.8" opacity="0.6"/>
+    <line x1="2.8" y1="2.8" x2="4.7" y2="4.7" stroke="white" stroke-width="0.8" opacity="0.6"/>
+  </g>
 </svg>
