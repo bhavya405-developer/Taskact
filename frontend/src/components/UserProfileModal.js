@@ -283,7 +283,6 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
                       onChange={handleChange}
                       className="form-input"
                       data-testid="name-input"
-                      required
                     />
                   </div>
                   <div>
