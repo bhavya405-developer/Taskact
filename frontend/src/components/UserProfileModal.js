@@ -117,7 +117,19 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
       onClose();
     } catch (error) {
       console.error('Error saving user:', error);
-      alert(error.response?.data?.detail || 'Failed to save user profile');
+      
+      // Better error message handling
+      let errorMessage = 'Failed to save user profile';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
