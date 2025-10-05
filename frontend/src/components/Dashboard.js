@@ -283,64 +283,8 @@ const Dashboard = ({ users, tasks }) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Tasks */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900" data-testid="recent-tasks-title">
-              Recent Tasks
-            </h3>
-          </div>
-          <div className="p-6">
-            {recent_tasks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No recent tasks found</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recent_tasks.map((task) => {
-                  const status = getStatusDisplay(task.status);
-                  const priority = getPriorityDisplay(task.priority);
-                  
-                  return (
-                    <div 
-                      key={task.id} 
-                      className="border border-gray-200 rounded-lg p-4 card-hover cursor-pointer" 
-                      onClick={() => handleTaskClick(task)}
-                      data-testid={`recent-task-${task.id}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{task.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {task.client_name ? `Client: ${task.client_name} • ` : ''}Assigned to: {task.assignee_name}
-                          </p>
-                          <div className="flex items-center space-x-2 mt-2">
-                            <span className={`badge ${status.class}`}>
-                              {status.label}
-                            </span>
-                            <span className={`badge ${priority.class}`}>
-                              {priority.label}
-                            </span>
-                            {task.category && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                {task.category}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {formatDate(task.created_at)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
+      {/* Team Performance Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
         {/* Team Performance */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
