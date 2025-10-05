@@ -8,7 +8,7 @@ import {
   CheckCircle, 
   AlertCircle, 
   Calendar,
-  TrendingUp,
+  Pause,
   Users,
   Building2
 } from 'lucide-react';
