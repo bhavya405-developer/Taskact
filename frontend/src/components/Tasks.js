@@ -9,11 +9,14 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Tasks = ({ tasks, users, onTaskUpdate }) => {
+  const { isPartner } = useAuth();
   const [filter, setFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [clientFilter, setClientFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [updating, setUpdating] = useState({});
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showTaskDetail, setShowTaskDetail] = useState(false);
 
   const getStatusDisplay = (status) => {
     const statusConfig = {
