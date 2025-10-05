@@ -330,10 +330,15 @@ async def get_tasks(
     return [Task(**parse_from_mongo(task)) for task in tasks]
 
 @api_router.get("/tasks/{task_id}", response_model=Task)
-async def get_task(task_id: str):
+async def get_task(task_id: str, current_user: UserResponse = Depends(get_current_user)):
     task = await db.tasks.find_one({"id": task_id})
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Check if user can view this task (partners can view all, others only their own)
+    if current_user.role != UserRole.PARTNER and task["assignee_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only view your own tasks")
+    
     return Task(**parse_from_mongo(task))
 
 @api_router.put("/tasks/{task_id}", response_model=Task)
