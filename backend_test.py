@@ -785,6 +785,64 @@ class TaskActTester:
         
         return False
     
+    def test_jwt_token_validation(self):
+        """Test JWT token generation and validation"""
+        print("\n=== Testing JWT Token Validation ===")
+        
+        if not self.auth_token:
+            self.log_test("JWT Token Validation", False, "Cannot test - no authentication token")
+            return False
+        
+        try:
+            # Test token format (should be 3 parts separated by dots)
+            token_parts = self.auth_token.split('.')
+            if len(token_parts) == 3:
+                self.log_test(
+                    "JWT Token Format", 
+                    True, 
+                    "JWT token has correct 3-part structure"
+                )
+            else:
+                self.log_test(
+                    "JWT Token Format", 
+                    False, 
+                    f"JWT token has {len(token_parts)} parts instead of 3"
+                )
+                return False
+            
+            # Test token validation by making authenticated request
+            response = self.session.get(f"{API_BASE_URL}/auth/me")
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                if user_data.get('id') == self.current_user.get('id'):
+                    self.log_test(
+                        "JWT Token Validation", 
+                        True, 
+                        "JWT token successfully validates and returns correct user data"
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "JWT Token Validation", 
+                        False, 
+                        "JWT token validates but returns incorrect user data"
+                    )
+            else:
+                self.log_test(
+                    "JWT Token Validation", 
+                    False, 
+                    f"JWT token validation failed with status {response.status_code}"
+                )
+        except Exception as e:
+            self.log_test(
+                "JWT Token Validation", 
+                False, 
+                f"Error in JWT token validation test: {str(e)}"
+            )
+        
+        return False
+    
     def cleanup_test_tasks(self):
         """Clean up created test tasks"""
         print("\n=== Cleaning Up Test Tasks ===")
