@@ -610,8 +610,15 @@ async def create_user(user_data: UserCreate, current_user: UserResponse = Depend
     return UserResponse(**parse_from_mongo(user_dict))
 
 @api_router.get("/users", response_model=List[UserResponse])
-async def get_users(current_user: UserResponse = Depends(get_current_user)):
-    users = await db.users.find({"active": True}).to_list(length=None)
+async def get_users(
+    current_user: UserResponse = Depends(get_current_user),
+    include_inactive: bool = False
+):
+    """Get all users. Partners can include inactive users."""
+    if include_inactive and current_user.role == UserRole.PARTNER:
+        users = await db.users.find({}).to_list(length=None)
+    else:
+        users = await db.users.find({"active": True}).to_list(length=None)
     return [UserResponse(**parse_from_mongo(user)) for user in users]
 
 @api_router.get("/users/{user_id}", response_model=UserResponse)
