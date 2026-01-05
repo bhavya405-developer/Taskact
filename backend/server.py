@@ -701,6 +701,102 @@ async def reset_user_password(
     
     return {"message": "Password updated successfully"}
 
+@api_router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Delete a user only if they have no tasks assigned (ever)"""
+    # Cannot delete yourself
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    # Check if user exists
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if user has any tasks (current or historical)
+    task_count = await db.tasks.count_documents({"assignee_id": user_id})
+    if task_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete user with {task_count} task(s). Please deactivate instead to preserve task history."
+        )
+    
+    # Delete the user permanently
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Also delete any notifications for this user
+    await db.notifications.delete_many({"user_id": user_id})
+    
+    return {"message": f"User '{user['name']}' deleted successfully"}
+
+@api_router.put("/users/{user_id}/deactivate")
+async def deactivate_user(
+    user_id: str,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Deactivate a user - they won't be able to login but task history is preserved"""
+    # Cannot deactivate yourself
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    
+    # Check if user exists
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already deactivated
+    if not user.get("active", True):
+        raise HTTPException(status_code=400, detail="User is already deactivated")
+    
+    # Deactivate the user
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"active": False}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": f"User '{user['name']}' has been deactivated. They can no longer login."}
+
+@api_router.put("/users/{user_id}/reactivate")
+async def reactivate_user(
+    user_id: str,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Reactivate a deactivated user"""
+    # Check if user exists
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already active
+    if user.get("active", True):
+        raise HTTPException(status_code=400, detail="User is already active")
+    
+    # Reactivate the user
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"active": True}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Notify the user
+    await create_notification(
+        user_id=user_id,
+        title="Account Reactivated",
+        message=f"Your account has been reactivated by {current_user.name}. You can now login again."
+    )
+    
+    return {"message": f"User '{user['name']}' has been reactivated."}
+
 # Tasks endpoints
 @api_router.post("/tasks", response_model=Task)
 async def create_task(task_data: TaskCreate, current_user: UserResponse = Depends(get_current_user)):
