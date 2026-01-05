@@ -513,7 +513,11 @@ async def forgot_password(request: ForgotPasswordRequest):
     if not email_sent:
         logger.warning(f"Failed to send OTP email to {request.email}")
     
-    return {"message": "If this email is registered, you will receive an OTP shortly"}
+    # DEV MODE: Return OTP for testing (remove in production)
+    return {
+        "message": "If this email is registered, you will receive an OTP shortly",
+        "dev_otp": otp  # Remove this line in production
+    }
 
 @api_router.post("/auth/verify-otp")
 async def verify_otp(request: VerifyOTPRequest):

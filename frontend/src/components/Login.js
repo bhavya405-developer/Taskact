@@ -46,15 +46,25 @@ const Login = () => {
     setLoading(false);
   };
 
+  // State for dev OTP display
+  const [devOtp, setDevOtp] = useState('');
+
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccessMessage('');
+    setDevOtp('');
 
     try {
-      await axios.post(`${API_URL}/api/auth/forgot-password`, { email: forgotEmail });
-      setSuccessMessage('OTP sent to your email. Please check your inbox.');
+      const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { email: forgotEmail });
+      // DEV MODE: Show OTP on screen for testing
+      if (response.data.dev_otp) {
+        setDevOtp(response.data.dev_otp);
+        setSuccessMessage(`OTP generated! (Dev Mode - OTP shown below for testing)`);
+      } else {
+        setSuccessMessage('OTP sent to your email. Please check your inbox.');
+      }
       setForgotPasswordStep(2);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to send OTP. Please try again.');
