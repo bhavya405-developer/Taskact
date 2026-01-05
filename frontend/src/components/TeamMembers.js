@@ -2,17 +2,21 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import UserProfileModal from './UserProfileModal';
 import { useAuth } from '../contexts/AuthContext';
+import { Trash2, UserX, UserCheck, Edit, AlertTriangle } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const TeamMembers = ({ users, tasks, onUserAdded }) => {
-  const { isPartner } = useAuth();
+  const { isPartner, user: currentUser } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null); // Track which user action is loading
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -84,6 +88,77 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
     setIsCreateMode(false);
   };
 
+  // Delete user
+  const handleDeleteUser = async (user) => {
+    setConfirmAction({
+      type: 'delete',
+      user,
+      title: 'Delete Team Member',
+      message: `Are you sure you want to permanently delete "${user.name}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      confirmClass: 'bg-red-600 hover:bg-red-700'
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Deactivate user
+  const handleDeactivateUser = async (user) => {
+    setConfirmAction({
+      type: 'deactivate',
+      user,
+      title: 'Deactivate Team Member',
+      message: `Are you sure you want to deactivate "${user.name}"? They will no longer be able to login, but their task history will be preserved.`,
+      confirmText: 'Deactivate',
+      confirmClass: 'bg-amber-600 hover:bg-amber-700'
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Reactivate user
+  const handleReactivateUser = async (user) => {
+    setConfirmAction({
+      type: 'reactivate',
+      user,
+      title: 'Reactivate Team Member',
+      message: `Are you sure you want to reactivate "${user.name}"? They will be able to login again.`,
+      confirmText: 'Reactivate',
+      confirmClass: 'bg-green-600 hover:bg-green-700'
+    });
+    setShowConfirmModal(true);
+  };
+
+  // Execute confirmed action
+  const executeAction = async () => {
+    if (!confirmAction) return;
+    
+    const { type, user } = confirmAction;
+    setActionLoading(user.id);
+    setShowConfirmModal(false);
+
+    try {
+      let response;
+      if (type === 'delete') {
+        response = await axios.delete(`${API}/users/${user.id}`);
+      } else if (type === 'deactivate') {
+        response = await axios.put(`${API}/users/${user.id}/deactivate`);
+      } else if (type === 'reactivate') {
+        response = await axios.put(`${API}/users/${user.id}/reactivate`);
+      }
+      
+      // Refresh users list
+      await onUserAdded();
+      
+      // Show success message
+      alert(response.data.message);
+    } catch (error) {
+      console.error(`Error ${type}ing user:`, error);
+      alert(error.response?.data?.detail || `Failed to ${type} user. Please try again.`);
+    } finally {
+      setActionLoading(null);
+      setConfirmAction(null);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -110,16 +185,6 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
     };
   };
 
-  const getRoleIcon = (role) => {
-    const roleIcons = {
-      partner: '👔',
-      associate: '👨‍💼',
-      junior: '👨‍💻',
-      intern: '🎓'
-    };
-    return roleIcons[role] || '👤';
-  };
-
   const getRoleColor = (role) => {
     const roleColors = {
       partner: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -132,6 +197,40 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Confirmation Modal */}
+      {showConfirmModal && confirmAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-fade-in">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">{confirmAction.title}</h3>
+            </div>
+            <p className="text-gray-600 mb-6">{confirmAction.message}</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmAction(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                data-testid="confirm-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeAction}
+                className={`px-4 py-2 text-white rounded-md transition-colors ${confirmAction.confirmClass}`}
+                data-testid="confirm-action"
+              >
+                {confirmAction.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -254,45 +353,48 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
         ) : (
           users.map(user => {
             const stats = getUserTaskStats(user.id);
+            const isCurrentUser = currentUser?.id === user.id;
+            const isInactive = user.active === false;
             
             return (
-              <div key={user.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 card-hover" data-testid={`team-member-card-${user.id}`}>
+              <div 
+                key={user.id} 
+                className={`bg-white rounded-lg shadow-sm border p-6 card-hover relative ${
+                  isInactive ? 'border-gray-300 opacity-60' : 'border-gray-200'
+                }`} 
+                data-testid={`team-member-card-${user.id}`}
+              >
+                {/* Inactive Badge */}
+                {isInactive && (
+                  <div className="absolute top-3 right-3">
+                    <span className="px-2 py-1 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">
+                      Inactive
+                    </span>
+                  </div>
+                )}
+
                 {/* Member Header */}
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 overflow-hidden">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 overflow-hidden ${
+                    isInactive ? 'bg-gray-200' : 'bg-blue-100'
+                  }`}>
                     {user.profile_picture_url ? (
                       <img src={user.profile_picture_url} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-blue-600 font-semibold text-lg">
+                      <span className={`font-semibold text-lg ${isInactive ? 'text-gray-500' : 'text-blue-600'}`}>
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                        <p className="text-sm text-gray-600">{user.email}</p>
-                        {user.phone && (
-                          <p className="text-xs text-gray-500">{user.phone}</p>
-                        )}
-                      </div>
-                      {isPartner() && (
-                        <button
-                          onClick={() => handleEditProfile(user)}
-                          className="text-gray-400 hover:text-blue-600 p-1"
-                          data-testid={`edit-profile-${user.id}`}
-                          title="Edit Profile"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-2xl">
-                    {getRoleIcon(user.role)}
+                    <h3 className={`font-semibold ${isInactive ? 'text-gray-500' : 'text-gray-900'}`}>
+                      {user.name}
+                      {isCurrentUser && <span className="text-xs text-blue-600 ml-2">(You)</span>}
+                    </h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    {user.phone && (
+                      <p className="text-xs text-gray-500">{user.phone}</p>
+                    )}
                   </div>
                 </div>
 
@@ -368,6 +470,83 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
                     </div>
                   </div>
                 </div>
+
+                {/* Action Buttons for Partners */}
+                {isPartner() && !isCurrentUser && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Edit Button */}
+                      <button
+                        onClick={() => handleEditProfile(user)}
+                        disabled={actionLoading === user.id}
+                        className="flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                        data-testid={`edit-user-${user.id}`}
+                        title="Edit Profile"
+                      >
+                        <Edit className="w-3.5 h-3.5 mr-1" />
+                        Edit
+                      </button>
+
+                      {/* Deactivate/Reactivate Button */}
+                      {isInactive ? (
+                        <button
+                          onClick={() => handleReactivateUser(user)}
+                          disabled={actionLoading === user.id}
+                          className="flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+                          data-testid={`reactivate-user-${user.id}`}
+                          title="Reactivate User"
+                        >
+                          {actionLoading === user.id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-green-700 mr-1"></div>
+                          ) : (
+                            <UserCheck className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Reactivate
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDeactivateUser(user)}
+                          disabled={actionLoading === user.id}
+                          className="flex items-center px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors"
+                          data-testid={`deactivate-user-${user.id}`}
+                          title="Deactivate User"
+                        >
+                          {actionLoading === user.id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-amber-700 mr-1"></div>
+                          ) : (
+                            <UserX className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Deactivate
+                        </button>
+                      )}
+
+                      {/* Delete Button - only if no tasks */}
+                      {stats.total === 0 && (
+                        <button
+                          onClick={() => handleDeleteUser(user)}
+                          disabled={actionLoading === user.id}
+                          className="flex items-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                          data-testid={`delete-user-${user.id}`}
+                          title="Delete User (No tasks assigned)"
+                        >
+                          {actionLoading === user.id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-red-700 mr-1"></div>
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          )}
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Info text for users with tasks */}
+                    {stats.total > 0 && !isInactive && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        User has {stats.total} task(s). Use "Deactivate" to revoke access while preserving history.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })
@@ -380,8 +559,10 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{users.length}</div>
-              <div className="text-sm text-gray-600">Total Members</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {users.filter(u => u.active !== false).length}
+              </div>
+              <div className="text-sm text-gray-600">Active Members</div>
             </div>
             <div className="p-3 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
