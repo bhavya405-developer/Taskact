@@ -32,14 +32,16 @@ const DashboardRedirect = () => {
 };
 
 const AppContent = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isPartner } = useAuth();
   const [users, setUsers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API}/users`);
+      // Partners can see inactive users for management
+      const includeInactive = isPartner ? isPartner() : false;
+      const response = await axios.get(`${API}/users${includeInactive ? '?include_inactive=true' : ''}`);
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
