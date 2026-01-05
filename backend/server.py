@@ -347,6 +347,70 @@ async def create_notification(user_id: str, title: str, message: str, task_id: s
     await db.notifications.insert_one(notification_dict)
     return notification
 
+def generate_otp(length: int = 6) -> str:
+    """Generate a random numeric OTP"""
+    return ''.join(random.choices(string.digits, k=length))
+
+async def send_otp_email(email: str, otp: str, user_name: str = "User") -> bool:
+    """Send OTP email using Resend"""
+    if not RESEND_API_KEY:
+        logger.error("RESEND_API_KEY not configured")
+        return False
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Inter', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; }}
+            .container {{ max-width: 480px; margin: 0 auto; background: white; border-radius: 8px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+            .logo {{ text-align: center; margin-bottom: 24px; }}
+            .logo h1 {{ color: #4f46e5; font-size: 28px; margin: 0; }}
+            .otp-box {{ background: #f0f9ff; border: 2px dashed #3b82f6; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0; }}
+            .otp-code {{ font-size: 36px; font-weight: bold; color: #1e40af; letter-spacing: 8px; }}
+            .message {{ color: #4b5563; line-height: 1.6; }}
+            .footer {{ text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px; }}
+            .warning {{ background: #fef3c7; border-radius: 6px; padding: 12px; margin-top: 16px; color: #92400e; font-size: 14px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="logo">
+                <h1>TaskAct</h1>
+            </div>
+            <p class="message">Hi {user_name},</p>
+            <p class="message">You requested to reset your password. Use the OTP below to proceed:</p>
+            <div class="otp-box">
+                <div class="otp-code">{otp}</div>
+            </div>
+            <p class="message">This OTP is valid for <strong>10 minutes</strong>.</p>
+            <div class="warning">
+                If you didn't request this password reset, please ignore this email or contact support if you have concerns.
+            </div>
+            <div class="footer">
+                <p>&copy; 2024 TaskAct. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [email],
+        "subject": "TaskAct - Password Reset OTP",
+        "html": html_content
+    }
+    
+    try:
+        # Run sync SDK in thread to keep FastAPI non-blocking
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"OTP email sent to {email}, email_id: {result.get('id')}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send OTP email to {email}: {str(e)}")
+        return False
+
 async def update_overdue_tasks():
     """Automatically update tasks to overdue status if past due date"""
     current_time = datetime.now(timezone.utc)
