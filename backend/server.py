@@ -204,6 +204,27 @@ class LoginResponse(BaseModel):
     token_type: str
     user: UserResponse
 
+# Forgot Password Models
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ResetPasswordWithOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+
+class OTPRecord(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    otp: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime
+    used: bool = False
+
 class Notification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
