@@ -473,6 +473,115 @@ async def login(login_data: LoginRequest):
 async def get_current_user_info(current_user: UserResponse = Depends(get_current_user)):
     return current_user
 
+# Forgot Password endpoints
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    """Send OTP to user's email for password reset"""
+    # Check if user exists
+    user = await db.users.find_one({"email": request.email})
+    if not user:
+        # Return success even if user doesn't exist (security - don't reveal user existence)
+        return {"message": "If this email is registered, you will receive an OTP shortly"}
+    
+    # Check if user is active
+    if not user.get("active", True):
+        return {"message": "If this email is registered, you will receive an OTP shortly"}
+    
+    # Generate OTP
+    otp = generate_otp(6)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    # Invalidate any existing OTPs for this email
+    await db.otp_records.update_many(
+        {"email": request.email, "used": False},
+        {"$set": {"used": True}}
+    )
+    
+    # Store OTP in database
+    otp_record = OTPRecord(
+        email=request.email,
+        otp=otp,
+        expires_at=expires_at
+    )
+    otp_dict = prepare_for_mongo(otp_record.dict())
+    await db.otp_records.insert_one(otp_dict)
+    
+    # Send OTP email
+    user_name = user.get("name", "User")
+    email_sent = await send_otp_email(request.email, otp, user_name)
+    
+    if not email_sent:
+        logger.warning(f"Failed to send OTP email to {request.email}")
+    
+    return {"message": "If this email is registered, you will receive an OTP shortly"}
+
+@api_router.post("/auth/verify-otp")
+async def verify_otp(request: VerifyOTPRequest):
+    """Verify OTP without resetting password (optional step for UI validation)"""
+    # Find valid OTP
+    otp_record = await db.otp_records.find_one({
+        "email": request.email,
+        "otp": request.otp,
+        "used": False
+    })
+    
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    
+    # Check if OTP is expired
+    expires_at = datetime.fromisoformat(otp_record["expires_at"])
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one")
+    
+    return {"message": "OTP verified successfully", "valid": True}
+
+@api_router.post("/auth/reset-password")
+async def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
+    """Reset password using OTP"""
+    # Find valid OTP
+    otp_record = await db.otp_records.find_one({
+        "email": request.email,
+        "otp": request.otp,
+        "used": False
+    })
+    
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    
+    # Check if OTP is expired
+    expires_at = datetime.fromisoformat(otp_record["expires_at"])
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one")
+    
+    # Find user
+    user = await db.users.find_one({"email": request.email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Hash new password
+    new_password_hash = get_password_hash(request.new_password)
+    
+    # Update user password
+    await db.users.update_one(
+        {"email": request.email},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    # Mark OTP as used
+    await db.otp_records.update_one(
+        {"id": otp_record["id"]},
+        {"$set": {"used": True}}
+    )
+    
+    # Create notification for user
+    await create_notification(
+        user_id=user["id"],
+        title="Password Reset Successful",
+        message="Your password has been successfully reset. If you did not make this change, please contact support immediately."
+    )
+    
+    return {"message": "Password reset successful. You can now login with your new password."}
+
 # Users endpoints
 @api_router.post("/users", response_model=UserResponse)
 async def create_user(user_data: UserCreate, current_user: UserResponse = Depends(get_current_partner)):
