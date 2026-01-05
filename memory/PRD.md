@@ -66,10 +66,11 @@ TaskAct is a comprehensive task management application designed for professional
 - [x] **Forgot Password with OTP** (Dev Mode)
 
 ### Pending Features
-- [ ] Team Member Deletion/Deactivation (P1)
-  - Delete user if no tasks assigned
-  - Deactivate user if tasks exist
-  - Block deactivated users from login
+- [x] **Team Member Deletion/Deactivation** (Completed Jan 2025)
+  - Delete user if no tasks ever assigned (permanent removal)
+  - Deactivate user if tasks exist (preserves history, blocks login)
+  - Reactivate deactivated users
+  - Confirmation modals for all actions
 - [ ] Production email delivery (requires Resend API key)
 
 ## Demo Accounts
@@ -93,10 +94,13 @@ TaskAct is a comprehensive task management application designed for professional
 - `DELETE /api/tasks/{id}` - Delete task
 
 ### Users
-- `GET /api/users` - List users
+- `GET /api/users` - List users (partners can add `?include_inactive=true`)
 - `POST /api/users` - Create user
 - `PUT /api/users/{id}` - Update user
 - `PUT /api/users/{id}/password` - Reset password (by Partner)
+- `DELETE /api/users/{id}` - Delete user (only if no tasks)
+- `PUT /api/users/{id}/deactivate` - Deactivate user
+- `PUT /api/users/{id}/reactivate` - Reactivate user
 
 ### Dashboard
 - `GET /api/dashboard` - Dashboard analytics
