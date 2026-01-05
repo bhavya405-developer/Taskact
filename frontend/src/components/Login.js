@@ -260,6 +260,15 @@ const Login = () => {
             {/* Step 2: Enter OTP */}
             {forgotPasswordStep === 2 && (
               <form onSubmit={handleVerifyOTP} className="space-y-6">
+                {/* DEV MODE: Show OTP on screen */}
+                {devOtp && (
+                  <div className="bg-yellow-50 border border-yellow-300 rounded-md p-4 mb-4">
+                    <p className="text-sm text-yellow-800 font-medium">🔧 Dev Mode - Your OTP:</p>
+                    <p className="text-3xl font-mono font-bold text-yellow-900 tracking-widest text-center mt-2">{devOtp}</p>
+                    <p className="text-xs text-yellow-700 mt-2">This is only shown for testing. In production, OTP will be sent via email.</p>
+                  </div>
+                )}
+                
                 <div>
                   <label htmlFor="otp" className="form-label">
                     Enter OTP
