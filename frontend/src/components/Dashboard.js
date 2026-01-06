@@ -196,18 +196,21 @@ const Dashboard = ({ users, tasks }) => {
             <div className="flex items-center">
               <Clock size={20} className="text-yellow-600 mr-2" />
               <h3 className="text-lg font-semibold text-yellow-900" data-testid="pending-tasks-title">
-                Pending Tasks ({pending_tasks.length})
+                Pending Tasks ({pending_task_list.length})
               </h3>
             </div>
+            {isPartner() && (
+              <p className="text-xs text-yellow-700 mt-1">Showing all team members • Next 30 days</p>
+            )}
           </div>
           <div className="p-6">
-            {pending_tasks.length === 0 ? (
+            {pending_task_list.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p>No pending tasks</p>
+                <p>No pending tasks for next 30 days</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {pending_tasks.map((task) => {
+                {pending_task_list.map((task) => {
                   const priority = getPriorityDisplay(task.priority);
                   
                   return (
