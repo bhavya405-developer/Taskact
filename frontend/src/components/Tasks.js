@@ -192,13 +192,176 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Bulk Import Tasks</h3>
+              <button
+                onClick={closeImportModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {!importResult ? (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <FileSpreadsheet className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">Upload Excel or CSV file</p>
+                  <p className="text-xs text-gray-500 mb-4">Supported formats: .xlsx, .xls, .csv</p>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImportTasks}
+                    accept=".xlsx,.xls,.csv"
+                    className="hidden"
+                    id="task-file-input"
+                    data-testid="task-file-input"
+                  />
+                  
+                  <label
+                    htmlFor="task-file-input"
+                    className={`btn-primary cursor-pointer inline-flex items-center ${importing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {importing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Select File
+                      </>
+                    )}
+                  </label>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 font-medium mb-2">Need a template?</p>
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                    data-testid="download-template-modal"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Download Task Template
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Import Results */}
+                <div className={`p-4 rounded-lg ${importResult.success_count > 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <div className="flex items-center mb-2">
+                    {importResult.success_count > 0 ? (
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+                    )}
+                    <span className="font-medium">
+                      {importResult.success_count} task(s) imported successfully
+                    </span>
+                  </div>
+                  {importResult.error_count > 0 && (
+                    <p className="text-sm text-red-600">
+                      {importResult.error_count} error(s) occurred
+                    </p>
+                  )}
+                </div>
+
+                {/* Created Items */}
+                {importResult.created_items.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Created Tasks:</p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {importResult.created_items.map((item, index) => (
+                        <li key={index} className="flex items-center">
+                          <CheckCircle className="w-3 h-3 text-green-500 mr-2" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Errors */}
+                {importResult.errors.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto bg-red-50 rounded-lg p-3">
+                    <p className="text-sm font-medium text-red-700 mb-2">Errors:</p>
+                    <ul className="text-sm text-red-600 space-y-1">
+                      {importResult.errors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <button
+                  onClick={closeImportModal}
+                  className="w-full btn-primary"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Tasks</h2>
           <p className="mt-2 text-gray-600">Manage and track all team tasks</p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
+          {/* Partner-only bulk actions */}
+          {isPartner() && (
+            <>
+              <button
+                onClick={handleDownloadTemplate}
+                className="btn-secondary flex items-center text-sm"
+                data-testid="download-template-btn"
+                title="Download Task Template"
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Template</span>
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="btn-secondary flex items-center text-sm"
+                data-testid="import-tasks-btn"
+                title="Import Tasks"
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Import</span>
+              </button>
+              <button
+                onClick={handleExportTasks}
+                disabled={exporting || tasks.length === 0}
+                className="btn-secondary flex items-center text-sm"
+                data-testid="export-tasks-btn"
+                title="Export All Tasks"
+              >
+                {exporting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-1"></div>
+                    <span className="hidden sm:inline">Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-1" />
+                    <span className="hidden sm:inline">Export</span>
+                  </>
+                )}
+              </button>
+            </>
+          )}
           <Link
             to="/create-task"
             className="btn-primary"
