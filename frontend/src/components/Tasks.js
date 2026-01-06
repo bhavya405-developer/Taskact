@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye } from 'lucide-react';
+import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -17,6 +17,13 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const [updating, setUpdating] = useState({});
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  
+  // Bulk import/export states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileInputRef = useRef(null);
 
   const getStatusDisplay = (status) => {
     const statusConfig = {
@@ -79,6 +86,96 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const handleCloseTaskDetail = () => {
     setSelectedTask(null);
     setShowTaskDetail(false);
+  };
+
+  // Download template
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axios.get(`${API}/tasks/download-template`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'tasks_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      alert('Failed to download template. Please try again.');
+    }
+  };
+
+  // Export tasks
+  const handleExportTasks = async () => {
+    setExporting(true);
+    try {
+      const response = await axios.get(`${API}/tasks/export`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toISOString().split('T')[0];
+      link.setAttribute('download', `tasks_export_${today}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting tasks:', error);
+      alert(error.response?.data?.detail || 'Failed to export tasks. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Import tasks
+  const handleImportTasks = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportResult(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post(`${API}/tasks/bulk-import`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      setImportResult(response.data);
+      
+      // Refresh tasks list
+      await onTaskUpdate();
+    } catch (error) {
+      console.error('Error importing tasks:', error);
+      setImportResult({
+        success_count: 0,
+        error_count: 1,
+        errors: [error.response?.data?.detail || 'Failed to import tasks'],
+        created_items: []
+      });
+    } finally {
+      setImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const closeImportModal = () => {
+    setShowImportModal(false);
+    setImportResult(null);
   };
 
   const filteredTasks = tasks.filter(task => {
