@@ -1788,13 +1788,17 @@ async def bulk_import_clients(
         else:
             df = pd.read_excel(io.BytesIO(content), sheet_name='Clients')
         
-        # Validate required columns
-        required_columns = ['Name']
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
+        # Check for Name column (with or without *)
+        name_column = None
+        for col in df.columns:
+            if col.strip().lower().replace('*', '').strip() == 'name':
+                name_column = col
+                break
+        
+        if not name_column:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Missing required columns: {', '.join(missing_columns)}"
+                detail="Missing required column: 'Name' (or 'Name *')"
             )
         
         success_count = 0
@@ -1806,10 +1810,10 @@ async def bulk_import_clients(
         for index, row in df.iterrows():
             try:
                 # Skip empty rows
-                if pd.isna(row['Name']) or row['Name'].strip() == '':
+                if pd.isna(row[name_column]) or str(row[name_column]).strip() == '':
                     continue
                 
-                client_name = row['Name'].strip()
+                client_name = str(row[name_column]).strip()
                 
                 # Check if client already exists
                 existing = await db.clients.find_one({"name": client_name, "active": True})
@@ -1818,23 +1822,28 @@ async def bulk_import_clients(
                     error_count += 1
                     continue
                 
-                # Create client
-                client_data = {
-                    "name": client_name,
-                    "company_type": row.get('Company Type', '').strip() if pd.notna(row.get('Company Type')) else None,
-                    "industry": row.get('Industry', '').strip() if pd.notna(row.get('Industry')) else None,
-                    "contact_person": row.get('Contact Person', '').strip() if pd.notna(row.get('Contact Person')) else None,
-                    "email": row.get('Email', '').strip() if pd.notna(row.get('Email')) else None,
-                    "phone": row.get('Phone', '').strip() if pd.notna(row.get('Phone')) else None,
-                    "address": row.get('Address', '').strip() if pd.notna(row.get('Address')) else None,
-                    "notes": row.get('Notes', '').strip() if pd.notna(row.get('Notes')) else None
-                }
+                # Helper function to get optional field value
+                def get_optional(field_name):
+                    value = row.get(field_name)
+                    if pd.isna(value) or str(value).strip() == '':
+                        return None
+                    return str(value).strip()
                 
-                client_dict = client_data.copy()
-                client_dict["id"] = str(uuid.uuid4())
-                client_dict["created_by"] = current_user.id
-                client_dict["created_at"] = datetime.now(timezone.utc)
-                client_dict["active"] = True
+                # Create client - only Name is required
+                client_dict = {
+                    "id": str(uuid.uuid4()),
+                    "name": client_name,
+                    "company_type": get_optional('Company Type'),
+                    "industry": get_optional('Industry'),
+                    "contact_person": get_optional('Contact Person'),
+                    "email": get_optional('Email'),
+                    "phone": get_optional('Phone'),
+                    "address": get_optional('Address'),
+                    "notes": get_optional('Notes'),
+                    "created_by": current_user.id,
+                    "created_at": datetime.now(timezone.utc),
+                    "active": True
+                }
                 
                 client_dict = prepare_for_mongo(client_dict)
                 await db.clients.insert_one(client_dict)
