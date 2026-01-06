@@ -1902,8 +1902,26 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     completed_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.COMPLETED})
     overdue_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.OVERDUE})
     
-    # Get recent tasks
-    recent_tasks = await db.tasks.find(task_query).sort("created_at", -1).limit(5).to_list(length=None)
+    # Get overdue tasks (all for partners, own for others)
+    overdue_tasks = await db.tasks.find({**task_query, "status": TaskStatus.OVERDUE}).sort("due_date", 1).to_list(length=None)
+    
+    # Get pending tasks for next 30 days
+    today = datetime.now(timezone.utc)
+    thirty_days_later = today + timedelta(days=30)
+    
+    pending_query = {
+        **task_query,
+        "status": TaskStatus.PENDING,
+        "$or": [
+            {"due_date": {"$lte": thirty_days_later.isoformat(), "$gte": today.isoformat()}},
+            {"due_date": None},  # Include tasks without due date
+            {"due_date": {"$exists": False}}
+        ]
+    }
+    pending_tasks = await db.tasks.find(pending_query).sort("due_date", 1).to_list(length=None)
+    
+    # For backward compatibility, also include recent_tasks
+    recent_tasks = overdue_tasks + pending_tasks
     
     # Get team performance
     users = await db.users.find({"active": True}).to_list(length=None)
@@ -1956,6 +1974,8 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
             "total": pending_count + on_hold_count + completed_count + overdue_count
         },
         "recent_tasks": [Task(**parse_from_mongo(task)) for task in recent_tasks],
+        "overdue_tasks": [Task(**parse_from_mongo(task)) for task in overdue_tasks],
+        "pending_tasks_30days": [Task(**parse_from_mongo(task)) for task in pending_tasks],
         "team_stats": team_stats,
         "client_stats": sorted(client_stats, key=lambda x: x["total_tasks"], reverse=True),
         "category_stats": sorted(category_stats, key=lambda x: x["task_count"], reverse=True)
