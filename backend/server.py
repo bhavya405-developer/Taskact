@@ -947,7 +947,7 @@ async def bulk_import_tasks(
             df = pd.read_excel(io.BytesIO(content), sheet_name='Tasks')
         
         # Validate required columns
-        required_columns = ['Title', 'Client Name', 'Category', 'Assignee Email', 'Priority']
+        required_columns = ['Title', 'Client Name', 'Category', 'Assignee Name', 'Priority']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             raise HTTPException(
@@ -955,9 +955,9 @@ async def bulk_import_tasks(
                 detail=f"Missing required columns: {', '.join(missing_columns)}"
             )
         
-        # Get all users for email lookup
+        # Get all users for name lookup
         users = await db.users.find({"active": True}).to_list(length=None)
-        email_to_user = {u['email'].lower(): u for u in users}
+        name_to_user = {u['name'].lower(): u for u in users}
         
         # Get all clients and categories for validation
         clients = await db.clients.find({"active": True}).to_list(length=None)
@@ -983,13 +983,13 @@ async def bulk_import_tasks(
                 
                 title = str(row['Title']).strip()
                 
-                # Validate and get assignee
-                assignee_email = str(row['Assignee Email']).strip().lower()
-                if assignee_email not in email_to_user:
-                    errors.append(f"Row {index + 2}: Assignee email '{row['Assignee Email']}' not found")
+                # Validate and get assignee by name
+                assignee_name = str(row['Assignee Name']).strip().lower()
+                if assignee_name not in name_to_user:
+                    errors.append(f"Row {index + 2}: Assignee name '{row['Assignee Name']}' not found")
                     error_count += 1
                     continue
-                assignee = email_to_user[assignee_email]
+                assignee = name_to_user[assignee_name]
                 
                 # Validate client
                 client_name = str(row['Client Name']).strip()
@@ -1014,17 +1014,20 @@ async def bulk_import_tasks(
                     error_count += 1
                     continue
                 
-                # Parse due date if provided
+                # Parse due date if provided (DD-MMM-YYYY format like 15-Jan-2025)
                 due_date = None
                 if 'Due Date' in row and pd.notna(row['Due Date']):
                     try:
-                        if isinstance(row['Due Date'], str):
-                            due_date = datetime.strptime(row['Due Date'].strip(), '%Y-%m-%d')
-                        else:
+                        date_str = str(row['Due Date']).strip()
+                        # Try DD-MMM-YYYY format first (e.g., 15-Jan-2025)
+                        try:
+                            due_date = datetime.strptime(date_str, '%d-%b-%Y')
+                        except ValueError:
+                            # Fallback: try pandas date parsing for Excel date values
                             due_date = pd.to_datetime(row['Due Date'])
                         due_date = due_date.replace(tzinfo=timezone.utc)
                     except Exception as e:
-                        errors.append(f"Row {index + 2}: Invalid date format '{row['Due Date']}'. Use YYYY-MM-DD")
+                        errors.append(f"Row {index + 2}: Invalid date format '{row['Due Date']}'. Use DD-MMM-YYYY (e.g., 15-Jan-2025)")
                         error_count += 1
                         continue
                 
