@@ -463,18 +463,18 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
         ) : (
           <>
             {/* Desktop Table View - Hidden on Mobile */}
-            <div className="hidden md:block overflow-hidden">
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="table-header">Task</th>
-                    <th className="table-header">Client</th>
-                    <th className="table-header">Category</th>
-                    <th className="table-header">Assignee</th>
-                    <th className="table-header">Status</th>
-                    <th className="table-header">Priority</th>
-                    <th className="table-header">Due Date</th>
-                    <th className="table-header">Actions</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Task</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Client</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Category</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Assignee</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Status</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Priority</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Due Date</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -489,56 +489,55 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
                         data-testid={`task-row-${task.id}`}
                         onClick={() => handleTaskClick(task)}
                       >
-                        <td className="table-cell">
-                          <div>
-                            <div className="font-medium text-gray-900">{task.title}</div>
+                        <td className="px-3 py-2 text-sm">
+                          <div className="max-w-[180px]">
+                            <div className="font-medium text-gray-900 truncate" title={task.title}>{task.title}</div>
                             {task.description && (
-                              <div className="text-sm text-gray-600 mt-1">
-                                {task.description.length > 40 
-                                  ? `${task.description.substring(0, 40)}...`
-                                  : task.description
-                                }
+                              <div className="text-xs text-gray-500 truncate" title={task.description}>
+                                {task.description}
                               </div>
                             )}
                           </div>
                         </td>
-                        <td className="table-cell">
-                          <div className="font-medium text-gray-900">{task.client_name}</div>
+                        <td className="px-2 py-2 text-sm">
+                          <div className="max-w-[120px] truncate font-medium text-gray-900" title={task.client_name}>
+                            {task.client_name}
+                          </div>
                         </td>
-                        <td className="table-cell">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <td className="px-2 py-2 text-sm">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 whitespace-nowrap">
                             {task.category}
                           </span>
                         </td>
-                        <td className="table-cell">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                              <span className="text-blue-600 font-medium text-sm">
+                        <td className="px-2 py-2 text-sm">
+                          <div className="flex items-center max-w-[120px]">
+                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-1.5 flex-shrink-0">
+                              <span className="text-blue-600 font-medium text-xs">
                                 {task.assignee_name.charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <div>{task.assignee_name}</div>
+                            <span className="truncate text-sm" title={task.assignee_name}>{task.assignee_name}</span>
                           </div>
                         </td>
-                        <td className="table-cell">
-                          <span className={`badge ${status.class}`}>
+                        <td className="px-2 py-2 text-sm">
+                          <span className={`badge text-xs px-1.5 py-0.5 ${status.class}`}>
                             {status.label}
                           </span>
                         </td>
-                        <td className="table-cell">
-                          <span className={`badge ${priority.class}`}>
+                        <td className="px-2 py-2 text-sm">
+                          <span className={`badge text-xs px-1.5 py-0.5 ${priority.class}`}>
                             {priority.label}
                           </span>
                         </td>
-                        <td className="table-cell text-gray-600">
+                        <td className="px-2 py-2 text-sm text-gray-600 whitespace-nowrap">
                           {formatDate(task.due_date)}
                         </td>
-                        <td className="table-cell" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-2 py-2 text-sm" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={task.status}
                             onChange={(e) => handleStatusChange(task.id, e.target.value)}
                             disabled={updating[task.id] || task.status === 'completed'}
-                            className={`text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                            className={`text-xs border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                               task.status === 'completed' ? 'bg-gray-100 cursor-not-allowed' : ''
                             }`}
                             data-testid={`status-select-${task.id}`}
