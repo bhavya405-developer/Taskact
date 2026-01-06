@@ -805,6 +805,378 @@ async def reactivate_user(
     return {"message": f"User '{user['name']}' has been reactivated."}
 
 # Tasks endpoints
+
+# Task Template and Bulk Import/Export endpoints (Partners only) - Must come before parameterized routes
+@api_router.get("/tasks/download-template")
+async def download_tasks_template(current_user: UserResponse = Depends(get_current_partner)):
+    """Download Excel template for bulk task import"""
+    
+    # Get active users, clients, and categories for reference
+    users = await db.users.find({"active": True}).to_list(length=None)
+    clients = await db.clients.find({"active": True}).to_list(length=None)
+    categories = await db.categories.find({"active": True}).to_list(length=None)
+    
+    # Create sample data with headers
+    template_data = {
+        'Title': ['Review Contract for ABC Corp', 'Prepare Tax Filing', 'Client Meeting Follow-up'],
+        'Description': [
+            'Review and analyze the contract terms',
+            'Prepare quarterly tax filing documents',
+            'Follow up on action items from client meeting'
+        ],
+        'Client Name': [clients[0]['name'] if clients else 'Sample Client', 
+                       clients[1]['name'] if len(clients) > 1 else 'Sample Client',
+                       clients[0]['name'] if clients else 'Sample Client'],
+        'Category': [categories[0]['name'] if categories else 'General',
+                    categories[1]['name'] if len(categories) > 1 else 'General',
+                    categories[0]['name'] if categories else 'General'],
+        'Assignee Email': [users[1]['email'] if len(users) > 1 else users[0]['email'],
+                          users[2]['email'] if len(users) > 2 else users[0]['email'],
+                          users[1]['email'] if len(users) > 1 else users[0]['email']],
+        'Priority': ['high', 'medium', 'low'],
+        'Due Date': [
+            (datetime.now(timezone.utc) + timedelta(days=7)).strftime('%Y-%m-%d'),
+            (datetime.now(timezone.utc) + timedelta(days=14)).strftime('%Y-%m-%d'),
+            (datetime.now(timezone.utc) + timedelta(days=3)).strftime('%Y-%m-%d')
+        ]
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Write data
+        df.to_excel(writer, sheet_name='Tasks', index=False)
+        
+        # Get workbook and worksheet for formatting
+        workbook = writer.book
+        worksheet = writer.sheets['Tasks']
+        
+        # Add formatting
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#3B82F6',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        # Format headers
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        
+        # Set column widths
+        worksheet.set_column('A:A', 35)  # Title
+        worksheet.set_column('B:B', 45)  # Description
+        worksheet.set_column('C:C', 25)  # Client Name
+        worksheet.set_column('D:D', 20)  # Category
+        worksheet.set_column('E:E', 30)  # Assignee Email
+        worksheet.set_column('F:F', 12)  # Priority
+        worksheet.set_column('G:G', 15)  # Due Date
+        
+        # Add reference sheets
+        # Users reference
+        users_data = {'Name': [u['name'] for u in users], 'Email': [u['email'] for u in users], 'Role': [u['role'] for u in users]}
+        users_df = pd.DataFrame(users_data)
+        users_df.to_excel(writer, sheet_name='Team Members (Reference)', index=False)
+        
+        # Clients reference
+        if clients:
+            clients_data = {'Client Name': [c['name'] for c in clients]}
+            clients_df = pd.DataFrame(clients_data)
+            clients_df.to_excel(writer, sheet_name='Clients (Reference)', index=False)
+        
+        # Categories reference
+        if categories:
+            categories_data = {'Category Name': [c['name'] for c in categories]}
+            categories_df = pd.DataFrame(categories_data)
+            categories_df.to_excel(writer, sheet_name='Categories (Reference)', index=False)
+        
+        # Add instructions sheet
+        instructions_data = {
+            'Instructions': [
+                '1. Fill in the task information in the "Tasks" sheet',
+                '2. Title: Required - Task title/name',
+                '3. Description: Optional - Detailed task description',
+                '4. Client Name: Required - Must match existing client name exactly',
+                '5. Category: Required - Must match existing category name exactly',
+                '6. Assignee Email: Required - Email of team member to assign task',
+                '7. Priority: Required - Must be: low, medium, high, or urgent',
+                '8. Due Date: Optional - Format: YYYY-MM-DD (e.g., 2025-01-15)',
+                '',
+                'Reference sheets are provided for:',
+                '- Team Members: List of all active users with their emails',
+                '- Clients: List of all active clients',
+                '- Categories: List of all active categories',
+                '',
+                'Notes:',
+                '- All tasks will be created with "pending" status',
+                '- Creator will be set to the partner uploading the file',
+                '- Save the file and upload it back to import tasks'
+            ]
+        }
+        instructions_df = pd.DataFrame(instructions_data)
+        instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": "attachment; filename=tasks_template.xlsx"}
+    )
+
+@api_router.post("/tasks/bulk-import", response_model=BulkImportResult)
+async def bulk_import_tasks(
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Bulk import tasks from Excel/CSV file"""
+    
+    if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
+        raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Parse file based on extension
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(content.decode('utf-8')))
+        else:
+            df = pd.read_excel(io.BytesIO(content), sheet_name='Tasks')
+        
+        # Validate required columns
+        required_columns = ['Title', 'Client Name', 'Category', 'Assignee Email', 'Priority']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing required columns: {', '.join(missing_columns)}"
+            )
+        
+        # Get all users for email lookup
+        users = await db.users.find({"active": True}).to_list(length=None)
+        email_to_user = {u['email'].lower(): u for u in users}
+        
+        # Get all clients and categories for validation
+        clients = await db.clients.find({"active": True}).to_list(length=None)
+        client_names = {c['name'].lower(): c['name'] for c in clients}
+        
+        categories = await db.categories.find({"active": True}).to_list(length=None)
+        category_names = {c['name'].lower(): c['name'] for c in categories}
+        
+        success_count = 0
+        error_count = 0
+        errors = []
+        created_items = []
+        
+        # Valid priorities
+        valid_priorities = ['low', 'medium', 'high', 'urgent']
+        
+        # Process each row
+        for index, row in df.iterrows():
+            try:
+                # Skip empty rows
+                if pd.isna(row['Title']) or str(row['Title']).strip() == '':
+                    continue
+                
+                title = str(row['Title']).strip()
+                
+                # Validate and get assignee
+                assignee_email = str(row['Assignee Email']).strip().lower()
+                if assignee_email not in email_to_user:
+                    errors.append(f"Row {index + 2}: Assignee email '{row['Assignee Email']}' not found")
+                    error_count += 1
+                    continue
+                assignee = email_to_user[assignee_email]
+                
+                # Validate client
+                client_name = str(row['Client Name']).strip()
+                if client_name.lower() not in client_names:
+                    errors.append(f"Row {index + 2}: Client '{client_name}' not found")
+                    error_count += 1
+                    continue
+                actual_client_name = client_names[client_name.lower()]
+                
+                # Validate category
+                category = str(row['Category']).strip()
+                if category.lower() not in category_names:
+                    errors.append(f"Row {index + 2}: Category '{category}' not found")
+                    error_count += 1
+                    continue
+                actual_category = category_names[category.lower()]
+                
+                # Validate priority
+                priority = str(row['Priority']).strip().lower()
+                if priority not in valid_priorities:
+                    errors.append(f"Row {index + 2}: Invalid priority '{row['Priority']}'. Must be: low, medium, high, or urgent")
+                    error_count += 1
+                    continue
+                
+                # Parse due date if provided
+                due_date = None
+                if 'Due Date' in row and pd.notna(row['Due Date']):
+                    try:
+                        if isinstance(row['Due Date'], str):
+                            due_date = datetime.strptime(row['Due Date'].strip(), '%Y-%m-%d')
+                        else:
+                            due_date = pd.to_datetime(row['Due Date'])
+                        due_date = due_date.replace(tzinfo=timezone.utc)
+                    except Exception as e:
+                        errors.append(f"Row {index + 2}: Invalid date format '{row['Due Date']}'. Use YYYY-MM-DD")
+                        error_count += 1
+                        continue
+                
+                # Create task
+                task_dict = {
+                    "id": str(uuid.uuid4()),
+                    "title": title,
+                    "description": str(row.get('Description', '')).strip() if pd.notna(row.get('Description')) else None,
+                    "client_name": actual_client_name,
+                    "category": actual_category,
+                    "assignee_id": assignee['id'],
+                    "assignee_name": assignee['name'],
+                    "creator_id": current_user.id,
+                    "creator_name": current_user.name,
+                    "status": TaskStatus.PENDING,
+                    "priority": priority,
+                    "due_date": due_date.isoformat() if due_date else None,
+                    "created_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
+                    "completed_at": None
+                }
+                
+                task_dict = prepare_for_mongo(task_dict)
+                await db.tasks.insert_one(task_dict)
+                
+                # Create notification for assignee
+                if assignee['id'] != current_user.id:
+                    await create_notification(
+                        user_id=assignee['id'],
+                        title="New Task Assigned",
+                        message=f"You have been assigned a new task: {title}",
+                        task_id=task_dict['id']
+                    )
+                
+                success_count += 1
+                created_items.append(title)
+                
+            except Exception as e:
+                error_count += 1
+                errors.append(f"Row {index + 2}: {str(e)}")
+        
+        return BulkImportResult(
+            success_count=success_count,
+            error_count=error_count,
+            errors=errors,
+            created_items=created_items
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
+
+@api_router.get("/tasks/export")
+async def export_tasks(current_user: UserResponse = Depends(get_current_partner)):
+    """Export all tasks to Excel file"""
+    
+    # Update overdue tasks before export
+    await update_overdue_tasks()
+    
+    # Get all tasks
+    tasks = await db.tasks.find({}).sort("created_at", -1).to_list(length=None)
+    
+    if not tasks:
+        raise HTTPException(status_code=404, detail="No tasks found to export")
+    
+    # Prepare data for export
+    export_data = []
+    for task in tasks:
+        export_data.append({
+            'Task ID': task['id'],
+            'Title': task['title'],
+            'Description': task.get('description', ''),
+            'Client Name': task.get('client_name', ''),
+            'Category': task.get('category', ''),
+            'Assignee': task.get('assignee_name', ''),
+            'Creator': task.get('creator_name', ''),
+            'Status': task.get('status', ''),
+            'Priority': task.get('priority', ''),
+            'Due Date': task.get('due_date', '')[:10] if task.get('due_date') else '',
+            'Created At': task.get('created_at', '')[:10] if task.get('created_at') else '',
+            'Updated At': task.get('updated_at', '')[:10] if task.get('updated_at') else '',
+            'Completed At': task.get('completed_at', '')[:10] if task.get('completed_at') else ''
+        })
+    
+    df = pd.DataFrame(export_data)
+    
+    # Create Excel file in memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='All Tasks', index=False)
+        
+        workbook = writer.book
+        worksheet = writer.sheets['All Tasks']
+        
+        # Add formatting
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#3B82F6',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        # Format headers
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+        
+        # Set column widths
+        worksheet.set_column('A:A', 36)  # Task ID
+        worksheet.set_column('B:B', 35)  # Title
+        worksheet.set_column('C:C', 45)  # Description
+        worksheet.set_column('D:D', 25)  # Client Name
+        worksheet.set_column('E:E', 20)  # Category
+        worksheet.set_column('F:F', 20)  # Assignee
+        worksheet.set_column('G:G', 20)  # Creator
+        worksheet.set_column('H:H', 12)  # Status
+        worksheet.set_column('I:I', 10)  # Priority
+        worksheet.set_column('J:M', 12)  # Dates
+        
+        # Add summary sheet
+        status_counts = df['Status'].value_counts().to_dict()
+        priority_counts = df['Priority'].value_counts().to_dict()
+        
+        summary_data = {
+            'Metric': ['Total Tasks', 'Pending', 'On Hold', 'Overdue', 'Completed', '', 
+                      'Low Priority', 'Medium Priority', 'High Priority', 'Urgent'],
+            'Count': [
+                len(tasks),
+                status_counts.get('pending', 0),
+                status_counts.get('on_hold', 0),
+                status_counts.get('overdue', 0),
+                status_counts.get('completed', 0),
+                '',
+                priority_counts.get('low', 0),
+                priority_counts.get('medium', 0),
+                priority_counts.get('high', 0),
+                priority_counts.get('urgent', 0)
+            ]
+        }
+        summary_df = pd.DataFrame(summary_data)
+        summary_df.to_excel(writer, sheet_name='Summary', index=False)
+    
+    output.seek(0)
+    
+    # Generate filename with current date
+    current_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    filename = f"tasks_export_{current_date}.xlsx"
+    
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.post("/tasks", response_model=Task)
 async def create_task(task_data: TaskCreate, current_user: UserResponse = Depends(get_current_user)):
     # Get assignee and creator names
