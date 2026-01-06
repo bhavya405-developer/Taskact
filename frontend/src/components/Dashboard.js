@@ -132,18 +132,21 @@ const Dashboard = ({ users, tasks }) => {
             <div className="flex items-center">
               <AlertCircle size={20} className="text-red-600 mr-2" />
               <h3 className="text-lg font-semibold text-red-900" data-testid="overdue-tasks-title">
-                Overdue Tasks ({overdue_tasks.length})
+                Overdue Tasks ({overdue_task_list.length})
               </h3>
             </div>
+            {isPartner() && (
+              <p className="text-xs text-red-700 mt-1">Showing all team members</p>
+            )}
           </div>
           <div className="p-6">
-            {overdue_tasks.length === 0 ? (
+            {overdue_task_list.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No overdue tasks! 🎉</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {overdue_tasks.map((task) => {
+                {overdue_task_list.map((task) => {
                   const priority = getPriorityDisplay(task.priority);
                   
                   return (
