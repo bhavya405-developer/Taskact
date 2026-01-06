@@ -137,16 +137,6 @@ const Login = () => {
     setSuccessMessage('');
   };
 
-  const demoAccounts = [
-    { name: 'Sarah Johnson (Partner)', email: 'sarah@firm.com', password: 'password123' },
-    { name: 'Michael Chen (Associate)', email: 'michael@firm.com', password: 'password123' },
-    { name: 'Emma Wilson (Junior)', email: 'emma@firm.com', password: 'password123' }
-  ];
-
-  const loginAsDemo = (email, password) => {
-    setFormData({ email, password });
-  };
-
   // Forgot Password Flow UI
   if (forgotPasswordMode) {
     return (
