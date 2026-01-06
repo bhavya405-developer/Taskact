@@ -359,43 +359,43 @@ const ClientManager = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="table-header">Client Name</th>
-                    <th className="table-header">Type</th>
-                    <th className="table-header">Industry</th>
-                    <th className="table-header">Contact</th>
-                    <th className="table-header">Actions</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Client Name</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Type</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Industry</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Contact</th>
+                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {clients.map((client) => (
                     <tr key={client.id} className="hover:bg-gray-50 transition-colors" data-testid={`client-row-${client.id}`}>
-                      <td className="table-cell">
-                        <div>
-                          <div className="font-medium text-gray-900">{client.name}</div>
+                      <td className="px-3 py-2 text-sm">
+                        <div className="max-w-[180px]">
+                          <div className="font-medium text-gray-900 truncate" title={client.name}>{client.name}</div>
                           {client.contact_person && (
-                            <div className="text-sm text-gray-600">Contact: {client.contact_person}</div>
+                            <div className="text-xs text-gray-500 truncate">Contact: {client.contact_person}</div>
                           )}
                         </div>
                       </td>
-                      <td className="table-cell">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {client.company_type || 'Not specified'}
+                      <td className="px-2 py-2 text-sm">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap">
+                          {client.company_type || 'N/A'}
                         </span>
                       </td>
-                      <td className="table-cell text-gray-600">
-                        {client.industry || 'Not specified'}
+                      <td className="px-2 py-2 text-sm text-gray-600 max-w-[120px] truncate" title={client.industry}>
+                        {client.industry || 'N/A'}
                       </td>
-                      <td className="table-cell">
-                        <div className="text-sm">
+                      <td className="px-2 py-2 text-sm">
+                        <div className="text-xs max-w-[150px]">
                           {client.email && (
-                            <div className="text-gray-900">{client.email}</div>
+                            <div className="text-gray-900 truncate" title={client.email}>{client.email}</div>
                           )}
                           {client.phone && (
-                            <div className="text-gray-600">{client.phone}</div>
+                            <div className="text-gray-500">{client.phone}</div>
                           )}
                         </div>
                       </td>
-                      <td className="table-cell">
+                      <td className="px-2 py-2 text-sm">
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleEdit(client)}
