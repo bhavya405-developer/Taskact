@@ -46,11 +46,11 @@ const Dashboard = ({ users, tasks }) => {
     );
   }
 
-  const { task_counts, recent_tasks, team_stats } = dashboardData;
+  const { task_counts, recent_tasks, team_stats, overdue_tasks, pending_tasks_30days } = dashboardData;
   
-  // Filter tasks by status for priority sections
-  const overdue_tasks = recent_tasks.filter(task => task.status === 'overdue');
-  const pending_tasks = recent_tasks.filter(task => task.status === 'pending');
+  // Use the new specific task lists from backend (already filtered by role)
+  const overdue_task_list = overdue_tasks || recent_tasks.filter(task => task.status === 'overdue');
+  const pending_task_list = pending_tasks_30days || recent_tasks.filter(task => task.status === 'pending');
 
   const StatusCard = ({ title, count, status, icon }) => (
     <div className={`stats-card animate-fade-in`} data-testid={`status-card-${status}`}>
