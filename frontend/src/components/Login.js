@@ -484,27 +484,6 @@ const Login = () => {
               </button>
             </div>
           </form>
-
-          {/* Demo Accounts */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Demo Accounts:</h3>
-            <div className="space-y-2">
-              {demoAccounts.map((account, index) => (
-                <button
-                  key={index}
-                  onClick={() => loginAsDemo(account.email, account.password)}
-                  className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors text-sm"
-                  data-testid={`demo-login-${index}`}
-                >
-                  <div className="font-medium text-gray-900">{account.name}</div>
-                  <div className="text-gray-600">{account.email}</div>
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-gray-500">
-              Click on any demo account to auto-fill the form, then click "Sign in"
-            </p>
-          </div>
         </div>
       </div>
     </div>
