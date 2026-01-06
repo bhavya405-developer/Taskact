@@ -1602,23 +1602,25 @@ async def create_client(client_data: ClientCreate, current_user: UserResponse = 
 async def download_clients_template(current_user: UserResponse = Depends(get_current_partner)):
     """Download Excel template for bulk client import"""
     
-    # Create sample data with headers
+    # Create sample data - only Name is required, others are optional
     template_data = {
-        'Name': ['TechCorp Inc.', 'Global Manufacturing Ltd.', 'Healthcare Solutions Group'],
-        'Company Type': ['Corporation', 'Corporation', 'LLC'],
-        'Industry': ['Technology', 'Manufacturing', 'Healthcare'],
-        'Contact Person': ['John Smith', 'Maria Rodriguez', 'Dr. James Wilson'],
-        'Email': ['john@techcorp.com', 'maria@global.com', 'james@healthcare.com'],
-        'Phone': ['+1 (555) 123-4567', '+1 (555) 987-6543', '+1 (555) 456-7890'],
+        'Name *': ['TechCorp Inc.', 'Global Manufacturing Ltd.', 'Healthcare Solutions Group', 'Simple Client'],
+        'Company Type': ['Corporation', 'Corporation', 'LLC', ''],
+        'Industry': ['Technology', 'Manufacturing', 'Healthcare', ''],
+        'Contact Person': ['John Smith', 'Maria Rodriguez', 'Dr. James Wilson', ''],
+        'Email': ['john@techcorp.com', 'maria@global.com', 'james@healthcare.com', ''],
+        'Phone': ['+1 (555) 123-4567', '+1 (555) 987-6543', '+1 (555) 456-7890', ''],
         'Address': [
             '123 Tech Street, Silicon Valley, CA 94000',
             '456 Industrial Blvd, Detroit, MI 48000',
-            '789 Medical Center Dr, Boston, MA 02000'
+            '789 Medical Center Dr, Boston, MA 02000',
+            ''
         ],
         'Notes': [
             'Major technology client',
             'Large manufacturing company',
-            'Healthcare consulting firm'
+            'Healthcare consulting firm',
+            ''
         ]
     }
     
@@ -1634,35 +1636,74 @@ async def download_clients_template(current_user: UserResponse = Depends(get_cur
         workbook = writer.book
         worksheet = writer.sheets['Clients']
         
-        # Add formatting
-        header_format = workbook.add_format({
+        # Add formatting - required field header in different color
+        required_header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#DC2626',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        optional_header_format = workbook.add_format({
             'bold': True,
             'bg_color': '#059669',
             'font_color': 'white',
             'border': 1
         })
         
-        # Format headers
+        # Format headers - first column (Name) is required, rest are optional
         for col_num, value in enumerate(df.columns.values):
-            worksheet.write(0, col_num, value, header_format)
+            if col_num == 0:  # Name column - required
+                worksheet.write(0, col_num, value, required_header_format)
+            else:
+                worksheet.write(0, col_num, value, optional_header_format)
+        
+        # Set column widths
+        worksheet.set_column('A:A', 30)  # Name
+        worksheet.set_column('B:B', 15)  # Company Type
+        worksheet.set_column('C:C', 15)  # Industry
+        worksheet.set_column('D:D', 20)  # Contact Person
+        worksheet.set_column('E:E', 25)  # Email
+        worksheet.set_column('F:F', 18)  # Phone
+        worksheet.set_column('G:G', 40)  # Address
+        worksheet.set_column('H:H', 30)  # Notes
         
         # Add instructions sheet
         instructions_data = {
             'Instructions': [
-                '1. Fill in the client information below',
-                '2. Name: Required field - unique client name',
-                '3. Company Type: Corporation, LLC, Partnership, Individual, etc.',
-                '4. Industry: Technology, Healthcare, Finance, Manufacturing, etc.',
-                '5. Contact Person: Primary contact name',
-                '6. Email: Client email address',
-                '7. Phone: Client phone number',
-                '8. Address: Full address including city, state, zip',
-                '9. Notes: Additional information about the client',
-                '10. Save the file and upload it back to import'
+                'HOW TO IMPORT CLIENTS',
+                '=====================',
+                '',
+                'REQUIRED FIELD (marked with * in red):',
+                '  - Name: Unique client name (REQUIRED)',
+                '',
+                'OPTIONAL FIELDS (marked in green):',
+                '  - Company Type: Corporation, LLC, Partnership, Individual, etc.',
+                '  - Industry: Technology, Healthcare, Finance, Manufacturing, etc.',
+                '  - Contact Person: Primary contact name',
+                '  - Email: Client email address',
+                '  - Phone: Client phone number',
+                '  - Address: Full address including city, state, zip',
+                '  - Notes: Additional information about the client',
+                '',
+                'SIMPLE IMPORT EXAMPLE:',
+                '  You can import clients with just the Name column.',
+                '  See row 5 in the Clients sheet for an example.',
+                '',
+                'STEPS:',
+                '  1. Add client names in the "Name *" column',
+                '  2. Fill in optional fields as needed (or leave blank)',
+                '  3. Delete the sample rows (rows 2-5)',
+                '  4. Save the file',
+                '  5. Upload the file to import clients'
             ]
         }
         instructions_df = pd.DataFrame(instructions_data)
         instructions_df.to_excel(writer, sheet_name='Instructions', index=False)
+        
+        # Format instructions sheet
+        instr_worksheet = writer.sheets['Instructions']
+        instr_worksheet.set_column('A:A', 60)
     
     output.seek(0)
     
