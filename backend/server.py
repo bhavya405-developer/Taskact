@@ -830,14 +830,14 @@ async def download_tasks_template(current_user: UserResponse = Depends(get_curre
         'Category': [categories[0]['name'] if categories else 'General',
                     categories[1]['name'] if len(categories) > 1 else 'General',
                     categories[0]['name'] if categories else 'General'],
-        'Assignee Email': [users[1]['email'] if len(users) > 1 else users[0]['email'],
-                          users[2]['email'] if len(users) > 2 else users[0]['email'],
-                          users[1]['email'] if len(users) > 1 else users[0]['email']],
+        'Assignee Name': [users[1]['name'] if len(users) > 1 else users[0]['name'],
+                          users[2]['name'] if len(users) > 2 else users[0]['name'],
+                          users[1]['name'] if len(users) > 1 else users[0]['name']],
         'Priority': ['high', 'medium', 'low'],
         'Due Date': [
-            (datetime.now(timezone.utc) + timedelta(days=7)).strftime('%Y-%m-%d'),
-            (datetime.now(timezone.utc) + timedelta(days=14)).strftime('%Y-%m-%d'),
-            (datetime.now(timezone.utc) + timedelta(days=3)).strftime('%Y-%m-%d')
+            (datetime.now(timezone.utc) + timedelta(days=7)).strftime('%d-%b-%Y'),
+            (datetime.now(timezone.utc) + timedelta(days=14)).strftime('%d-%b-%Y'),
+            (datetime.now(timezone.utc) + timedelta(days=3)).strftime('%d-%b-%Y')
         ]
     }
     
@@ -870,7 +870,7 @@ async def download_tasks_template(current_user: UserResponse = Depends(get_curre
         worksheet.set_column('B:B', 45)  # Description
         worksheet.set_column('C:C', 25)  # Client Name
         worksheet.set_column('D:D', 20)  # Category
-        worksheet.set_column('E:E', 30)  # Assignee Email
+        worksheet.set_column('E:E', 25)  # Assignee Name
         worksheet.set_column('F:F', 12)  # Priority
         worksheet.set_column('G:G', 15)  # Due Date
         
