@@ -876,7 +876,7 @@ async def download_tasks_template(current_user: UserResponse = Depends(get_curre
         
         # Add reference sheets
         # Users reference
-        users_data = {'Name': [u['name'] for u in users], 'Email': [u['email'] for u in users], 'Role': [u['role'] for u in users]}
+        users_data = {'Name': [u['name'] for u in users], 'Role': [u['role'] for u in users]}
         users_df = pd.DataFrame(users_data)
         users_df.to_excel(writer, sheet_name='Team Members (Reference)', index=False)
         
@@ -900,12 +900,12 @@ async def download_tasks_template(current_user: UserResponse = Depends(get_curre
                 '3. Description: Optional - Detailed task description',
                 '4. Client Name: Required - Must match existing client name exactly',
                 '5. Category: Required - Must match existing category name exactly',
-                '6. Assignee Email: Required - Email of team member to assign task',
+                '6. Assignee Name: Required - Name of team member to assign task',
                 '7. Priority: Required - Must be: low, medium, high, or urgent',
-                '8. Due Date: Optional - Format: YYYY-MM-DD (e.g., 2025-01-15)',
+                '8. Due Date: Optional - Format: DD-MMM-YYYY (e.g., 15-Jan-2025)',
                 '',
                 'Reference sheets are provided for:',
-                '- Team Members: List of all active users with their emails',
+                '- Team Members: List of all active users with their names',
                 '- Clients: List of all active clients',
                 '- Categories: List of all active categories',
                 '',
