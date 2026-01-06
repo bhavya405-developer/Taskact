@@ -57,8 +57,10 @@ TaskAct is a comprehensive task management application designed for professional
 - [x] 4-status task system with auto-overdue
 - [x] Completed tasks immutability
 - [x] Team management (add, edit users)
+- [x] **Team Member Delete/Deactivate** (Jan 2025)
 - [x] Client and Category management
-- [x] Bulk import/export with Excel templates
+- [x] Bulk import/export with Excel templates (Clients, Categories)
+- [x] **Bulk Task Import/Export** (Jan 2025) - Partners only
 - [x] Dashboard with analytics
 - [x] Notification system
 - [x] Mobile responsive design (hamburger menu, card layout)
@@ -92,6 +94,9 @@ TaskAct is a comprehensive task management application designed for professional
 - `POST /api/tasks` - Create task
 - `PUT /api/tasks/{id}` - Update task
 - `DELETE /api/tasks/{id}` - Delete task
+- `GET /api/tasks/download-template` - Download bulk import template (Partner)
+- `POST /api/tasks/bulk-import` - Bulk import tasks from Excel (Partner)
+- `GET /api/tasks/export` - Export all tasks to Excel (Partner)
 
 ### Users
 - `GET /api/users` - List users (partners can add `?include_inactive=true`)
