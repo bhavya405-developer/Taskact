@@ -289,21 +289,17 @@ const Dashboard = ({ users, tasks }) => {
         />
       </div>
 
-      {/* Team Performance Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        {/* Team Performance */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900" data-testid="team-performance-title">
-              Team Performance
-            </h3>
-          </div>
-          <div className="p-6">
-            {team_stats.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No team members found</p>
-              </div>
-            ) : (
+      {/* Team Performance Section - Only for Partners */}
+      {isPartner() && team_stats.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+          {/* Team Performance */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900" data-testid="team-performance-title">
+                Team Performance
+              </h3>
+            </div>
+            <div className="p-6">
               <div className="space-y-4">
                 {team_stats.map((member) => (
                   <div key={member.user_id} className="border border-gray-200 rounded-lg p-4 card-hover" data-testid={`team-member-${member.user_id}`}>
@@ -332,10 +328,10 @@ const Dashboard = ({ users, tasks }) => {
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Task Detail Modal */}
       <TaskDetailModal
