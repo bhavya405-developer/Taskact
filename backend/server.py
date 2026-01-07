@@ -339,6 +339,58 @@ def format_ist_datetime(dt):
     ist_dt = utc_to_ist(dt) if dt.tzinfo != IST else dt
     return ist_dt.strftime('%d-%b-%Y %I:%M %p IST')
 
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate distance between two GPS coordinates in meters using Haversine formula"""
+    R = 6371000  # Earth's radius in meters
+    
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    
+    a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    return R * c
+
+async def reverse_geocode(latitude: float, longitude: float) -> Optional[str]:
+    """Reverse geocode coordinates to address using OpenStreetMap Nominatim (free)"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/reverse",
+                params={
+                    "lat": latitude,
+                    "lon": longitude,
+                    "format": "json",
+                    "addressdetails": 1
+                },
+                headers={
+                    "User-Agent": "TaskAct/1.0 (Attendance System)"  # Required by Nominatim
+                },
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("display_name", None)
+            else:
+                logger.warning(f"Reverse geocoding failed: {response.status_code}")
+                return None
+    except Exception as e:
+        logger.error(f"Reverse geocoding error: {str(e)}")
+        return None
+
+async def get_geofence_settings():
+    """Get geofence settings from database"""
+    settings = await db.geofence_settings.find_one({"id": "geofence_settings"})
+    if not settings:
+        # Create default settings
+        default_settings = GeofenceSettings()
+        await db.geofence_settings.insert_one(prepare_for_mongo(default_settings.dict()))
+        return default_settings
+    return GeofenceSettings(**parse_from_mongo(settings))
+
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
     if isinstance(data, dict):
