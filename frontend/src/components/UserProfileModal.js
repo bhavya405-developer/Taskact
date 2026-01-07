@@ -203,16 +203,15 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
   if (!isOpen) return null;
 
   const departments = [
-    'Legal',
-    'Corporate Law',
-    'Litigation',
-    'Tax Law',
-    'Employment Law',
-    'Real Estate Law',
-    'Intellectual Property',
-    'Family Law',
-    'Criminal Law',
-    'Administrative'
+    'Audit and Assurance',
+    'Tax and Regulatory Compliance',
+    'Accounting',
+    'Certification',
+    'Tax Litigation',
+    'Advisory',
+    'Administrative',
+    'Management',
+    'Others'
   ];
 
   return (
