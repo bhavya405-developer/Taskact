@@ -588,6 +588,16 @@ const Attendance = () => {
             </p>
           </div>
         )}
+
+        {/* Location tip */}
+        {!todayStatus?.clock_in && !todayStatus?.clock_out && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 flex items-center">
+              <Navigation className="w-4 h-4 mr-2" />
+              Tip: Please ensure location services are enabled in your browser for accurate attendance tracking.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Attendance History */}
