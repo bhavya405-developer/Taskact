@@ -137,10 +137,12 @@ const Attendance = () => {
     setError('');
     setSuccess('');
     setActionLoading(true);
+    setLocationFetching(true);
     setLocationError('');
 
     try {
       const location = await getCurrentLocation();
+      setLocationFetching(false);
       setCurrentLocation(location);
 
       const response = await axios.post(`${API}/attendance/clock-in`, {
@@ -152,12 +154,14 @@ const Attendance = () => {
       setSuccess(`Clocked in successfully at ${response.data.address || 'your location'}`);
       await fetchData();
     } catch (err) {
+      setLocationFetching(false);
       if (err.message) {
         setLocationError(err.message);
       }
       setError(err.response?.data?.detail || err.message || 'Failed to clock in');
     } finally {
       setActionLoading(false);
+      setLocationFetching(false);
     }
   };
 
