@@ -61,59 +61,69 @@ TaskAct is a comprehensive task management application designed for professional
 - **Monthly Report** (Partners only): View team attendance statistics
 
 ## Technical Stack
-- **Backend**: FastAPI (Python), Motor (async MongoDB)
+- **Backend**: FastAPI (Python), Motor (async MongoDB), httpx (HTTP client)
 - **Frontend**: React, Tailwind CSS, Shadcn UI, Lucide React
 - **Database**: MongoDB
 - **Authentication**: JWT with bcrypt password hashing
 - **Email**: Resend (for OTP delivery)
+- **Geolocation**: Browser Geolocation API + OpenStreetMap Nominatim (reverse geocoding)
 
-## What's Been Implemented (Jan 2025)
+## What's Been Implemented (Jan 2026)
 
 ### Completed Features
 - [x] Full authentication system with JWT
-- [x] Role-based access control (Partner, Associate, Junior)
+- [x] Role-based access control (Partner, Associate, Junior, Intern)
 - [x] Task CRUD with all attributes
 - [x] 4-status task system with auto-overdue
 - [x] Completed tasks immutability
+- [x] **IST Timestamps**: Task creation and status changes recorded in IST
+- [x] **Sortable Task Columns**: Click headers to sort
+- [x] **Horizontal Scrolling**: Wide tables support horizontal scroll
 - [x] Team management (add, edit users)
-- [x] **Team Member Delete/Deactivate** (Jan 2025)
+- [x] **Team Member Delete/Deactivate**
 - [x] Client and Category management
 - [x] Bulk import/export with Excel templates (Clients, Categories)
-- [x] **Bulk Task Import/Export** (Jan 2025) - Partners only
+- [x] **Bulk Task Import/Export** (Partners only) - Uses names & DD-MMM-YYYY format
+- [x] **Simplified Client Import** - Name only required
 - [x] Dashboard with analytics
+- [x] **Partner Dashboard**: Team-wide overdue/pending tasks
 - [x] Notification system
 - [x] Mobile responsive design (hamburger menu, card layout)
 - [x] Custom TaskAct branding (logo, favicon)
 - [x] **Forgot Password with OTP** (Dev Mode)
+- [x] **GPS-Based Attendance** (NEW)
+  - Clock in/out with GPS location
+  - Reverse geocoding (addresses)
+  - Today's status view
+  - Attendance history
+  - Geofence settings (partners)
+  - Monthly attendance report (partners)
 
-### Pending Features
-- [x] **Team Member Deletion/Deactivation** (Completed Jan 2025)
-  - Delete user if no tasks ever assigned (permanent removal)
-  - Deactivate user if tasks exist (preserves history, blocks login)
-  - Reactivate deactivated users
-  - Confirmation modals for all actions
-- [ ] Production email delivery (requires Resend API key)
+### Pending/Future Features
+- [ ] Production email delivery (requires Resend API key from user)
 
 ## Demo Accounts
-- Partner: sarah@firm.com / newpassword123
-- Associate: michael@firm.com / password123
-- Junior: emma@firm.com / password123
+All accounts use password: `password123`
+- Partner: bhavika@sundesha.in
+- Partner: bhavya@sundesha.in
+- Associates: namita@example.com, nitish@example.com, etc.
 
 ## API Endpoints
 
 ### Authentication
 - `POST /api/auth/login` - User login
 - `GET /api/auth/me` - Get current user
-- `POST /api/auth/forgot-password` - Request OTP
+- `POST /api/auth/request-otp` - Request password reset OTP
 - `POST /api/auth/verify-otp` - Verify OTP
 - `POST /api/auth/reset-password` - Reset password with OTP
 
 ### Tasks
 - `GET /api/tasks` - List tasks
 - `POST /api/tasks` - Create task
+- `GET /api/tasks/{id}` - Get task details
 - `PUT /api/tasks/{id}` - Update task
 - `DELETE /api/tasks/{id}` - Delete task
-- `GET /api/tasks/download-template` - Download bulk import template (Partner)
+- `GET /api/tasks/template` - Download bulk import template (Partner)
 - `POST /api/tasks/bulk-import` - Bulk import tasks from Excel (Partner)
 - `GET /api/tasks/export` - Export all tasks to Excel (Partner)
 
@@ -126,10 +136,20 @@ TaskAct is a comprehensive task management application designed for professional
 - `PUT /api/users/{id}/deactivate` - Deactivate user
 - `PUT /api/users/{id}/reactivate` - Reactivate user
 
+### Attendance (NEW)
+- `GET /api/attendance/settings` - Get geofence settings
+- `PUT /api/attendance/settings` - Update geofence settings (Partner)
+- `POST /api/attendance/clock-in` - Clock in with GPS location
+- `POST /api/attendance/clock-out` - Clock out with GPS location
+- `GET /api/attendance/today` - Get today's attendance status
+- `GET /api/attendance/history` - Get attendance history
+- `GET /api/attendance/report` - Get monthly attendance report (Partner)
+
 ### Dashboard
 - `GET /api/dashboard` - Dashboard analytics
 
 ## Notes
 - OTP is currently shown on screen (Dev Mode) for testing
-- For production, configure RESEND_API_KEY in backend/.env
+- For production email, configure RESEND_API_KEY in backend/.env
 - JWT secret is stored in SECRET_KEY environment variable
+- Geolocation requires HTTPS in production (works on localhost for testing)
