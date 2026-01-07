@@ -274,6 +274,28 @@ class TaskUpdate(BaseModel):
     due_date: Optional[datetime] = None
 
 # Helper functions
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_ist_now():
+    """Get current time in IST"""
+    return datetime.now(IST)
+
+def utc_to_ist(utc_dt):
+    """Convert UTC datetime to IST"""
+    if utc_dt is None:
+        return None
+    if utc_dt.tzinfo is None:
+        utc_dt = utc_dt.replace(tzinfo=timezone.utc)
+    return utc_dt.astimezone(IST)
+
+def format_ist_datetime(dt):
+    """Format datetime as IST string"""
+    if dt is None:
+        return None
+    ist_dt = utc_to_ist(dt) if dt.tzinfo != IST else dt
+    return ist_dt.strftime('%d-%b-%Y %I:%M %p IST')
+
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
     if isinstance(data, dict):
