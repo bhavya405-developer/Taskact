@@ -517,7 +517,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
 
       {/* Tasks List */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {filteredTasks.length === 0 ? (
+        {sortedTasks.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-4xl mb-4">📋</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
@@ -541,18 +541,74 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Task</th>
-                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Client</th>
-                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Category</th>
-                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Assignee</th>
-                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Status</th>
-                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Priority</th>
-                    <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Due Date</th>
+                    <th 
+                      className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('title')}
+                      data-testid="sort-title"
+                    >
+                      <div className="flex items-center">
+                        Task {getSortIcon('title')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('client_name')}
+                      data-testid="sort-client"
+                    >
+                      <div className="flex items-center">
+                        Client {getSortIcon('client_name')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('category')}
+                      data-testid="sort-category"
+                    >
+                      <div className="flex items-center">
+                        Category {getSortIcon('category')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('assignee_name')}
+                      data-testid="sort-assignee"
+                    >
+                      <div className="flex items-center">
+                        Assignee {getSortIcon('assignee_name')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('status')}
+                      data-testid="sort-status"
+                    >
+                      <div className="flex items-center">
+                        Status {getSortIcon('status')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('priority')}
+                      data-testid="sort-priority"
+                    >
+                      <div className="flex items-center">
+                        Priority {getSortIcon('priority')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={() => handleSort('due_date')}
+                      data-testid="sort-due-date"
+                    >
+                      <div className="flex items-center">
+                        Due Date {getSortIcon('due_date')}
+                      </div>
+                    </th>
                     <th className="px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTasks.map((task) => {
+                  {sortedTasks.map((task) => {
                     const status = getStatusDisplay(task.status);
                     const priority = getPriorityDisplay(task.priority);
                     
