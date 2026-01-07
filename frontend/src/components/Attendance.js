@@ -69,34 +69,66 @@ const Attendance = () => {
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              reject(new Error('Location permission denied. Please enable location access.'));
-              break;
-            case error.POSITION_UNAVAILABLE:
-              reject(new Error('Location information unavailable.'));
-              break;
-            case error.TIMEOUT:
-              reject(new Error('Location request timed out.'));
-              break;
-            default:
-              reject(new Error('An unknown error occurred.'));
+      // First try with high accuracy (GPS)
+      const tryHighAccuracy = () => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+          },
+          (error) => {
+            // If high accuracy fails, try with low accuracy (network-based)
+            if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
+              tryLowAccuracy();
+            } else if (error.code === error.PERMISSION_DENIED) {
+              reject(new Error('Location permission denied. Please enable location access in your browser settings.'));
+            } else {
+              reject(new Error('Failed to get location. Please try again.'));
+            }
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000
           }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
+        );
+      };
+
+      // Fallback to low accuracy (faster, uses network/WiFi)
+      const tryLowAccuracy = () => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+          },
+          (error) => {
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                reject(new Error('Location permission denied. Please enable location access in your browser settings.'));
+                break;
+              case error.POSITION_UNAVAILABLE:
+                reject(new Error('Location unavailable. Please check your device location settings.'));
+                break;
+              case error.TIMEOUT:
+                reject(new Error('Location request timed out. Please ensure location services are enabled and try again.'));
+                break;
+              default:
+                reject(new Error('Failed to get location. Please try again.'));
+            }
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 30000,
+            maximumAge: 300000
+          }
+        );
+      };
+
+      tryHighAccuracy();
     });
   };
 
