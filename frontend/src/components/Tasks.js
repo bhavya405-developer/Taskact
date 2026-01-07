@@ -692,7 +692,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
 
             {/* Mobile Card View - Visible on Mobile */}
             <div className="md:hidden divide-y divide-gray-200">
-              {filteredTasks.map((task) => {
+              {sortedTasks.map((task) => {
                 const status = getStatusDisplay(task.status);
                 const priority = getPriorityDisplay(task.priority);
                 
