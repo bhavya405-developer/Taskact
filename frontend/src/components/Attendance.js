@@ -537,11 +537,16 @@ const Attendance = () => {
               data-testid="clock-in-btn"
             >
               {actionLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  {locationFetching ? 'Getting location...' : 'Clocking in...'}
+                </>
               ) : (
-                <LogIn className="w-5 h-5 mr-2" />
+                <>
+                  <LogIn className="w-5 h-5 mr-2" />
+                  Clock In
+                </>
               )}
-              Clock In
             </button>
           )}
 
@@ -553,11 +558,16 @@ const Attendance = () => {
               data-testid="clock-out-btn"
             >
               {actionLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  {locationFetching ? 'Getting location...' : 'Clocking out...'}
+                </>
               ) : (
-                <LogOut className="w-5 h-5 mr-2" />
+                <>
+                  <LogOut className="w-5 h-5 mr-2" />
+                  Clock Out
+                </>
               )}
-              Clock Out
             </button>
           )}
 
