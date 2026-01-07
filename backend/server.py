@@ -2335,10 +2335,11 @@ async def get_today_attendance(current_user: UserResponse = Depends(get_current_
     clock_out = None
     
     for record in records:
-        if record["type"] == AttendanceType.CLOCK_IN:
-            clock_in = record
-        elif record["type"] == AttendanceType.CLOCK_OUT:
-            clock_out = record
+        parsed_record = parse_from_mongo(record)
+        if parsed_record["type"] == AttendanceType.CLOCK_IN:
+            clock_in = parsed_record
+        elif parsed_record["type"] == AttendanceType.CLOCK_OUT:
+            clock_out = parsed_record
     
     work_duration = None
     if clock_in and clock_out:
