@@ -1317,6 +1317,7 @@ async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserR
     
     # Store original assignee for notification comparison
     original_assignee_id = existing_task["assignee_id"]
+    now_utc = datetime.now(timezone.utc)
     
     # Update assignee name if assignee_id is changed
     if "assignee_id" in update_data:
@@ -1325,11 +1326,31 @@ async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserR
             raise HTTPException(status_code=404, detail="Assignee not found")
         update_data["assignee_name"] = assignee["name"]
     
-    # Set completed_at when status changes to completed
-    if "status" in update_data and update_data["status"] == TaskStatus.COMPLETED:
-        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+    # Record status change in history
+    if "status" in update_data:
+        old_status = existing_task.get("status")
+        new_status = update_data["status"]
+        
+        # Get existing status history or create new
+        status_history = existing_task.get("status_history", [])
+        
+        # Add new status change entry
+        status_entry = {
+            "status": new_status,
+            "previous_status": old_status,
+            "changed_at": now_utc.isoformat(),
+            "changed_at_ist": format_ist_datetime(now_utc),
+            "changed_by": current_user.name,
+            "action": "status_changed"
+        }
+        status_history.append(status_entry)
+        update_data["status_history"] = status_history
+        
+        # Set completed_at when status changes to completed
+        if new_status == TaskStatus.COMPLETED:
+            update_data["completed_at"] = now_utc.isoformat()
     
-    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_at"] = now_utc.isoformat()
     
     result = await db.tasks.update_one({"id": task_id}, {"$set": update_data})
     
