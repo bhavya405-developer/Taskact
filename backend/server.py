@@ -2139,6 +2139,313 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
         "category_stats": sorted(category_stats, key=lambda x: x["task_count"], reverse=True) if category_stats else []
     }
 
+# ==================== ATTENDANCE ENDPOINTS ====================
+
+@api_router.get("/attendance/settings")
+async def get_attendance_settings(current_user: UserResponse = Depends(get_current_user)):
+    """Get geofence settings"""
+    settings = await get_geofence_settings()
+    return settings
+
+@api_router.put("/attendance/settings")
+async def update_attendance_settings(
+    settings_update: GeofenceSettingsUpdate,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Update geofence settings (Partners only)"""
+    update_data = {k: v for k, v in settings_update.dict().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    update_data["updated_by"] = current_user.name
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # If office coordinates are updated, try to reverse geocode the address
+    if "office_latitude" in update_data and "office_longitude" in update_data:
+        address = await reverse_geocode(update_data["office_latitude"], update_data["office_longitude"])
+        if address:
+            update_data["office_address"] = address
+    
+    result = await db.geofence_settings.update_one(
+        {"id": "geofence_settings"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    settings = await get_geofence_settings()
+    return settings
+
+@api_router.post("/attendance/clock-in")
+async def clock_in(
+    attendance_data: AttendanceCreate,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Clock in with GPS location"""
+    # Check if already clocked in today
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    existing_clock_in = await db.attendance.find_one({
+        "user_id": current_user.id,
+        "type": AttendanceType.CLOCK_IN,
+        "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    if existing_clock_in:
+        raise HTTPException(status_code=400, detail="Already clocked in today")
+    
+    now_utc = datetime.now(timezone.utc)
+    
+    # Get geofence settings
+    settings = await get_geofence_settings()
+    
+    # Calculate distance from office if geofence is configured
+    is_within_geofence = None
+    distance_from_office = None
+    
+    if settings.enabled and settings.office_latitude and settings.office_longitude:
+        distance_from_office = haversine_distance(
+            attendance_data.latitude, attendance_data.longitude,
+            settings.office_latitude, settings.office_longitude
+        )
+        is_within_geofence = distance_from_office <= settings.radius_meters
+        
+        if not is_within_geofence:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"You are {distance_from_office:.0f}m away from office. Must be within {settings.radius_meters:.0f}m to clock in."
+            )
+    
+    # Reverse geocode the address
+    address = await reverse_geocode(attendance_data.latitude, attendance_data.longitude)
+    
+    attendance = Attendance(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        type=AttendanceType.CLOCK_IN,
+        timestamp=now_utc,
+        timestamp_ist=format_ist_datetime(now_utc),
+        latitude=attendance_data.latitude,
+        longitude=attendance_data.longitude,
+        address=address,
+        is_within_geofence=is_within_geofence,
+        distance_from_office=distance_from_office,
+        device_info=attendance_data.device_info
+    )
+    
+    attendance_dict = prepare_for_mongo(attendance.dict())
+    await db.attendance.insert_one(attendance_dict)
+    
+    return {
+        "message": "Clocked in successfully",
+        "attendance": attendance,
+        "address": address
+    }
+
+@api_router.post("/attendance/clock-out")
+async def clock_out(
+    attendance_data: AttendanceCreate,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Clock out with GPS location"""
+    # Check if clocked in today
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    existing_clock_in = await db.attendance.find_one({
+        "user_id": current_user.id,
+        "type": AttendanceType.CLOCK_IN,
+        "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    if not existing_clock_in:
+        raise HTTPException(status_code=400, detail="You haven't clocked in today")
+    
+    # Check if already clocked out
+    existing_clock_out = await db.attendance.find_one({
+        "user_id": current_user.id,
+        "type": AttendanceType.CLOCK_OUT,
+        "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    })
+    
+    if existing_clock_out:
+        raise HTTPException(status_code=400, detail="Already clocked out today")
+    
+    now_utc = datetime.now(timezone.utc)
+    
+    # Get geofence settings
+    settings = await get_geofence_settings()
+    
+    # Calculate distance from office (for record, not enforced on clock out)
+    is_within_geofence = None
+    distance_from_office = None
+    
+    if settings.office_latitude and settings.office_longitude:
+        distance_from_office = haversine_distance(
+            attendance_data.latitude, attendance_data.longitude,
+            settings.office_latitude, settings.office_longitude
+        )
+        is_within_geofence = distance_from_office <= settings.radius_meters if settings.enabled else None
+    
+    # Reverse geocode the address
+    address = await reverse_geocode(attendance_data.latitude, attendance_data.longitude)
+    
+    attendance = Attendance(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        type=AttendanceType.CLOCK_OUT,
+        timestamp=now_utc,
+        timestamp_ist=format_ist_datetime(now_utc),
+        latitude=attendance_data.latitude,
+        longitude=attendance_data.longitude,
+        address=address,
+        is_within_geofence=is_within_geofence,
+        distance_from_office=distance_from_office,
+        device_info=attendance_data.device_info
+    )
+    
+    attendance_dict = prepare_for_mongo(attendance.dict())
+    await db.attendance.insert_one(attendance_dict)
+    
+    # Calculate work duration
+    clock_in_time = datetime.fromisoformat(existing_clock_in["timestamp"])
+    work_duration = now_utc - clock_in_time
+    hours = work_duration.total_seconds() / 3600
+    
+    return {
+        "message": "Clocked out successfully",
+        "attendance": attendance,
+        "address": address,
+        "work_duration_hours": round(hours, 2)
+    }
+
+@api_router.get("/attendance/today")
+async def get_today_attendance(current_user: UserResponse = Depends(get_current_user)):
+    """Get today's attendance status for current user"""
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    records = await db.attendance.find({
+        "user_id": current_user.id,
+        "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
+    }).sort("timestamp", 1).to_list(length=None)
+    
+    clock_in = None
+    clock_out = None
+    
+    for record in records:
+        if record["type"] == AttendanceType.CLOCK_IN:
+            clock_in = record
+        elif record["type"] == AttendanceType.CLOCK_OUT:
+            clock_out = record
+    
+    work_duration = None
+    if clock_in and clock_out:
+        in_time = datetime.fromisoformat(clock_in["timestamp"])
+        out_time = datetime.fromisoformat(clock_out["timestamp"])
+        work_duration = round((out_time - in_time).total_seconds() / 3600, 2)
+    
+    return {
+        "clock_in": clock_in,
+        "clock_out": clock_out,
+        "is_clocked_in": clock_in is not None and clock_out is None,
+        "work_duration_hours": work_duration
+    }
+
+@api_router.get("/attendance/history")
+async def get_attendance_history(
+    user_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get attendance history. Partners can view all users, others only their own."""
+    query = {}
+    
+    # Non-partners can only view their own attendance
+    if current_user.role != UserRole.PARTNER:
+        query["user_id"] = current_user.id
+    elif user_id:
+        query["user_id"] = user_id
+    
+    # Date filtering
+    if start_date:
+        query.setdefault("timestamp", {})["$gte"] = start_date
+    if end_date:
+        query.setdefault("timestamp", {})["$lte"] = end_date
+    
+    records = await db.attendance.find(query).sort("timestamp", -1).to_list(length=500)
+    
+    return [parse_from_mongo(record) for record in records]
+
+@api_router.get("/attendance/report")
+async def get_attendance_report(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Get monthly attendance report for all users (Partners only)"""
+    now = datetime.now(timezone.utc)
+    report_month = month or now.month
+    report_year = year or now.year
+    
+    # Calculate date range
+    start_date = datetime(report_year, report_month, 1, tzinfo=timezone.utc)
+    if report_month == 12:
+        end_date = datetime(report_year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_date = datetime(report_year, report_month + 1, 1, tzinfo=timezone.utc)
+    
+    # Get all users
+    users = await db.users.find({"active": True}).to_list(length=None)
+    
+    report = []
+    for user in users:
+        # Get attendance records for this user in the month
+        records = await db.attendance.find({
+            "user_id": user["id"],
+            "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
+        }).to_list(length=None)
+        
+        # Count days present (has clock_in)
+        days_present = len(set(
+            datetime.fromisoformat(r["timestamp"]).date() 
+            for r in records if r["type"] == AttendanceType.CLOCK_IN
+        ))
+        
+        # Calculate total hours worked
+        clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN]
+        clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT]
+        
+        total_hours = 0
+        for cin in clock_ins:
+            cin_date = datetime.fromisoformat(cin["timestamp"]).date()
+            matching_out = next(
+                (co for co in clock_outs 
+                 if datetime.fromisoformat(co["timestamp"]).date() == cin_date),
+                None
+            )
+            if matching_out:
+                in_time = datetime.fromisoformat(cin["timestamp"])
+                out_time = datetime.fromisoformat(matching_out["timestamp"])
+                total_hours += (out_time - in_time).total_seconds() / 3600
+        
+        report.append({
+            "user_id": user["id"],
+            "user_name": user["name"],
+            "role": user["role"],
+            "days_present": days_present,
+            "total_hours": round(total_hours, 2),
+            "average_hours_per_day": round(total_hours / days_present, 2) if days_present > 0 else 0
+        })
+    
+    return {
+        "month": report_month,
+        "year": report_year,
+        "report": sorted(report, key=lambda x: x["user_name"])
+    }
+
 # Health check
 @api_router.get("/")
 async def root():
