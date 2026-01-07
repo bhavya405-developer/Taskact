@@ -169,10 +169,12 @@ const Attendance = () => {
     setError('');
     setSuccess('');
     setActionLoading(true);
+    setLocationFetching(true);
     setLocationError('');
 
     try {
       const location = await getCurrentLocation();
+      setLocationFetching(false);
       setCurrentLocation(location);
 
       const response = await axios.post(`${API}/attendance/clock-out`, {
