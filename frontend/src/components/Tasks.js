@@ -182,12 +182,82 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
     setImportResult(null);
   };
 
+  // Handle column sort
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Get sort icon for column header
+  const getSortIcon = (column) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="w-3 h-3 ml-1 text-gray-400" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="w-3 h-3 ml-1 text-blue-600" />
+      : <ChevronDown className="w-3 h-3 ml-1 text-blue-600" />;
+  };
+
+  // Priority order for sorting
+  const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+  const statusOrder = { overdue: 0, pending: 1, on_hold: 2, completed: 3 };
+
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = filter === 'all' || task.status === filter;
     const matchesAssignee = assigneeFilter === 'all' || task.assignee_id === assigneeFilter;
     const matchesClient = clientFilter === 'all' || (task.client_name && task.client_name.toLowerCase().includes(clientFilter.toLowerCase()));
     const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter;
     return matchesStatus && matchesAssignee && matchesClient && matchesCategory;
+  });
+
+  // Sort filtered tasks
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortColumn) {
+      case 'title':
+        aValue = (a.title || '').toLowerCase();
+        bValue = (b.title || '').toLowerCase();
+        break;
+      case 'client_name':
+        aValue = (a.client_name || '').toLowerCase();
+        bValue = (b.client_name || '').toLowerCase();
+        break;
+      case 'category':
+        aValue = (a.category || '').toLowerCase();
+        bValue = (b.category || '').toLowerCase();
+        break;
+      case 'assignee_name':
+        aValue = (a.assignee_name || '').toLowerCase();
+        bValue = (b.assignee_name || '').toLowerCase();
+        break;
+      case 'status':
+        aValue = statusOrder[a.status] ?? 99;
+        bValue = statusOrder[b.status] ?? 99;
+        break;
+      case 'priority':
+        aValue = priorityOrder[a.priority] ?? 99;
+        bValue = priorityOrder[b.priority] ?? 99;
+        break;
+      case 'due_date':
+        // Handle null/undefined due dates - put them at the end
+        aValue = a.due_date ? new Date(a.due_date).getTime() : (sortDirection === 'asc' ? Infinity : -Infinity);
+        bValue = b.due_date ? new Date(b.due_date).getTime() : (sortDirection === 'asc' ? Infinity : -Infinity);
+        break;
+      default:
+        aValue = a[sortColumn] || '';
+        bValue = b[sortColumn] || '';
+    }
+    
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   // Get unique clients and categories for filter options
