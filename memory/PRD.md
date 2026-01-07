@@ -7,7 +7,7 @@ TaskAct is a comprehensive task management application designed for professional
 
 ### 1. Authentication & Authorization
 - JWT-based authentication
-- Role-based access: Partner, Associate, Junior
+- Role-based access: Partner, Associate, Junior, Intern
 - **Forgot Password with OTP** (Dev Mode - OTP shown on screen for testing)
   - 3-step flow: Email → OTP Verification → New Password
   - OTP valid for 10 minutes
@@ -19,27 +19,46 @@ TaskAct is a comprehensive task management application designed for professional
 - 4-status system: Pending (default), On Hold, Overdue (auto), Completed
 - Completed tasks are immutable
 - Automatic overdue detection
+- **Status History**: All status changes are recorded with IST timestamps
+- **Sortable Columns**: Click column headers to sort tasks
+- **Horizontal Scrolling**: Wide tables support horizontal scroll
 
 ### 3. Team Management
 - Partners can add/edit team members
-- View team performance stats
+- **Delete/Deactivate Users**: Delete if no task history, deactivate otherwise
+- View team performance stats (partners only)
 - Password reset by partners
 
 ### 4. Data Management
 - Master lists for Clients and Categories
 - Bulk import/export via Excel templates
+- **Bulk Task Import/Export** (Partners only)
+  - Uses assignee names (not emails)
+  - DD-MMM-YYYY date format
+- **Simplified Client Import**: Name only required
 - MongoDB database
 
 ### 5. Dashboard
 - Task counts by status
-- Overdue and Pending task lists prominently displayed
-- Team performance analytics
+- **Team-wide overdue and pending tasks** (partners only)
+- Team performance analytics (partners only)
 - Client and category analytics
 
 ### 6. Notifications
 - Task assignment notifications
 - Task update notifications
 - Password reset notifications
+
+### 7. GPS-Based Attendance (NEW - Jan 2026)
+- **Clock In/Out**: Users can clock in and out with GPS location capture
+- **Reverse Geocoding**: Addresses displayed using OpenStreetMap (Nominatim API)
+- **Today's Status**: Shows current day's clock in/out times and work duration
+- **Attendance History**: View past attendance records with location details
+- **Geofence Settings** (Partners only):
+  - Enable/disable geofence restriction
+  - Set office coordinates and radius
+  - Use Current Location button
+- **Monthly Report** (Partners only): View team attendance statistics
 
 ## Technical Stack
 - **Backend**: FastAPI (Python), Motor (async MongoDB)
