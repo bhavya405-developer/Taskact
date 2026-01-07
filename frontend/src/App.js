@@ -135,6 +135,10 @@ const AppContent = () => {
               element={<ClientManager />} 
             />
             <Route 
+              path="/attendance" 
+              element={<Attendance />} 
+            />
+            <Route 
               path="/create-task" 
               element={
                 <CreateTask 
