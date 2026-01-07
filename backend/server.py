@@ -234,6 +234,47 @@ class Notification(BaseModel):
     read: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Attendance Models
+class AttendanceType(str, Enum):
+    CLOCK_IN = "clock_in"
+    CLOCK_OUT = "clock_out"
+
+class Attendance(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    type: AttendanceType
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp_ist: Optional[str] = None
+    latitude: float
+    longitude: float
+    address: Optional[str] = None  # Reverse geocoded address
+    is_within_geofence: Optional[bool] = None
+    distance_from_office: Optional[float] = None  # in meters
+    device_info: Optional[str] = None
+
+class AttendanceCreate(BaseModel):
+    latitude: float
+    longitude: float
+    device_info: Optional[str] = None
+
+class GeofenceSettings(BaseModel):
+    id: str = Field(default="geofence_settings")
+    enabled: bool = False
+    office_latitude: Optional[float] = None
+    office_longitude: Optional[float] = None
+    office_address: Optional[str] = None
+    radius_meters: float = 100  # Default 100 meters
+    updated_by: Optional[str] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GeofenceSettingsUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    office_latitude: Optional[float] = None
+    office_longitude: Optional[float] = None
+    office_address: Optional[str] = None
+    radius_meters: Optional[float] = None
+
 class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
