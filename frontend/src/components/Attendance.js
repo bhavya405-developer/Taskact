@@ -186,12 +186,14 @@ const Attendance = () => {
       setSuccess(`Clocked out successfully. Work duration: ${response.data.work_duration_hours} hours`);
       await fetchData();
     } catch (err) {
+      setLocationFetching(false);
       if (err.message) {
         setLocationError(err.message);
       }
       setError(err.response?.data?.detail || err.message || 'Failed to clock out');
     } finally {
       setActionLoading(false);
+      setLocationFetching(false);
     }
   };
 
