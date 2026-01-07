@@ -400,10 +400,14 @@ def prepare_for_mongo(data):
     return data
 
 def parse_from_mongo(item):
-    """Parse ISO strings back to datetime objects from MongoDB"""
+    """Parse MongoDB document for API response - handles ObjectId and datetime"""
     if isinstance(item, dict):
+        # Remove MongoDB's _id field (ObjectId is not JSON serializable)
+        if '_id' in item:
+            del item['_id']
+        # Parse datetime strings
         for key, value in item.items():
-            if isinstance(value, str) and key.endswith(('_at', 'due_date')):
+            if isinstance(value, str) and key.endswith(('_at', 'due_date', 'timestamp')):
                 try:
                     item[key] = datetime.fromisoformat(value)
                 except ValueError:
