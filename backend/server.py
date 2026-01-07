@@ -2263,7 +2263,7 @@ async def clock_out(
     
     existing_clock_in = await db.attendance.find_one({
         "user_id": current_user.id,
-        "type": AttendanceType.CLOCK_IN,
+        "type": AttendanceType.CLOCK_IN.value,
         "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
     })
     
@@ -2273,7 +2273,7 @@ async def clock_out(
     # Check if already clocked out
     existing_clock_out = await db.attendance.find_one({
         "user_id": current_user.id,
-        "type": AttendanceType.CLOCK_OUT,
+        "type": AttendanceType.CLOCK_OUT.value,
         "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
     })
     
@@ -2299,21 +2299,22 @@ async def clock_out(
     # Reverse geocode the address
     address = await reverse_geocode(attendance_data.latitude, attendance_data.longitude)
     
-    attendance = Attendance(
-        user_id=current_user.id,
-        user_name=current_user.name,
-        type=AttendanceType.CLOCK_OUT,
-        timestamp=now_utc,
-        timestamp_ist=format_ist_datetime(now_utc),
-        latitude=attendance_data.latitude,
-        longitude=attendance_data.longitude,
-        address=address,
-        is_within_geofence=is_within_geofence,
-        distance_from_office=distance_from_office,
-        device_info=attendance_data.device_info
-    )
+    attendance_dict = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user.id,
+        "user_name": current_user.name,
+        "type": AttendanceType.CLOCK_OUT.value,
+        "timestamp": now_utc.isoformat(),
+        "timestamp_ist": format_ist_datetime(now_utc),
+        "latitude": attendance_data.latitude,
+        "longitude": attendance_data.longitude,
+        "address": address,
+        "is_within_geofence": is_within_geofence,
+        "distance_from_office": distance_from_office,
+        "device_info": attendance_data.device_info
+    }
     
-    attendance_dict = prepare_for_mongo(attendance.dict())
+    attendance_dict = prepare_for_mongo(attendance_dict)
     await db.attendance.insert_one(attendance_dict)
     
     # Calculate work duration
@@ -2321,9 +2322,16 @@ async def clock_out(
     work_duration = now_utc - clock_in_time
     hours = work_duration.total_seconds() / 3600
     
+    # Create notification
+    await create_notification(
+        user_id=current_user.id,
+        title="Clocked Out",
+        message=f"You clocked out at {format_ist_datetime(now_utc)}. Work duration: {round(hours, 2)} hours"
+    )
+    
     return {
         "message": "Clocked out successfully",
-        "attendance": attendance,
+        "attendance": parse_from_mongo(attendance_dict),
         "address": address,
         "work_duration_hours": round(hours, 2)
     }
