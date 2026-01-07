@@ -13,6 +13,7 @@ const Attendance = () => {
   const { user, isPartner } = useAuth();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [locationFetching, setLocationFetching] = useState(false);
   const [todayStatus, setTodayStatus] = useState(null);
   const [history, setHistory] = useState([]);
   const [geofenceSettings, setGeofenceSettings] = useState(null);
