@@ -2428,12 +2428,12 @@ async def get_attendance_report(
         # Count days present (has clock_in)
         days_present = len(set(
             datetime.fromisoformat(r["timestamp"]).date() 
-            for r in records if r["type"] == AttendanceType.CLOCK_IN
+            for r in records if r["type"] == AttendanceType.CLOCK_IN.value
         ))
         
         # Calculate total hours worked
-        clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN]
-        clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT]
+        clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
+        clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT.value]
         
         total_hours = 0
         for cin in clock_ins:
