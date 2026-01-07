@@ -2363,8 +2363,8 @@ async def get_today_attendance(current_user: UserResponse = Depends(get_current_
     
     work_duration = None
     if clock_in and clock_out:
-        in_time = datetime.fromisoformat(clock_in["timestamp"])
-        out_time = datetime.fromisoformat(clock_out["timestamp"])
+        in_time = clock_in["timestamp"] if isinstance(clock_in["timestamp"], datetime) else datetime.fromisoformat(clock_in["timestamp"])
+        out_time = clock_out["timestamp"] if isinstance(clock_out["timestamp"], datetime) else datetime.fromisoformat(clock_out["timestamp"])
         work_duration = round((out_time - in_time).total_seconds() / 3600, 2)
     
     return {
