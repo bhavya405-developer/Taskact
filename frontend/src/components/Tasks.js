@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -17,6 +17,10 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const [updating, setUpdating] = useState({});
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  
+  // Sorting state - default sort by due_date ascending
+  const [sortColumn, setSortColumn] = useState('due_date');
+  const [sortDirection, setSortDirection] = useState('asc');
   
   // Bulk import/export states
   const [showImportModal, setShowImportModal] = useState(false);
