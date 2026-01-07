@@ -1213,10 +1213,25 @@ async def create_task(task_data: TaskCreate, current_user: UserResponse = Depend
     if not assignee or not creator:
         raise HTTPException(status_code=404, detail="Assignee or creator not found")
     
+    # Get current IST time
+    now_ist = get_ist_now()
+    now_utc = datetime.now(timezone.utc)
+    
     task_dict = task_data.dict()
     task_dict["creator_id"] = current_user.id  # Set current user as creator
     task_dict["assignee_name"] = assignee["name"]
     task_dict["creator_name"] = creator["name"]
+    task_dict["created_at"] = now_utc
+    task_dict["updated_at"] = now_utc
+    
+    # Initialize status history with creation entry
+    task_dict["status_history"] = [{
+        "status": TaskStatus.PENDING,
+        "changed_at": now_utc.isoformat(),
+        "changed_at_ist": format_ist_datetime(now_utc),
+        "changed_by": current_user.name,
+        "action": "created"
+    }]
     
     task = Task(**task_dict)
     task_dict = prepare_for_mongo(task.dict())
