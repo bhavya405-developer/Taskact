@@ -250,6 +250,8 @@ class Task(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
+    # Status change history - records all status changes with IST timestamps
+    status_history: Optional[List[dict]] = None
 
 class TaskCreate(BaseModel):
     title: str
