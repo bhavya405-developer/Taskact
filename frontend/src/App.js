@@ -11,6 +11,7 @@ import CreateTask from "./components/CreateTask";
 import CategoryManager from "./components/CategoryManager";
 import ClientManager from "./components/ClientManager";
 import Navigation from "./components/Navigation";
+import Attendance from "./components/Attendance";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
