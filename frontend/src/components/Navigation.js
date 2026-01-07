@@ -12,7 +12,8 @@ import {
   LogOut,
   User,
   Menu,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 
 const Navigation = () => {
@@ -23,6 +24,7 @@ const Navigation = () => {
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
     { path: '/tasks', name: 'Tasks', icon: CheckSquare },
+    { path: '/attendance', name: 'Attendance', icon: Clock },
     { path: '/team', name: 'Team', icon: Users, partnerOnly: true },
     { path: '/categories', name: 'Categories', icon: FolderOpen, partnerOnly: true },
     { path: '/clients', name: 'Clients', icon: Building2, partnerOnly: true },
