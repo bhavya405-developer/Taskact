@@ -1983,47 +1983,50 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     # For backward compatibility, also include recent_tasks
     recent_tasks = overdue_tasks + pending_tasks
     
-    # Get team performance
-    users = await db.users.find({"active": True}).to_list(length=None)
+    # Get team performance (only for partners)
     team_stats = []
-    
-    for user in users:
-        user_tasks = await db.tasks.count_documents({"assignee_id": user["id"]})
-        completed_tasks = await db.tasks.count_documents({"assignee_id": user["id"], "status": TaskStatus.COMPLETED})
+    if current_user.role == UserRole.PARTNER:
+        users = await db.users.find({"active": True}).to_list(length=None)
         
-        team_stats.append({
-            "user_id": user["id"],
-            "name": user["name"],
-            "role": user["role"],
-            "total_tasks": user_tasks,
-            "completed_tasks": completed_tasks,
-            "completion_rate": (completed_tasks / user_tasks * 100) if user_tasks > 0 else 0
-        })
+        for user in users:
+            user_tasks = await db.tasks.count_documents({"assignee_id": user["id"]})
+            completed_tasks = await db.tasks.count_documents({"assignee_id": user["id"], "status": TaskStatus.COMPLETED})
+            
+            team_stats.append({
+                "user_id": user["id"],
+                "name": user["name"],
+                "role": user["role"],
+                "total_tasks": user_tasks,
+                "completed_tasks": completed_tasks,
+                "completion_rate": (completed_tasks / user_tasks * 100) if user_tasks > 0 else 0
+            })
     
-    # Get client analytics
+    # Get client analytics (only for partners)
     client_stats = []
-    clients = await db.tasks.distinct("client_name")
-    for client in clients[:5]:  # Top 5 clients
-        if client:
-            client_tasks = await db.tasks.count_documents({"client_name": client})
-            completed_client_tasks = await db.tasks.count_documents({"client_name": client, "status": TaskStatus.COMPLETED})
-            client_stats.append({
-                "client_name": client,
-                "total_tasks": client_tasks,
-                "completed_tasks": completed_client_tasks,
-                "completion_rate": (completed_client_tasks / client_tasks * 100) if client_tasks > 0 else 0
-            })
+    if current_user.role == UserRole.PARTNER:
+        clients = await db.tasks.distinct("client_name")
+        for client in clients[:5]:  # Top 5 clients
+            if client:
+                client_tasks = await db.tasks.count_documents({"client_name": client})
+                completed_client_tasks = await db.tasks.count_documents({"client_name": client, "status": TaskStatus.COMPLETED})
+                client_stats.append({
+                    "client_name": client,
+                    "total_tasks": client_tasks,
+                    "completed_tasks": completed_client_tasks,
+                    "completion_rate": (completed_client_tasks / client_tasks * 100) if client_tasks > 0 else 0
+                })
     
-    # Get category analytics
+    # Get category analytics (only for partners)
     category_stats = []
-    categories = await db.tasks.distinct("category")
-    for category in categories:
-        if category:
-            category_tasks = await db.tasks.count_documents({"category": category})
-            category_stats.append({
-                "category": category,
-                "task_count": category_tasks
-            })
+    if current_user.role == UserRole.PARTNER:
+        categories = await db.tasks.distinct("category")
+        for category in categories:
+            if category:
+                category_tasks = await db.tasks.count_documents({"category": category})
+                category_stats.append({
+                    "category": category,
+                    "task_count": category_tasks
+                })
     
     return {
         "task_counts": {
@@ -2036,9 +2039,9 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
         "recent_tasks": [Task(**parse_from_mongo(task)) for task in recent_tasks],
         "overdue_tasks": [Task(**parse_from_mongo(task)) for task in overdue_tasks],
         "pending_tasks_30days": [Task(**parse_from_mongo(task)) for task in pending_tasks],
-        "team_stats": team_stats,
-        "client_stats": sorted(client_stats, key=lambda x: x["total_tasks"], reverse=True),
-        "category_stats": sorted(category_stats, key=lambda x: x["task_count"], reverse=True)
+        "team_stats": team_stats,  # Empty for non-partners
+        "client_stats": sorted(client_stats, key=lambda x: x["total_tasks"], reverse=True) if client_stats else [],
+        "category_stats": sorted(category_stats, key=lambda x: x["task_count"], reverse=True) if category_stats else []
     }
 
 # Health check
