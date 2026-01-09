@@ -26,6 +26,17 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
 
+  const fetchDashboardData = async () => {
+    try {
+      const response = await axios.get(`${API}/dashboard`);
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
