@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
 import EditTaskModal from './EditTaskModal';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Lock } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,6 +31,14 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const [exporting, setExporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Bulk delete states
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkDeleteType, setBulkDeleteType] = useState(null); // 'completed' or 'all'
+  const [bulkDeletePassword, setBulkDeletePassword] = useState('');
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState('');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteError, setBulkDeleteError] = useState('');
 
   const getStatusDisplay = (status) => {
     const statusConfig = {
