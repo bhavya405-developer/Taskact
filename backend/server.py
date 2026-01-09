@@ -602,7 +602,6 @@ async def update_overdue_tasks():
     }).to_list(length=5000)
     
     # Collect bulk operations for overdue tasks
-    from pymongo import UpdateOne
     bulk_operations = []
     
     for task in tasks:
