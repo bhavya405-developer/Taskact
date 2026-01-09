@@ -49,15 +49,27 @@ TaskAct is a comprehensive task management application designed for professional
 - Task update notifications
 - Password reset notifications
 
-### 7. GPS-Based Attendance (NEW - Jan 2026)
+### 7. GPS-Based Attendance (Enhanced - Jan 2026)
 - **Clock In/Out**: Users can clock in and out with GPS location capture
 - **Reverse Geocoding**: Addresses displayed using OpenStreetMap (Nominatim API)
 - **Today's Status**: Shows current day's clock in/out times and work duration
-- **Attendance History**: View past attendance records with location details
-- **Geofence Settings** (Partners only):
+- **Attendance History**: View past attendance records with location details and day type (Full/Half)
+- **Multi-Location Geofence Settings** (Partners only):
   - Enable/disable geofence restriction
-  - Set office coordinates and radius
-  - Use Current Location button
+  - **Up to 5 office locations** supported
+  - Set radius for all locations
+  - Add locations using current GPS coordinates
+- **Attendance Rules** (Partners only):
+  - **Minimum hours for full day**: Default 8 hours (configurable)
+  - **Working days**: Monday to Saturday (Sunday is weekly off by default)
+  - Hours below minimum = Half Day
+- **Holiday Management** (Partners only):
+  - Add/delete office holidays (paid holidays)
+  - Holidays excluded from working day calculations
+- **Enhanced Monthly Report** (Partners only):
+  - Summary: Working days, Weekly offs (Sundays), Holidays, Min hours setting
+  - Per user: Full days, Half days, Effective days, Absent days, Total hours, Avg hours
+  - Shows holidays for the month
 - **Monthly Report** (Partners only): View team attendance statistics
 
 ## Technical Stack
