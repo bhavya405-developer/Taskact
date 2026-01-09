@@ -742,9 +742,20 @@ const Attendance = () => {
               <Users className="w-5 h-5 mr-2" />
               Attendance Report - {report.month}/{report.year}
             </h3>
-            <button onClick={() => setShowReport(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
-              ×
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadReport}
+                disabled={actionLoading}
+                className="btn-primary flex items-center text-sm"
+                data-testid="download-report-btn"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                {actionLoading ? 'Downloading...' : 'Download Excel'}
+              </button>
+              <button onClick={() => setShowReport(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
+                ×
+              </button>
+            </div>
           </div>
 
           {/* Summary */}
