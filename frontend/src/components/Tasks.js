@@ -483,6 +483,117 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
         </div>
       )}
 
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Lock className="w-5 h-5 mr-2 text-red-600" />
+                {bulkDeleteType === 'completed' ? 'Clear Completed Tasks' : 'Clear All Tasks'}
+              </h3>
+              <button
+                onClick={closeBulkDeleteModal}
+                className="text-gray-400 hover:text-gray-600"
+                data-testid="close-bulk-delete-modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Warning */}
+              <div className={`p-4 rounded-lg ${bulkDeleteType === 'completed' ? 'bg-orange-50 border border-orange-200' : 'bg-red-50 border border-red-200'}`}>
+                <div className="flex items-start">
+                  <AlertCircle className={`w-5 h-5 mr-3 mt-0.5 ${bulkDeleteType === 'completed' ? 'text-orange-600' : 'text-red-600'}`} />
+                  <div>
+                    <p className={`font-medium ${bulkDeleteType === 'completed' ? 'text-orange-800' : 'text-red-800'}`}>
+                      {bulkDeleteType === 'completed' 
+                        ? `This will permanently delete ${tasks.filter(t => t.status === 'completed').length} completed task(s).`
+                        : `This will permanently delete ALL ${tasks.length} task(s).`
+                      }
+                    </p>
+                    <p className={`text-sm mt-1 ${bulkDeleteType === 'completed' ? 'text-orange-700' : 'text-red-700'}`}>
+                      This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div>
+                <label className="form-label">Enter your password to confirm</label>
+                <input
+                  type="password"
+                  value={bulkDeletePassword}
+                  onChange={(e) => setBulkDeletePassword(e.target.value)}
+                  className="form-input"
+                  placeholder="Your login password"
+                  data-testid="bulk-delete-password"
+                />
+              </div>
+
+              {/* Confirmation Text */}
+              <div>
+                <label className="form-label">
+                  Type <span className="font-mono font-bold text-red-600">
+                    {bulkDeleteType === 'completed' ? 'DELETE COMPLETED' : 'DELETE ALL'}
+                  </span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={bulkDeleteConfirm}
+                  onChange={(e) => setBulkDeleteConfirm(e.target.value)}
+                  className="form-input"
+                  placeholder={bulkDeleteType === 'completed' ? 'DELETE COMPLETED' : 'DELETE ALL'}
+                  data-testid="bulk-delete-confirm"
+                />
+              </div>
+
+              {/* Error Message */}
+              {bulkDeleteError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-700">{bulkDeleteError}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={closeBulkDeleteModal}
+                  className="flex-1 btn-secondary"
+                  disabled={bulkDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className={`flex-1 flex items-center justify-center ${
+                    bulkDeleteType === 'completed' 
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  } font-medium py-2 px-4 rounded-lg transition-colors`}
+                  data-testid="confirm-bulk-delete"
+                >
+                  {bulkDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {bulkDeleteType === 'completed' ? 'Delete Completed' : 'Delete All'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
