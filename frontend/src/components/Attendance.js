@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Clock, MapPin, LogIn, LogOut, Settings, AlertCircle, 
-  CheckCircle, Navigation, Calendar, Users, ChevronDown, ChevronUp 
+  CheckCircle, Navigation, Calendar, Users, Plus, Trash2, 
+  CalendarDays, BookOpen
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -17,7 +18,11 @@ const Attendance = () => {
   const [todayStatus, setTodayStatus] = useState(null);
   const [history, setHistory] = useState([]);
   const [geofenceSettings, setGeofenceSettings] = useState(null);
+  const [attendanceRules, setAttendanceRules] = useState(null);
+  const [holidays, setHolidays] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+  const [showHolidays, setShowHolidays] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState(null);
   const [error, setError] = useState('');
@@ -25,31 +30,54 @@ const Attendance = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationError, setLocationError] = useState('');
   
-  // Settings form
+  // Settings form - up to 5 locations
   const [settingsForm, setSettingsForm] = useState({
     enabled: false,
-    office_latitude: '',
-    office_longitude: '',
+    locations: [],
     radius_meters: 100
+  });
+
+  // Rules form
+  const [rulesForm, setRulesForm] = useState({
+    min_hours_full_day: 8,
+    working_days: [0, 1, 2, 3, 4, 5]
+  });
+
+  // Holiday form
+  const [holidayForm, setHolidayForm] = useState({
+    date: '',
+    name: '',
+    is_paid: true
   });
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [todayRes, historyRes, settingsRes] = await Promise.all([
+      const requests = [
         axios.get(`${API}/attendance/today`),
         axios.get(`${API}/attendance/history`),
-        axios.get(`${API}/attendance/settings`)
-      ]);
+        axios.get(`${API}/attendance/settings`),
+        axios.get(`${API}/attendance/rules`),
+        axios.get(`${API}/attendance/holidays?year=${new Date().getFullYear()}`)
+      ];
+      
+      const [todayRes, historyRes, settingsRes, rulesRes, holidaysRes] = await Promise.all(requests);
       
       setTodayStatus(todayRes.data);
       setHistory(historyRes.data);
       setGeofenceSettings(settingsRes.data);
+      setAttendanceRules(rulesRes.data);
+      setHolidays(holidaysRes.data);
+      
       setSettingsForm({
-        enabled: settingsRes.data.enabled,
-        office_latitude: settingsRes.data.office_latitude || '',
-        office_longitude: settingsRes.data.office_longitude || '',
+        enabled: settingsRes.data.enabled || false,
+        locations: settingsRes.data.locations || [],
         radius_meters: settingsRes.data.radius_meters || 100
+      });
+      
+      setRulesForm({
+        min_hours_full_day: rulesRes.data.min_hours_full_day || 8,
+        working_days: rulesRes.data.working_days || [0, 1, 2, 3, 4, 5]
       });
     } catch (err) {
       console.error('Error fetching attendance data:', err);
@@ -70,7 +98,6 @@ const Attendance = () => {
         return;
       }
 
-      // First try with high accuracy (GPS)
       const tryHighAccuracy = () => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -80,7 +107,6 @@ const Attendance = () => {
             });
           },
           (error) => {
-            // If high accuracy fails, try with low accuracy (network-based)
             if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
               tryLowAccuracy();
             } else if (error.code === error.PERMISSION_DENIED) {
@@ -89,15 +115,10 @@ const Attendance = () => {
               reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 60000
-          }
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
         );
       };
 
-      // Fallback to low accuracy (faster, uses network/WiFi)
       const tryLowAccuracy = () => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -121,11 +142,7 @@ const Attendance = () => {
                 reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          {
-            enableHighAccuracy: false,
-            timeout: 30000,
-            maximumAge: 300000
-          }
+          { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
         );
       };
 
@@ -205,8 +222,7 @@ const Attendance = () => {
     try {
       await axios.put(`${API}/attendance/settings`, {
         enabled: settingsForm.enabled,
-        office_latitude: settingsForm.office_latitude ? parseFloat(settingsForm.office_latitude) : null,
-        office_longitude: settingsForm.office_longitude ? parseFloat(settingsForm.office_longitude) : null,
+        locations: settingsForm.locations,
         radius_meters: parseFloat(settingsForm.radius_meters)
       });
 
@@ -220,18 +236,95 @@ const Attendance = () => {
     }
   };
 
-  const handleUseCurrentLocation = async () => {
+  const handleSaveRules = async () => {
+    setError('');
+    setSuccess('');
+    setActionLoading(true);
+
+    try {
+      await axios.put(`${API}/attendance/rules`, rulesForm);
+      setSuccess('Attendance rules saved successfully');
+      await fetchData();
+      setShowRules(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to save rules');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAddHoliday = async () => {
+    if (!holidayForm.date || !holidayForm.name) {
+      setError('Please enter date and name for the holiday');
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setActionLoading(true);
+
+    try {
+      await axios.post(`${API}/attendance/holidays`, holidayForm);
+      setSuccess('Holiday added successfully');
+      setHolidayForm({ date: '', name: '', is_paid: true });
+      await fetchData();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to add holiday');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteHoliday = async (holidayId) => {
+    if (!window.confirm('Are you sure you want to delete this holiday?')) return;
+
+    try {
+      await axios.delete(`${API}/attendance/holidays/${holidayId}`);
+      setSuccess('Holiday deleted successfully');
+      await fetchData();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete holiday');
+    }
+  };
+
+  const addLocation = async () => {
+    if (settingsForm.locations.length >= 5) {
+      setError('Maximum 5 locations allowed');
+      return;
+    }
+
     try {
       const location = await getCurrentLocation();
+      const newLocation = {
+        name: `Office ${settingsForm.locations.length + 1}`,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: ''
+      };
       setSettingsForm(prev => ({
         ...prev,
-        office_latitude: location.latitude.toFixed(6),
-        office_longitude: location.longitude.toFixed(6)
+        locations: [...prev.locations, newLocation]
       }));
-      setSuccess('Current location captured for office location');
+      setSuccess('Location added. Click Save to confirm.');
     } catch (err) {
       setError(err.message || 'Failed to get current location');
     }
+  };
+
+  const removeLocation = (index) => {
+    setSettingsForm(prev => ({
+      ...prev,
+      locations: prev.locations.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateLocation = (index, field, value) => {
+    setSettingsForm(prev => ({
+      ...prev,
+      locations: prev.locations.map((loc, i) => 
+        i === index ? { ...loc, [field]: value } : loc
+      )
+    }));
   };
 
   const fetchReport = async () => {
@@ -262,6 +355,17 @@ const Attendance = () => {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  const toggleWorkingDay = (dayIndex) => {
+    setRulesForm(prev => ({
+      ...prev,
+      working_days: prev.working_days.includes(dayIndex)
+        ? prev.working_days.filter(d => d !== dayIndex)
+        : [...prev.working_days, dayIndex].sort()
+    }));
   };
 
   // Group history by date
@@ -295,22 +399,38 @@ const Attendance = () => {
           <p className="mt-2 text-gray-600">Track your daily attendance with GPS</p>
         </div>
         {isPartner() && (
-          <div className="mt-4 sm:mt-0 flex gap-2">
+          <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="btn-secondary flex items-center"
+              className="btn-secondary flex items-center text-sm"
               data-testid="settings-btn"
             >
-              <Settings className="w-4 h-4 mr-2" />
-              Geofence Settings
+              <Settings className="w-4 h-4 mr-1" />
+              Geofence
+            </button>
+            <button
+              onClick={() => setShowRules(!showRules)}
+              className="btn-secondary flex items-center text-sm"
+              data-testid="rules-btn"
+            >
+              <BookOpen className="w-4 h-4 mr-1" />
+              Rules
+            </button>
+            <button
+              onClick={() => setShowHolidays(!showHolidays)}
+              className="btn-secondary flex items-center text-sm"
+              data-testid="holidays-btn"
+            >
+              <CalendarDays className="w-4 h-4 mr-1" />
+              Holidays
             </button>
             <button
               onClick={fetchReport}
-              className="btn-secondary flex items-center"
+              className="btn-secondary flex items-center text-sm"
               data-testid="report-btn"
             >
-              <Calendar className="w-4 h-4 mr-2" />
-              Monthly Report
+              <Calendar className="w-4 h-4 mr-1" />
+              Report
             </button>
           </div>
         )}
@@ -339,7 +459,7 @@ const Attendance = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Settings className="w-5 h-5 mr-2" />
-            Geofence Settings
+            Geofence Settings (Up to 5 Locations)
           </h3>
           
           <div className="space-y-4">
@@ -353,36 +473,12 @@ const Attendance = () => {
                 data-testid="geofence-enabled"
               />
               <label htmlFor="geofence-enabled" className="ml-2 text-sm text-gray-700">
-                Enable Geofence Restriction (Users must be within radius to clock in)
+                Enable Geofence Restriction (Users must be within radius of any location to clock in)
               </label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="form-label">Office Latitude</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={settingsForm.office_latitude}
-                  onChange={(e) => setSettingsForm(prev => ({ ...prev, office_latitude: e.target.value }))}
-                  className="form-input"
-                  placeholder="19.0760"
-                  data-testid="office-latitude"
-                />
-              </div>
-              <div>
-                <label className="form-label">Office Longitude</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={settingsForm.office_longitude}
-                  onChange={(e) => setSettingsForm(prev => ({ ...prev, office_longitude: e.target.value }))}
-                  className="form-input"
-                  placeholder="72.8777"
-                  data-testid="office-longitude"
-                />
-              </div>
-              <div>
+            <div className="flex items-center gap-4">
+              <div className="w-48">
                 <label className="form-label">Radius (meters)</label>
                 <input
                   type="number"
@@ -393,24 +489,63 @@ const Attendance = () => {
                   data-testid="radius-meters"
                 />
               </div>
+              <button
+                onClick={addLocation}
+                disabled={settingsForm.locations.length >= 5}
+                className="btn-secondary flex items-center mt-6"
+                data-testid="add-location"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Current Location
+              </button>
             </div>
 
-            {geofenceSettings?.office_address && (
-              <p className="text-sm text-gray-600">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                Current office location: {geofenceSettings.office_address}
-              </p>
-            )}
+            {/* Location List */}
+            <div className="space-y-3">
+              {settingsForm.locations.map((loc, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input
+                      type="text"
+                      value={loc.name}
+                      onChange={(e) => updateLocation(index, 'name', e.target.value)}
+                      className="form-input text-sm"
+                      placeholder="Location Name"
+                    />
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={loc.latitude}
+                      onChange={(e) => updateLocation(index, 'latitude', parseFloat(e.target.value))}
+                      className="form-input text-sm"
+                      placeholder="Latitude"
+                    />
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={loc.longitude}
+                      onChange={(e) => updateLocation(index, 'longitude', parseFloat(e.target.value))}
+                      className="form-input text-sm"
+                      placeholder="Longitude"
+                    />
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-500 truncate flex-1">{loc.address || 'No address'}</span>
+                      <button
+                        onClick={() => removeLocation(index)}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {settingsForm.locations.length === 0 && (
+                <p className="text-gray-500 text-sm">No locations added. Click "Add Current Location" to add office locations.</p>
+              )}
+            </div>
 
             <div className="flex gap-3">
-              <button
-                onClick={handleUseCurrentLocation}
-                className="btn-secondary flex items-center"
-                data-testid="use-current-location"
-              >
-                <Navigation className="w-4 h-4 mr-2" />
-                Use Current Location
-              </button>
               <button
                 onClick={handleSaveSettings}
                 disabled={actionLoading}
@@ -419,7 +554,144 @@ const Attendance = () => {
               >
                 {actionLoading ? 'Saving...' : 'Save Settings'}
               </button>
+              <button onClick={() => setShowSettings(false)} className="btn-secondary">Cancel</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attendance Rules Panel (Partners only) */}
+      {showRules && isPartner() && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <BookOpen className="w-5 h-5 mr-2" />
+            Attendance Rules
+          </h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="form-label">Minimum Hours for Full Day</label>
+              <input
+                type="number"
+                step="0.5"
+                value={rulesForm.min_hours_full_day}
+                onChange={(e) => setRulesForm(prev => ({ ...prev, min_hours_full_day: parseFloat(e.target.value) }))}
+                className="form-input w-32"
+                data-testid="min-hours"
+              />
+              <p className="text-xs text-gray-500 mt-1">Hours below this will be counted as half day</p>
+            </div>
+
+            <div>
+              <label className="form-label">Working Days</label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {dayNames.map((day, index) => (
+                  <button
+                    key={day}
+                    onClick={() => toggleWorkingDay(index)}
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      rulesForm.working_days.includes(index)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {day.substring(0, 3)}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Selected days are working days. Unselected days are weekly off.</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSaveRules}
+                disabled={actionLoading}
+                className="btn-primary"
+              >
+                {actionLoading ? 'Saving...' : 'Save Rules'}
+              </button>
+              <button onClick={() => setShowRules(false)} className="btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Holidays Panel (Partners only) */}
+      {showHolidays && isPartner() && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <CalendarDays className="w-5 h-5 mr-2" />
+            Office Holidays (Paid)
+          </h3>
+          
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="form-label">Date</label>
+                <input
+                  type="date"
+                  value={holidayForm.date}
+                  onChange={(e) => setHolidayForm(prev => ({ ...prev, date: e.target.value }))}
+                  className="form-input"
+                  data-testid="holiday-date"
+                />
+              </div>
+              <div className="flex-1 min-w-48">
+                <label className="form-label">Holiday Name</label>
+                <input
+                  type="text"
+                  value={holidayForm.name}
+                  onChange={(e) => setHolidayForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="form-input"
+                  placeholder="e.g., Diwali"
+                  data-testid="holiday-name"
+                />
+              </div>
+              <button
+                onClick={handleAddHoliday}
+                disabled={actionLoading}
+                className="btn-primary flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Holiday
+              </button>
+            </div>
+
+            {/* Holiday List */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Holiday</th>
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {holidays.map((holiday) => (
+                    <tr key={holiday.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm text-gray-900">{holiday.date}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{holiday.name}</td>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => handleDeleteHoliday(holiday.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {holidays.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-center text-gray-500">No holidays added</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <button onClick={() => setShowHolidays(false)} className="btn-secondary">Close</button>
           </div>
         </div>
       )}
@@ -432,35 +704,77 @@ const Attendance = () => {
               <Users className="w-5 h-5 mr-2" />
               Attendance Report - {report.month}/{report.year}
             </h3>
-            <button onClick={() => setShowReport(false)} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => setShowReport(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
               ×
             </button>
           </div>
+
+          {/* Summary */}
+          {report.summary && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-xs text-gray-500">Working Days</p>
+                <p className="text-xl font-bold text-gray-900">{report.summary.total_working_days}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Weekly Offs (Sundays)</p>
+                <p className="text-xl font-bold text-gray-900">{report.summary.total_sundays}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Holidays</p>
+                <p className="text-xl font-bold text-gray-900">{report.summary.total_holidays}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Min Hours (Full Day)</p>
+                <p className="text-xl font-bold text-gray-900">{report.summary.min_hours_full_day}h</p>
+              </div>
+            </div>
+          )}
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Role</th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Days Present</th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Total Hours</th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Avg Hours/Day</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Dept</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Full Days</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Half Days</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Effective</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Absent</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Total Hrs</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Avg Hrs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {report.report.map((row) => (
                   <tr key={row.user_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.user_name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 capitalize">{row.role}</td>
-                    <td className="px-4 py-3 text-sm text-center text-gray-900">{row.days_present}</td>
-                    <td className="px-4 py-3 text-sm text-center text-gray-900">{row.total_hours}</td>
-                    <td className="px-4 py-3 text-sm text-center text-gray-900">{row.average_hours_per_day}</td>
+                    <td className="px-3 py-2 text-sm font-medium text-gray-900">{row.user_name}</td>
+                    <td className="px-3 py-2 text-xs text-gray-600">{row.department || '-'}</td>
+                    <td className="px-3 py-2 text-sm text-center text-green-600 font-medium">{row.full_days}</td>
+                    <td className="px-3 py-2 text-sm text-center text-yellow-600 font-medium">{row.half_days}</td>
+                    <td className="px-3 py-2 text-sm text-center text-blue-600 font-bold">{row.effective_days}</td>
+                    <td className="px-3 py-2 text-sm text-center text-red-600 font-medium">{row.absent_days}</td>
+                    <td className="px-3 py-2 text-sm text-center text-gray-900">{row.total_hours}</td>
+                    <td className="px-3 py-2 text-sm text-center text-gray-900">{row.average_hours_per_day}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Holidays in month */}
+          {report.summary?.holidays?.length > 0 && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm font-medium text-blue-800 mb-1">Holidays this month:</p>
+              <div className="flex flex-wrap gap-2">
+                {report.summary.holidays.map((h, i) => (
+                  <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {h.date}: {h.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -524,6 +838,11 @@ const Attendance = () => {
                   ? 'In progress...' 
                   : '-'}
             </p>
+            {todayStatus?.work_duration_hours && attendanceRules && (
+              <p className={`text-xs mt-1 ${todayStatus.work_duration_hours >= attendanceRules.min_hours_full_day ? 'text-green-600' : 'text-yellow-600'}`}>
+                {todayStatus.work_duration_hours >= attendanceRules.min_hours_full_day ? '✓ Full Day' : '½ Half Day'}
+              </p>
+            )}
           </div>
         </div>
 
@@ -580,11 +899,14 @@ const Attendance = () => {
         </div>
 
         {/* Geofence Info */}
-        {geofenceSettings?.enabled && (
+        {geofenceSettings?.enabled && geofenceSettings?.locations?.length > 0 && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-800 flex items-center">
               <MapPin className="w-4 h-4 mr-2" />
-              Geofence enabled: You must be within {geofenceSettings.radius_meters}m of office to clock in.
+              Geofence enabled: You must be within {geofenceSettings.radius_meters}m of any office location to clock in.
+            </p>
+            <p className="text-xs text-amber-700 mt-1">
+              Locations: {geofenceSettings.locations.map(l => l.name).join(', ')}
             </p>
           </div>
         )}
@@ -618,17 +940,20 @@ const Attendance = () => {
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Clock In</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Clock Out</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Duration</th>
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Type</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Location</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {Object.entries(groupedHistory).map(([date, records]) => {
                   let duration = '-';
+                  let dayType = '-';
                   if (records.clock_in && records.clock_out) {
                     const inTime = new Date(records.clock_in.timestamp);
                     const outTime = new Date(records.clock_out.timestamp);
                     const hours = ((outTime - inTime) / (1000 * 60 * 60)).toFixed(2);
                     duration = `${hours} hrs`;
+                    dayType = parseFloat(hours) >= (attendanceRules?.min_hours_full_day || 8) ? 'Full' : 'Half';
                   }
 
                   return (
@@ -641,6 +966,14 @@ const Attendance = () => {
                         {records.clock_out ? formatTime(records.clock_out.timestamp) : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-center text-gray-900">{duration}</td>
+                      <td className="px-4 py-3 text-sm text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          dayType === 'Full' ? 'bg-green-100 text-green-800' : 
+                          dayType === 'Half' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {dayType}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-xs text-gray-600 max-w-xs truncate" title={records.clock_in?.address}>
                         {records.clock_in?.address ? (
                           <span className="flex items-center">
