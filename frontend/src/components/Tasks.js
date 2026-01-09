@@ -95,6 +95,24 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
     setShowTaskDetail(false);
   };
 
+  const handleEditTask = (task) => {
+    setShowTaskDetail(false);
+    setTaskToEdit(task);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setTaskToEdit(null);
+    setShowEditModal(false);
+  };
+
+  const handleEditSave = () => {
+    // Refresh task list after edit
+    if (onTaskUpdate) {
+      onTaskUpdate();
+    }
+  };
+
   // Download template
   const handleDownloadTemplate = async () => {
     try {
