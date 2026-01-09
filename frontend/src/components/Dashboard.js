@@ -114,13 +114,13 @@ const Dashboard = ({ users, tasks }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+    <div className="space-y-6 md:space-y-8 animate-fade-in">
+      {/* Header - Smaller on mobile */}
       <div className="text-center lg:text-left flex items-center justify-center lg:justify-start">
-        <BarChart3 size={32} className="text-blue-600 mr-3" />
+        <BarChart3 size={24} className="text-blue-600 mr-2 md:mr-3 md:w-8 md:h-8" />
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-          <p className="mt-2 text-gray-600">Overview of your team's productivity</p>
+          <h2 className="text-xl md:text-3xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-sm md:text-base text-gray-600">Overview of your team's productivity</p>
         </div>
       </div>
 
