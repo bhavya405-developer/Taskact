@@ -355,6 +355,15 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         onClose={handleCloseTaskDetail}
         onEdit={isPartner() ? handleEditTask : null}
       />
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        task={taskToEdit}
+        users={users}
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onSave={handleEditSave}
+      />
     </div>
   );
 };
