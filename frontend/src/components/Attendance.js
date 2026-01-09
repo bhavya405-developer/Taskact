@@ -53,9 +53,15 @@ const Attendance = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      
+      // Get today's date range for filtering history
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      
       const requests = [
         axios.get(`${API}/attendance/today`),
-        axios.get(`${API}/attendance/history`),
+        axios.get(`${API}/attendance/history?start_date=${startOfDay}&end_date=${endOfDay}`),
         axios.get(`${API}/attendance/settings`),
         axios.get(`${API}/attendance/rules`),
         axios.get(`${API}/attendance/holidays?year=${new Date().getFullYear()}`)
