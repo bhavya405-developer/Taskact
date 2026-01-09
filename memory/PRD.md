@@ -151,14 +151,19 @@ All accounts use password: `password123`
 - `PUT /api/users/{id}/deactivate` - Deactivate user
 - `PUT /api/users/{id}/reactivate` - Reactivate user
 
-### Attendance (NEW)
-- `GET /api/attendance/settings` - Get geofence settings
+### Attendance (Enhanced)
+- `GET /api/attendance/settings` - Get geofence settings (multi-location)
 - `PUT /api/attendance/settings` - Update geofence settings (Partner)
+- `GET /api/attendance/rules` - Get attendance rules
+- `PUT /api/attendance/rules` - Update attendance rules (Partner)
+- `GET /api/attendance/holidays` - Get holidays for a year
+- `POST /api/attendance/holidays` - Add a holiday (Partner)
+- `DELETE /api/attendance/holidays/{id}` - Delete a holiday (Partner)
 - `POST /api/attendance/clock-in` - Clock in with GPS location
 - `POST /api/attendance/clock-out` - Clock out with GPS location
 - `GET /api/attendance/today` - Get today's attendance status
 - `GET /api/attendance/history` - Get attendance history
-- `GET /api/attendance/report` - Get monthly attendance report (Partner)
+- `GET /api/attendance/report` - Get enhanced monthly attendance report (Partner)
 
 ### Dashboard
 - `GET /api/dashboard` - Dashboard analytics
