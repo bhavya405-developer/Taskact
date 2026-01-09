@@ -2350,21 +2350,22 @@ async def clock_in(
     # Get geofence settings
     settings = await get_geofence_settings()
     
-    # Calculate distance from office if geofence is configured
+    # Calculate distance from office locations if geofence is configured
     is_within_geofence = None
     distance_from_office = None
+    nearest_location = None
     
-    if settings.enabled and settings.office_latitude and settings.office_longitude:
-        distance_from_office = haversine_distance(
+    locations = settings.get("locations", [])
+    if settings.get("enabled") and locations:
+        is_within_geofence, distance_from_office, nearest_location = check_within_any_geofence(
             attendance_data.latitude, attendance_data.longitude,
-            settings.office_latitude, settings.office_longitude
+            locations, settings.get("radius_meters", 100)
         )
-        is_within_geofence = distance_from_office <= settings.radius_meters
         
         if not is_within_geofence:
             raise HTTPException(
                 status_code=400, 
-                detail=f"You are {distance_from_office:.0f}m away from office. Must be within {settings.radius_meters:.0f}m to clock in."
+                detail=f"You are {distance_from_office:.0f}m away from the nearest office ({nearest_location}). Must be within {settings.get('radius_meters', 100):.0f}m to clock in."
             )
     
     # Reverse geocode the address
@@ -2382,6 +2383,7 @@ async def clock_in(
         "address": address,
         "is_within_geofence": is_within_geofence,
         "distance_from_office": distance_from_office,
+        "nearest_location": nearest_location,
         "device_info": attendance_data.device_info
     }
     
@@ -2438,13 +2440,14 @@ async def clock_out(
     # Calculate distance from office (for record, not enforced on clock out)
     is_within_geofence = None
     distance_from_office = None
+    nearest_location = None
     
-    if settings.office_latitude and settings.office_longitude:
-        distance_from_office = haversine_distance(
+    locations = settings.get("locations", [])
+    if locations:
+        is_within_geofence, distance_from_office, nearest_location = check_within_any_geofence(
             attendance_data.latitude, attendance_data.longitude,
-            settings.office_latitude, settings.office_longitude
+            locations, settings.get("radius_meters", 100)
         )
-        is_within_geofence = distance_from_office <= settings.radius_meters if settings.enabled else None
     
     # Reverse geocode the address
     address = await reverse_geocode(attendance_data.latitude, attendance_data.longitude)
