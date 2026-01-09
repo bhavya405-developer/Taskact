@@ -1127,15 +1127,15 @@ const Attendance = () => {
         )}
       </div>
 
-      {/* Attendance History */}
+      {/* Attendance History - Today Only */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Calendar className="w-5 h-5 mr-2" />
-          Attendance History {isPartner() && '(All Users)'}
+          Today&apos;s Attendance {isPartner() && '(All Users)'}
         </h3>
 
         {sortedGroupedHistory.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No attendance records found</p>
+          <p className="text-gray-500 text-center py-8">No attendance records for today</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
