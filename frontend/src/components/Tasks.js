@@ -224,6 +224,60 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
     setImportResult(null);
   };
 
+  // Bulk delete functions
+  const openBulkDeleteModal = (type) => {
+    setBulkDeleteType(type);
+    setBulkDeletePassword('');
+    setBulkDeleteConfirm('');
+    setBulkDeleteError('');
+    setShowBulkDeleteModal(true);
+  };
+
+  const closeBulkDeleteModal = () => {
+    setShowBulkDeleteModal(false);
+    setBulkDeleteType(null);
+    setBulkDeletePassword('');
+    setBulkDeleteConfirm('');
+    setBulkDeleteError('');
+  };
+
+  const handleBulkDelete = async () => {
+    // Validate confirmation text
+    const expectedConfirm = bulkDeleteType === 'completed' ? 'DELETE COMPLETED' : 'DELETE ALL';
+    if (bulkDeleteConfirm !== expectedConfirm) {
+      setBulkDeleteError(`Please type "${expectedConfirm}" to confirm`);
+      return;
+    }
+
+    if (!bulkDeletePassword) {
+      setBulkDeleteError('Please enter your password');
+      return;
+    }
+
+    setBulkDeleting(true);
+    setBulkDeleteError('');
+
+    try {
+      const endpoint = bulkDeleteType === 'completed' 
+        ? `${API}/tasks/bulk-delete/completed`
+        : `${API}/tasks/bulk-delete/all`;
+
+      const response = await axios.post(endpoint, { password: bulkDeletePassword });
+      
+      closeBulkDeleteModal();
+      alert(response.data.message);
+      
+      // Refresh tasks
+      if (onTaskUpdate) {
+        await onTaskUpdate();
+      }
+    } catch (error) {
+      setBulkDeleteError(error.response?.data?.detail || 'Failed to delete tasks. Please check your password.');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   // Handle column sort
   const handleSort = (column) => {
     if (sortColumn === column) {
