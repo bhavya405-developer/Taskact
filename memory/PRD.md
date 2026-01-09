@@ -93,6 +93,7 @@ TaskAct is a comprehensive task management application designed for professional
 - [x] **Horizontal Scrolling**: Wide tables support horizontal scroll
 - [x] Team management (add, edit users)
 - [x] **Team Member Delete/Deactivate**
+- [x] **Department Categories Updated**: Audit and Assurance, Tax and Regulatory Compliance, Accounting, Certification, Tax Litigation, Advisory, Administrative, Management, Others
 - [x] Client and Category management
 - [x] Bulk import/export with Excel templates (Clients, Categories)
 - [x] **Bulk Task Import/Export** (Partners only) - Uses names & DD-MMM-YYYY format
@@ -103,13 +104,15 @@ TaskAct is a comprehensive task management application designed for professional
 - [x] Mobile responsive design (hamburger menu, card layout)
 - [x] Custom TaskAct branding (logo, favicon)
 - [x] **Forgot Password with OTP** (Dev Mode)
-- [x] **GPS-Based Attendance** (NEW)
+- [x] **GPS-Based Attendance** (Enhanced)
   - Clock in/out with GPS location
   - Reverse geocoding (addresses)
-  - Today's status view
-  - Attendance history
-  - Geofence settings (partners)
-  - Monthly attendance report (partners)
+  - Today's status view with Full/Half day indicator
+  - Attendance history with day type
+  - **Multi-location geofence** (up to 5 locations)
+  - **Attendance rules** (min hours, working days)
+  - **Holiday management** (add/delete paid holidays)
+  - **Enhanced monthly report** (full/half days, absents, effective days)
 
 ### Pending/Future Features
 - [ ] Production email delivery (requires Resend API key from user)
