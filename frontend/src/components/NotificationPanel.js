@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,24 +11,54 @@ const NotificationPanel = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPanel, setShowPanel] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
+  const previousUnreadCount = useRef(0);
+  const latestNotificationId = useRef(null);
 
   // Request notification permission on mount
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      
+      // Auto-request permission when user first visits
+      if (Notification.permission === 'default') {
+        // Add a small delay to avoid blocking page load
+        const timer = setTimeout(() => {
+          Notification.requestPermission().then((permission) => {
+            setNotificationPermission(permission);
+          });
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
     }
   }, []);
 
-  // Function to show browser notification
+  // Function to show browser/OS notification
   const showBrowserNotification = useCallback((title, message) => {
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body: message,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: 'taskact-notification',
-        requireInteraction: false
-      });
+      try {
+        const notification = new Notification(title, {
+          body: message,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: `taskact-${Date.now()}`,
+          requireInteraction: false,
+          silent: false,
+          vibrate: [200, 100, 200]
+        });
+
+        // Auto close after 5 seconds
+        setTimeout(() => notification.close(), 5000);
+
+        // Handle click - focus the app
+        notification.onclick = () => {
+          window.focus();
+          setShowPanel(true);
+          notification.close();
+        };
+      } catch (error) {
+        console.error('Error showing notification:', error);
+      }
     }
   }, []);
 
@@ -38,7 +68,19 @@ const NotificationPanel = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API}/notifications`);
-      setNotifications(response.data);
+      const newNotifications = response.data;
+      
+      // Check if there's a new notification we haven't seen
+      if (newNotifications.length > 0) {
+        const latestNotif = newNotifications[0];
+        if (latestNotificationId.current && latestNotif.id !== latestNotificationId.current && !latestNotif.read) {
+          // Show browser notification for the new notification
+          showBrowserNotification(latestNotif.title, latestNotif.message);
+        }
+        latestNotificationId.current = latestNotif.id;
+      }
+      
+      setNotifications(newNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -54,15 +96,34 @@ const NotificationPanel = () => {
       const newCount = response.data.unread_count;
       
       // Show browser notification if count increased
-      if (newCount > unreadCount && unreadCount > 0) {
-        showBrowserNotification('New Notification', 'You have a new notification in TaskAct');
+      if (newCount > previousUnreadCount.current && previousUnreadCount.current >= 0) {
+        // Fetch latest notification to show its content
+        try {
+          const notifResponse = await axios.get(`${API}/notifications`);
+          const latestUnread = notifResponse.data.find(n => !n.read);
+          if (latestUnread && latestUnread.id !== latestNotificationId.current) {
+            showBrowserNotification(latestUnread.title, latestUnread.message);
+            latestNotificationId.current = latestUnread.id;
+          }
+        } catch (e) {
+          // Fallback generic notification
+          showBrowserNotification('TaskAct', 'You have a new notification');
+        }
       }
       
+      previousUnreadCount.current = newCount;
       setUnreadCount(newCount);
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
-  }, [user, unreadCount, showBrowserNotification]);
+  }, [user, showBrowserNotification]);
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+    }
+  };
 
   const markAsRead = async (notificationId) => {
     try {
