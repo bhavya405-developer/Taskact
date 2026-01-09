@@ -188,12 +188,10 @@ const NotificationPanel = () => {
         const fetchedNotifications = response.data;
         setNotifications(fetchedNotifications);
         
-        // Immediately mark all unread as read
-        const unread = fetchedNotifications.filter(n => !n.read);
-        if (unread.length > 0) {
-          await Promise.all(
-            unread.map(notif => axios.put(`${API}/notifications/${notif.id}/read`))
-          );
+        // Mark all as read using bulk endpoint
+        const unreadCount = fetchedNotifications.filter(n => !n.read).length;
+        if (unreadCount > 0) {
+          await axios.put(`${API}/notifications/mark-all-read`);
           // Update local state to show all as read
           setNotifications(fetchedNotifications.map(n => ({ ...n, read: true })));
           setUnreadCount(0);
