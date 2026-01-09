@@ -113,6 +113,19 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
     }
   };
 
+  const handleDeleteTask = async (task) => {
+    try {
+      await axios.delete(`${API}/tasks/${task.id}`);
+      handleCloseTaskDetail();
+      if (onTaskUpdate) {
+        onTaskUpdate();
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert(error.response?.data?.detail || 'Failed to delete task');
+    }
+  };
+
   // Download template
   const handleDownloadTemplate = async () => {
     try {
