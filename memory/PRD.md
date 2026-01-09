@@ -141,6 +141,8 @@ All accounts use password: `password123`
 - `GET /api/tasks/template` - Download bulk import template (Partner)
 - `POST /api/tasks/bulk-import` - Bulk import tasks from Excel (Partner)
 - `GET /api/tasks/export` - Export all tasks to Excel (Partner)
+- `POST /api/tasks/bulk-delete/completed` - Delete all completed tasks (Partner, requires password)
+- `POST /api/tasks/bulk-delete/all` - Delete all tasks (Partner, requires password)
 
 ### Users
 - `GET /api/users` - List users (partners can add `?include_inactive=true`)
