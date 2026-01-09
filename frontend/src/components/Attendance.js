@@ -342,17 +342,33 @@ const Attendance = () => {
   const downloadReport = async () => {
     try {
       setActionLoading(true);
-      const response = await axios.get(`${API}/attendance/report/export`, {
-        responseType: 'blob'
+      setError('');
+      
+      // Get the auth token
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API}/attendance/report/export`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to download report');
+      }
+      
+      // Get blob from response
+      const blob = await response.blob();
+      
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       
       // Get filename from header or generate one
-      const contentDisposition = response.headers['content-disposition'];
+      const contentDisposition = response.headers.get('content-disposition');
       let filename = 'Attendance_Report.xlsx';
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename=(.+)/);
@@ -369,7 +385,8 @@ const Attendance = () => {
       
       setSuccess('Report downloaded successfully');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to download report');
+      console.error('Download error:', err);
+      setError(err.message || 'Failed to download report');
     } finally {
       setActionLoading(false);
     }
