@@ -594,13 +594,16 @@ async def update_overdue_tasks():
     """Automatically update tasks to overdue status if past due date"""
     current_time = datetime.now(timezone.utc)
     
-    # Get all pending and on_hold tasks with due dates
+    # Get all pending and on_hold tasks with due dates (with reasonable limit)
     tasks = await db.tasks.find({
         "status": {"$in": [TaskStatus.PENDING, TaskStatus.ON_HOLD]},
         "due_date": {"$ne": None}
-    }).to_list(length=None)
+    }).to_list(length=5000)
     
-    updated_count = 0
+    # Collect bulk operations for overdue tasks
+    from pymongo import UpdateOne
+    bulk_operations = []
+    
     for task in tasks:
         due_date_str = task.get('due_date')
         if due_date_str:
@@ -610,17 +613,24 @@ async def update_overdue_tasks():
                 
                 # Check if task is actually overdue
                 if due_date < current_time:
-                    await db.tasks.update_one(
-                        {"id": task["id"]},
-                        {"$set": {
-                            "status": TaskStatus.OVERDUE,
-                            "updated_at": current_time.isoformat()
-                        }}
+                    bulk_operations.append(
+                        UpdateOne(
+                            {"id": task["id"]},
+                            {"$set": {
+                                "status": TaskStatus.OVERDUE,
+                                "updated_at": current_time.isoformat()
+                            }}
+                        )
                     )
-                    updated_count += 1
             except Exception as e:
                 # Log error but continue processing other tasks
                 print(f"Error processing overdue task {task.get('id', 'unknown')}: {e}")
+    
+    # Execute bulk update if there are any overdue tasks
+    updated_count = 0
+    if bulk_operations:
+        result = await db.tasks.bulk_write(bulk_operations)
+        updated_count = result.modified_count
     
     return updated_count
 
