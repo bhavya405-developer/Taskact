@@ -197,51 +197,27 @@ const CreateTask = ({ users, onTaskCreated }) => {
             </div>
           </div>
 
-          {/* Assignee and Creator Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="assignee_id" className="form-label">
-                Assign To *
-              </label>
-              <select
-                id="assignee_id"
-                name="assignee_id"
-                value={formData.assignee_id}
-                onChange={handleChange}
-                className="form-input"
-                data-testid="assignee-select"
-                required
-              >
-                <option value="">Select team member...</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} ({user.role})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="creator_id" className="form-label">
-                Created By
-              </label>
-              <select
-                id="creator_id"
-                name="creator_id"
-                value={formData.creator_id}
-                onChange={handleChange}
-                className="form-input"
-                data-testid="creator-select"
-                required
-              >
-                <option value="">Select creator...</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} ({user.role})
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Assignee */}
+          <div>
+            <label htmlFor="assignee_id" className="form-label">
+              Assign To *
+            </label>
+            <select
+              id="assignee_id"
+              name="assignee_id"
+              value={formData.assignee_id}
+              onChange={handleChange}
+              className="form-input"
+              data-testid="assignee-select"
+              required
+            >
+              <option value="">Select team member...</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.role})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Priority and Due Date Row */}
