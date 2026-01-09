@@ -303,6 +303,9 @@ class HolidayCreate(BaseModel):
     name: str
     is_paid: bool = True
 
+class PasswordVerifyRequest(BaseModel):
+    password: str
+
 class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
