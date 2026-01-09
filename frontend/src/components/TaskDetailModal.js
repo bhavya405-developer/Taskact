@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Clock, History, Trash2 } from 'lucide-react';
 
 const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete }) => {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
   if (!isOpen || !task) return null;
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (onDelete) {
-      setDeleting(true);
-      await onDelete(task);
-      setDeleting(false);
-      setShowDeleteConfirm(false);
+      onDelete(task);
     }
   };
 
