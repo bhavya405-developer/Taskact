@@ -530,6 +530,26 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
                   </>
                 )}
               </button>
+              <button
+                onClick={() => openBulkDeleteModal('completed')}
+                className="btn-secondary flex items-center text-sm text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                data-testid="clear-completed-btn"
+                title="Clear All Completed Tasks"
+                disabled={tasks.filter(t => t.status === 'completed').length === 0}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Clear Completed</span>
+              </button>
+              <button
+                onClick={() => openBulkDeleteModal('all')}
+                className="btn-secondary flex items-center text-sm text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                data-testid="clear-all-btn"
+                title="Clear All Tasks"
+                disabled={tasks.length === 0}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Clear All</span>
+              </button>
             </>
           )}
           <Link
