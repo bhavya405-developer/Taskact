@@ -1586,6 +1586,56 @@ async def delete_task(task_id: str, current_user: UserResponse = Depends(get_cur
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
 
+@api_router.post("/tasks/bulk-delete/completed")
+async def delete_all_completed_tasks(
+    password_verify: PasswordVerifyRequest,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Delete all completed tasks (Partners only, requires password verification)"""
+    # Verify password
+    user = await db.users.find_one({"id": current_user.id})
+    if not user or not verify_password(password_verify.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    
+    # Count completed tasks before deletion
+    count = await db.tasks.count_documents({"status": TaskStatus.COMPLETED})
+    
+    if count == 0:
+        return {"message": "No completed tasks to delete", "deleted_count": 0}
+    
+    # Delete all completed tasks
+    result = await db.tasks.delete_many({"status": TaskStatus.COMPLETED})
+    
+    return {
+        "message": f"Successfully deleted {result.deleted_count} completed task(s)",
+        "deleted_count": result.deleted_count
+    }
+
+@api_router.post("/tasks/bulk-delete/all")
+async def delete_all_tasks(
+    password_verify: PasswordVerifyRequest,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Delete all tasks regardless of status (Partners only, requires password verification)"""
+    # Verify password
+    user = await db.users.find_one({"id": current_user.id})
+    if not user or not verify_password(password_verify.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    
+    # Count all tasks before deletion
+    count = await db.tasks.count_documents({})
+    
+    if count == 0:
+        return {"message": "No tasks to delete", "deleted_count": 0}
+    
+    # Delete all tasks
+    result = await db.tasks.delete_many({})
+    
+    return {
+        "message": f"Successfully deleted {result.deleted_count} task(s)",
+        "deleted_count": result.deleted_count
+    }
+
 # Notification endpoints
 @api_router.get("/notifications", response_model=List[Notification])
 async def get_user_notifications(current_user: UserResponse = Depends(get_current_user)):
