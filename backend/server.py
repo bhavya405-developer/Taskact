@@ -2929,6 +2929,80 @@ async def export_attendance_report(
             "Avg Hours/Day": round(total_hours / (full_days + half_days), 2) if (full_days + half_days) > 0 else 0
         })
     
+    # Create daily detail data (employee-wise in/out times)
+    daily_detail_data = []
+    for user in users:
+        # Get attendance records for this user in the month
+        records = await db.attendance.find({
+            "user_id": user["id"],
+            "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
+        }).to_list(length=None)
+        
+        clock_ins = {datetime.fromisoformat(r["timestamp"]).strftime("%Y-%m-%d"): r 
+                     for r in records if r["type"] == AttendanceType.CLOCK_IN.value}
+        clock_outs = {datetime.fromisoformat(r["timestamp"]).strftime("%Y-%m-%d"): r 
+                      for r in records if r["type"] == AttendanceType.CLOCK_OUT.value}
+        
+        # Iterate through each day of the month
+        current_date = start_date
+        while current_date < end_date:
+            date_str = current_date.strftime("%Y-%m-%d")
+            weekday = current_date.weekday()
+            day_name = current_date.strftime("%A")
+            
+            cin = clock_ins.get(date_str)
+            cout = clock_outs.get(date_str)
+            
+            in_time_str = ""
+            out_time_str = ""
+            hours_worked = ""
+            day_type = ""
+            status = ""
+            
+            # Determine status
+            if weekday == 6:
+                status = "Weekly Off"
+            elif date_str in holiday_dates:
+                holiday_name = next((h["name"] for h in holidays if h["date"] == date_str), "Holiday")
+                status = f"Holiday ({holiday_name})"
+            elif weekday not in working_days:
+                status = "Weekly Off"
+            elif cin:
+                # Convert to IST for display
+                in_time = datetime.fromisoformat(cin["timestamp"])
+                in_time_ist = in_time + timedelta(hours=5, minutes=30)
+                in_time_str = in_time_ist.strftime("%I:%M %p")
+                
+                if cout:
+                    out_time = datetime.fromisoformat(cout["timestamp"])
+                    out_time_ist = out_time + timedelta(hours=5, minutes=30)
+                    out_time_str = out_time_ist.strftime("%I:%M %p")
+                    
+                    hours = (out_time - in_time).total_seconds() / 3600
+                    hours_worked = f"{hours:.2f}"
+                    day_type = "Full Day" if hours >= min_hours_full_day else "Half Day"
+                    status = "Present"
+                else:
+                    status = "Clocked In (No Clock Out)"
+            elif current_date.date() <= now.date():
+                status = "Absent"
+            else:
+                status = "-"  # Future date
+            
+            daily_detail_data.append({
+                "Date": date_str,
+                "Day": day_name,
+                "Employee": user["name"],
+                "Department": user.get("department", ""),
+                "Clock In": in_time_str,
+                "Clock Out": out_time_str,
+                "Hours Worked": hours_worked,
+                "Day Type": day_type,
+                "Status": status
+            })
+            
+            current_date += timedelta(days=1)
+    
     # Create summary data
     month_names = ["January", "February", "March", "April", "May", "June", 
                    "July", "August", "September", "October", "November", "December"]
