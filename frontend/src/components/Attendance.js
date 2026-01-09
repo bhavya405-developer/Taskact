@@ -1049,12 +1049,12 @@ const Attendance = () => {
           )}
         </div>
 
-        {/* Geofence Info */}
-        {geofenceSettings?.enabled && geofenceSettings?.locations?.length > 0 && (
+        {/* Geofence Info - Only show to partners */}
+        {isPartner() && geofenceSettings?.enabled && geofenceSettings?.locations?.length > 0 && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-800 flex items-center">
               <MapPin className="w-4 h-4 mr-2" />
-              Geofence enabled: You must be within {geofenceSettings.radius_meters}m of any office location to clock in.
+              Geofence enabled: Users must be within {geofenceSettings.radius_meters}m of any office location to clock in.
             </p>
             <p className="text-xs text-amber-700 mt-1">
               Locations: {geofenceSettings.locations.map(l => l.name).join(', ')}
