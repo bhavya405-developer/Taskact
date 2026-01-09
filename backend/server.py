@@ -331,7 +331,7 @@ class TaskCreate(BaseModel):
     client_name: str
     category: str
     assignee_id: str
-    creator_id: str
+    creator_id: Optional[str] = None  # Optional - will be set to current user by backend
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
 
