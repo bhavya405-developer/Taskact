@@ -2585,6 +2585,31 @@ async def get_attendance_history(
     
     return [parse_from_mongo(record) for record in records]
 
+@api_router.delete("/attendance/{attendance_id}")
+async def delete_attendance_record(
+    attendance_id: str,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Delete an attendance record (Partners only)"""
+    # Find the attendance record
+    record = await db.attendance.find_one({"id": attendance_id})
+    if not record:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    
+    # Delete the record
+    result = await db.attendance.delete_one({"id": attendance_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    
+    # Create notification for the user whose attendance was deleted
+    await create_notification(
+        user_id=record["user_id"],
+        title="Attendance Record Deleted",
+        message=f"Your {record['type']} record for {record.get('timestamp_ist', 'N/A')} has been deleted by {current_user.name}"
+    )
+    
+    return {"message": "Attendance record deleted successfully"}
+
 @api_router.get("/attendance/report")
 async def get_attendance_report(
     month: Optional[int] = None,
