@@ -113,6 +113,11 @@ TaskAct is a comprehensive task management application designed for professional
   - **Attendance rules** (min hours, working days)
   - **Holiday management** (add/delete paid holidays)
   - **Enhanced monthly report** (full/half days, absents, effective days)
+  - **Delete attendance records** (Partners can delete any attendance record)
+- [x] **Bulk Task Operations** (Partners only - Jan 2026)
+  - **Clear Completed Tasks**: Delete all completed tasks with password verification
+  - **Clear All Tasks**: Delete all tasks with password verification
+  - Double confirmation required: Password + Type confirmation text
 
 ### Pending/Future Features
 - [ ] Production email delivery (requires Resend API key from user)
