@@ -116,7 +116,7 @@ const Attendance = () => {
               reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }  // Force fresh location
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }  // Force fresh location for attendance
         );
       };
 
@@ -144,11 +144,59 @@ const Attendance = () => {
                 reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 }  // Force fresh location even for fallback
+          { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 }
         );
       };
 
       tryHighAccuracy();
+    });
+  };
+
+  // More lenient location getter for settings (allows cached location, longer timeout)
+  const getLocationForSettings = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by your browser'));
+        return;
+      }
+
+      // Try multiple approaches in sequence
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      const attemptLocation = (highAccuracy, timeout, maxAge) => {
+        attempts++;
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            });
+          },
+          (error) => {
+            if (error.code === error.PERMISSION_DENIED) {
+              reject(new Error('Location permission denied. Please enable location access in your browser settings.'));
+              return;
+            }
+            
+            // Try next approach
+            if (attempts === 1) {
+              // Second attempt: low accuracy, cached allowed
+              attemptLocation(false, 30000, 300000);
+            } else if (attempts === 2) {
+              // Third attempt: any accuracy, longer cache
+              attemptLocation(false, 60000, 600000);
+            } else {
+              reject(new Error('Unable to get location. Please enter coordinates manually or try again.'));
+            }
+          },
+          { enableHighAccuracy: highAccuracy, timeout: timeout, maximumAge: maxAge }
+        );
+      };
+
+      // First attempt: high accuracy, recent cache allowed
+      attemptLocation(true, 15000, 60000);
     });
   };
 
