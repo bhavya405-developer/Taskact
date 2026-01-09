@@ -104,7 +104,7 @@ const AppContent = () => {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route 
               path="/dashboard" 
-              element={<Dashboard users={users} tasks={tasks} />} 
+              element={<Dashboard users={users} tasks={tasks} onTaskUpdate={fetchTasks} />} 
             />
             <Route 
               path="/tasks" 
