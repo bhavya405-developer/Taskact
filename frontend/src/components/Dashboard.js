@@ -128,17 +128,6 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
     }
   };
 
-  const fetchDashboardData = async () => {
-    try {
-      const response = await axios.get(`${API}/dashboard`);
-      setDashboardData(response.data);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
       {/* Header - Smaller on mobile */}
