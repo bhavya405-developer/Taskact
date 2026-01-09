@@ -491,19 +491,52 @@ const Attendance = () => {
     }));
   };
 
-  // Group history by date
+  // Group history by date (for non-partners: single user, for partners: all users)
   const groupedHistory = history.reduce((acc, record) => {
     const date = formatDate(record.timestamp);
-    if (!acc[date]) {
-      acc[date] = { clock_in: null, clock_out: null };
-    }
-    if (record.type === 'clock_in') {
-      acc[date].clock_in = record;
+    const userId = record.user_id;
+    const userName = record.user_name || 'Unknown';
+    
+    // For partners, group by date AND user
+    if (isPartner()) {
+      const key = `${date}_${userId}`;
+      if (!acc[key]) {
+        acc[key] = { 
+          date, 
+          user_id: userId, 
+          user_name: userName,
+          clock_in: null, 
+          clock_out: null 
+        };
+      }
+      if (record.type === 'clock_in') {
+        acc[key].clock_in = record;
+      } else {
+        acc[key].clock_out = record;
+      }
     } else {
-      acc[date].clock_out = record;
+      // For non-partners: group by date only (own records)
+      if (!acc[date]) {
+        acc[date] = { clock_in: null, clock_out: null };
+      }
+      if (record.type === 'clock_in') {
+        acc[date].clock_in = record;
+      } else {
+        acc[date].clock_out = record;
+      }
     }
     return acc;
   }, {});
+
+  // Sort grouped history by date (most recent first) for partners
+  const sortedGroupedHistory = isPartner() 
+    ? Object.entries(groupedHistory).sort((a, b) => {
+        // Sort by date string (most recent first)
+        const dateA = a[1].clock_in?.timestamp || a[1].clock_out?.timestamp || '';
+        const dateB = b[1].clock_in?.timestamp || b[1].clock_out?.timestamp || '';
+        return new Date(dateB) - new Date(dateA);
+      })
+    : Object.entries(groupedHistory);
 
   if (loading) {
     return (
