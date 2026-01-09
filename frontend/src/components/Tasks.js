@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
+import EditTaskModal from './EditTaskModal';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
@@ -17,6 +18,8 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const [updating, setUpdating] = useState({});
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
   
   // Sorting state - default sort by due_date ascending
   const [sortColumn, setSortColumn] = useState('due_date');
