@@ -3026,9 +3026,31 @@ async def export_attendance_report(
         df_summary = pd.DataFrame(summary_data)
         df_summary.to_excel(writer, sheet_name='Summary', index=False)
         
-        # Report sheet
+        # Report sheet (employee-wise monthly summary)
         df_report = pd.DataFrame(sorted(report_data, key=lambda x: x["Name"]))
-        df_report.to_excel(writer, sheet_name='Attendance Report', index=False)
+        df_report.to_excel(writer, sheet_name='Monthly Summary', index=False)
+        
+        # Daily detail sheet (employee-wise daily in/out times)
+        df_daily = pd.DataFrame(daily_detail_data)
+        # Sort by date then by employee name
+        df_daily = df_daily.sort_values(by=['Date', 'Employee'])
+        df_daily.to_excel(writer, sheet_name='Daily Details', index=False)
+        
+        # Adjust column widths for Daily Details sheet
+        worksheet = writer.sheets['Daily Details']
+        column_widths = {
+            'A': 12,  # Date
+            'B': 12,  # Day
+            'C': 20,  # Employee
+            'D': 15,  # Department
+            'E': 12,  # Clock In
+            'F': 12,  # Clock Out
+            'G': 14,  # Hours Worked
+            'H': 12,  # Day Type
+            'I': 25,  # Status
+        }
+        for col, width in column_widths.items():
+            worksheet.column_dimensions[col].width = width
     
     output.seek(0)
     
