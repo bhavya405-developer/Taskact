@@ -585,7 +585,7 @@ const Attendance = () => {
               </label>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="w-48">
                 <label className="form-label">Radius (meters)</label>
                 <input
@@ -599,12 +599,44 @@ const Attendance = () => {
               </div>
               <button
                 onClick={addLocation}
-                disabled={settingsForm.locations.length >= 5}
+                disabled={settingsForm.locations.length >= 5 || actionLoading}
                 className="btn-secondary flex items-center mt-6"
                 data-testid="add-location"
               >
+                {actionLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                    Getting Location...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Current Location
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  if (settingsForm.locations.length >= 5) {
+                    setError('Maximum 5 locations allowed');
+                    return;
+                  }
+                  setSettingsForm(prev => ({
+                    ...prev,
+                    locations: [...prev.locations, {
+                      name: `Office ${prev.locations.length + 1}`,
+                      latitude: 0,
+                      longitude: 0,
+                      address: ''
+                    }]
+                  }));
+                  setSuccess('Location added. Please enter coordinates manually.');
+                }}
+                disabled={settingsForm.locations.length >= 5}
+                className="btn-secondary flex items-center mt-6 text-sm"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Current Location
+                Add Manually
               </button>
             </div>
 
