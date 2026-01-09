@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,6 +11,26 @@ const NotificationPanel = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPanel, setShowPanel] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Function to show browser notification
+  const showBrowserNotification = useCallback((title, message) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body: message,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: 'taskact-notification',
+        requireInteraction: false
+      });
+    }
+  }, []);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -26,16 +46,23 @@ const NotificationPanel = () => {
     }
   };
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     if (!user) return;
     
     try {
       const response = await axios.get(`${API}/notifications/unread-count`);
-      setUnreadCount(response.data.unread_count);
+      const newCount = response.data.unread_count;
+      
+      // Show browser notification if count increased
+      if (newCount > unreadCount && unreadCount > 0) {
+        showBrowserNotification('New Notification', 'You have a new notification in TaskAct');
+      }
+      
+      setUnreadCount(newCount);
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
-  };
+  }, [user, unreadCount, showBrowserNotification]);
 
   const markAsRead = async (notificationId) => {
     try {
@@ -68,7 +95,7 @@ const NotificationPanel = () => {
       
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, fetchUnreadCount]);
 
   const togglePanel = () => {
     if (!showPanel) {
@@ -111,65 +138,80 @@ const NotificationPanel = () => {
         )}
       </button>
 
-      {/* Notification Panel */}
+      {/* Notification Panel - Fixed for mobile */}
       {showPanel && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-          </div>
-          
-          <div className="max-h-96 overflow-y-auto">
-            {loading ? (
-              <div className="p-4 text-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-sm text-gray-600">Loading notifications...</p>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                <p>No notifications yet</p>
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                    !notification.read ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
-                  data-testid={`notification-${notification.id}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        {notification.title}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {formatDate(notification.created_at)}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <div className="w-2 h-2 bg-blue-600 rounded-full ml-2 mt-1"></div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          
-          {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-200 text-center">
+        <>
+          {/* Backdrop for mobile */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
+            onClick={() => setShowPanel(false)}
+          />
+          <div className="fixed right-2 left-2 top-16 md:absolute md:right-0 md:left-auto md:top-auto md:mt-2 md:w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[80vh] md:max-h-96 overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
               <button
                 onClick={() => setShowPanel(false)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-gray-400 hover:text-gray-600 md:hidden"
               >
-                Close
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          )}
-        </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="p-4 text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-600">Loading notifications...</p>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  <p>No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                      !notification.read ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => !notification.read && markAsRead(notification.id)}
+                    data-testid={`notification-${notification.id}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {notification.title}
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {formatDate(notification.created_at)}
+                        </p>
+                      </div>
+                      {!notification.read && (
+                        <div className="w-2 h-2 bg-blue-600 rounded-full ml-2 mt-1"></div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {notifications.length > 0 && (
+              <div className="px-4 py-3 border-t border-gray-200 text-center">
+                <button
+                  onClick={() => setShowPanel(false)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
