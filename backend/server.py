@@ -2568,6 +2568,35 @@ async def get_attendance_report(
     else:
         end_date = datetime(report_year, report_month + 1, 1, tzinfo=timezone.utc)
     
+    # Get attendance rules
+    rules = await db.attendance_rules.find_one({"id": "attendance_rules"})
+    min_hours_full_day = rules.get("min_hours_full_day", 8.0) if rules else 8.0
+    working_days = rules.get("working_days", [0, 1, 2, 3, 4, 5]) if rules else [0, 1, 2, 3, 4, 5]  # Mon-Sat
+    
+    # Get holidays for the month
+    holidays = await db.holidays.find({
+        "date": {"$regex": f"^{report_year}-{report_month:02d}"}
+    }).to_list(length=None)
+    holiday_dates = {h["date"] for h in holidays}
+    
+    # Calculate working days in the month (excluding Sundays and holidays)
+    total_working_days = 0
+    total_sundays = 0
+    total_holidays = 0
+    current_date = start_date
+    while current_date < end_date:
+        date_str = current_date.strftime("%Y-%m-%d")
+        weekday = current_date.weekday()  # 0=Monday, 6=Sunday
+        
+        if weekday == 6:  # Sunday
+            total_sundays += 1
+        elif date_str in holiday_dates:
+            total_holidays += 1
+        elif weekday in working_days:
+            total_working_days += 1
+        
+        current_date += timedelta(days=1)
+    
     # Get all users
     users = await db.users.find({"active": True}).to_list(length=None)
     
@@ -2579,41 +2608,93 @@ async def get_attendance_report(
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
         }).to_list(length=None)
         
-        # Count days present (has clock_in)
-        days_present = len(set(
-            datetime.fromisoformat(r["timestamp"]).date() 
-            for r in records if r["type"] == AttendanceType.CLOCK_IN.value
-        ))
-        
-        # Calculate total hours worked
+        # Group by date
         clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
         clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT.value]
         
+        full_days = 0
+        half_days = 0
         total_hours = 0
+        daily_details = []
+        
         for cin in clock_ins:
             cin_date = datetime.fromisoformat(cin["timestamp"]).date()
+            date_str = cin_date.strftime("%Y-%m-%d")
+            
             matching_out = next(
                 (co for co in clock_outs 
                  if datetime.fromisoformat(co["timestamp"]).date() == cin_date),
                 None
             )
+            
             if matching_out:
                 in_time = datetime.fromisoformat(cin["timestamp"])
                 out_time = datetime.fromisoformat(matching_out["timestamp"])
-                total_hours += (out_time - in_time).total_seconds() / 3600
+                hours = (out_time - in_time).total_seconds() / 3600
+                total_hours += hours
+                
+                # Determine if full day or half day
+                if hours >= min_hours_full_day:
+                    full_days += 1
+                    day_type = "full"
+                else:
+                    half_days += 1
+                    day_type = "half"
+                
+                daily_details.append({
+                    "date": date_str,
+                    "hours": round(hours, 2),
+                    "type": day_type
+                })
+            else:
+                # Clock in without clock out - mark as incomplete
+                daily_details.append({
+                    "date": date_str,
+                    "hours": 0,
+                    "type": "incomplete"
+                })
+        
+        # Calculate absent days (working days - present days)
+        present_dates = {d["date"] for d in daily_details}
+        absent_days = 0
+        current_date = start_date
+        while current_date < end_date and current_date.date() <= now.date():
+            date_str = current_date.strftime("%Y-%m-%d")
+            weekday = current_date.weekday()
+            
+            # Skip Sundays and holidays
+            if weekday != 6 and date_str not in holiday_dates and weekday in working_days:
+                if date_str not in present_dates:
+                    absent_days += 1
+            
+            current_date += timedelta(days=1)
+        
+        # Calculate effective days (full days + half days * 0.5)
+        effective_days = full_days + (half_days * 0.5)
         
         report.append({
             "user_id": user["id"],
             "user_name": user["name"],
             "role": user["role"],
-            "days_present": days_present,
+            "department": user.get("department", ""),
+            "full_days": full_days,
+            "half_days": half_days,
+            "effective_days": effective_days,
+            "absent_days": absent_days,
             "total_hours": round(total_hours, 2),
-            "average_hours_per_day": round(total_hours / days_present, 2) if days_present > 0 else 0
+            "average_hours_per_day": round(total_hours / (full_days + half_days), 2) if (full_days + half_days) > 0 else 0
         })
     
     return {
         "month": report_month,
         "year": report_year,
+        "summary": {
+            "total_working_days": total_working_days,
+            "total_sundays": total_sundays,
+            "total_holidays": total_holidays,
+            "min_hours_full_day": min_hours_full_day,
+            "holidays": [{"date": h["date"], "name": h["name"]} for h in holidays]
+        },
         "report": sorted(report, key=lambda x: x["user_name"])
     }
 
