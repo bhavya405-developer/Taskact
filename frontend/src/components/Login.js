@@ -240,14 +240,11 @@ const Login = () => {
             {/* Step 2: Enter OTP */}
             {forgotPasswordStep === 2 && (
               <form onSubmit={handleVerifyOTP} className="space-y-6">
-                {/* DEV MODE: Show OTP on screen */}
-                {devOtp && (
-                  <div className="bg-yellow-50 border border-yellow-300 rounded-md p-4 mb-4">
-                    <p className="text-sm text-yellow-800 font-medium">🔧 Dev Mode - Your OTP:</p>
-                    <p className="text-3xl font-mono font-bold text-yellow-900 tracking-widest text-center mt-2">{devOtp}</p>
-                    <p className="text-xs text-yellow-700 mt-2">This is only shown for testing. In production, OTP will be sent via email.</p>
-                  </div>
-                )}
+                {/* Info about getting OTP from partner */}
+                <div className="bg-blue-50 border border-blue-300 rounded-md p-4 mb-4">
+                  <p className="text-sm text-blue-800 font-medium">OTP Request Submitted</p>
+                  <p className="text-xs text-blue-700 mt-2">Please contact your partner to get the OTP. The OTP has been sent to your partner's notification panel.</p>
+                </div>
                 
                 <div>
                   <label htmlFor="otp" className="form-label">
@@ -268,7 +265,7 @@ const Login = () => {
                     />
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Enter the 6-digit code sent to {forgotEmail}
+                    Enter the 6-digit OTP provided by your partner
                   </p>
                 </div>
 
