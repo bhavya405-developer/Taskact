@@ -16,7 +16,6 @@ const CreateTask = ({ users, onTaskCreated }) => {
     client_name: '',
     category: '',
     assignee_id: '',
-    creator_id: users.find(u => u.role === 'partner')?.id || users[0]?.id || '',
     priority: 'medium',
     due_date: ''
   });
