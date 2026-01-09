@@ -411,11 +411,38 @@ async def get_geofence_settings():
     """Get geofence settings from database"""
     settings = await db.geofence_settings.find_one({"id": "geofence_settings"})
     if not settings:
-        # Create default settings
-        default_settings = GeofenceSettings()
-        await db.geofence_settings.insert_one(prepare_for_mongo(default_settings.dict()))
+        # Create default settings with empty locations array
+        default_settings = {
+            "id": "geofence_settings",
+            "enabled": False,
+            "locations": [],
+            "radius_meters": 100.0,
+            "updated_by": None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.geofence_settings.insert_one(default_settings.copy())
         return default_settings
-    return GeofenceSettings(**parse_from_mongo(settings))
+    return parse_from_mongo(settings)
+
+def check_within_any_geofence(lat: float, lon: float, locations: list, radius: float) -> tuple:
+    """Check if coordinates are within any of the geofence locations. Returns (is_within, closest_distance, closest_location_name)"""
+    if not locations:
+        return (None, None, None)
+    
+    closest_distance = float('inf')
+    closest_location = None
+    is_within = False
+    
+    for loc in locations:
+        if loc.get("latitude") and loc.get("longitude"):
+            distance = haversine_distance(lat, lon, loc["latitude"], loc["longitude"])
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_location = loc.get("name", "Unknown")
+            if distance <= radius:
+                is_within = True
+    
+    return (is_within, round(closest_distance, 2) if closest_distance != float('inf') else None, closest_location)
 
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
