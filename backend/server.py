@@ -2191,11 +2191,16 @@ async def update_attendance_settings(
     update_data["updated_by"] = current_user.name
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
-    # If office coordinates are updated, try to reverse geocode the address
-    if "office_latitude" in update_data and "office_longitude" in update_data:
-        address = await reverse_geocode(update_data["office_latitude"], update_data["office_longitude"])
-        if address:
-            update_data["office_address"] = address
+    # If locations are updated, reverse geocode addresses for any without addresses
+    if "locations" in update_data:
+        locations = update_data["locations"]
+        if len(locations) > 5:
+            raise HTTPException(status_code=400, detail="Maximum 5 locations allowed")
+        for loc in locations:
+            if loc.get("latitude") and loc.get("longitude") and not loc.get("address"):
+                address = await reverse_geocode(loc["latitude"], loc["longitude"])
+                if address:
+                    loc["address"] = address
     
     result = await db.geofence_settings.update_one(
         {"id": "geofence_settings"},
@@ -2205,6 +2210,94 @@ async def update_attendance_settings(
     
     settings = await get_geofence_settings()
     return settings
+
+# Attendance Rules endpoints
+@api_router.get("/attendance/rules")
+async def get_attendance_rules(current_user: UserResponse = Depends(get_current_user)):
+    """Get attendance rules"""
+    rules = await db.attendance_rules.find_one({"id": "attendance_rules"})
+    if not rules:
+        # Return defaults
+        return {
+            "id": "attendance_rules",
+            "min_hours_full_day": 8.0,
+            "working_days": [0, 1, 2, 3, 4, 5],  # Mon-Sat
+            "working_days_names": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        }
+    rules = parse_from_mongo(rules)
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    rules["working_days_names"] = [day_names[d] for d in rules.get("working_days", [])]
+    return rules
+
+@api_router.put("/attendance/rules")
+async def update_attendance_rules(
+    rules_update: AttendanceRulesUpdate,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Update attendance rules (Partners only)"""
+    update_data = {k: v for k, v in rules_update.dict().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    update_data["updated_by"] = current_user.name
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.attendance_rules.update_one(
+        {"id": "attendance_rules"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return await get_attendance_rules(current_user)
+
+# Holiday management endpoints
+@api_router.get("/attendance/holidays")
+async def get_holidays(
+    year: Optional[int] = None,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get holidays for a year"""
+    query = {}
+    if year:
+        query["date"] = {"$regex": f"^{year}"}
+    
+    holidays = await db.holidays.find(query).sort("date", 1).to_list(length=None)
+    return [parse_from_mongo(h) for h in holidays]
+
+@api_router.post("/attendance/holidays")
+async def add_holiday(
+    holiday: HolidayCreate,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Add a holiday (Partners only)"""
+    # Check if holiday already exists for this date
+    existing = await db.holidays.find_one({"date": holiday.date})
+    if existing:
+        raise HTTPException(status_code=400, detail="Holiday already exists for this date")
+    
+    holiday_dict = {
+        "id": str(uuid.uuid4()),
+        "date": holiday.date,
+        "name": holiday.name,
+        "is_paid": holiday.is_paid,
+        "created_by": current_user.name,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.holidays.insert_one(holiday_dict)
+    return parse_from_mongo(holiday_dict)
+
+@api_router.delete("/attendance/holidays/{holiday_id}")
+async def delete_holiday(
+    holiday_id: str,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Delete a holiday (Partners only)"""
+    result = await db.holidays.delete_one({"id": holiday_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Holiday not found")
+    return {"message": "Holiday deleted successfully"}
 
 @api_router.post("/attendance/clock-in")
 async def clock_in(
