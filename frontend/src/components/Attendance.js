@@ -103,7 +103,8 @@ const Attendance = () => {
           (position) => {
             resolve({
               latitude: position.coords.latitude,
-              longitude: position.coords.longitude
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
             });
           },
           (error) => {
@@ -115,7 +116,7 @@ const Attendance = () => {
               reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }  // Force fresh location
         );
       };
 
@@ -124,7 +125,8 @@ const Attendance = () => {
           (position) => {
             resolve({
               latitude: position.coords.latitude,
-              longitude: position.coords.longitude
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
             });
           },
           (error) => {
