@@ -652,16 +652,16 @@ async def get_current_user_info(current_user: UserResponse = Depends(get_current
 # Forgot Password endpoints
 @api_router.post("/auth/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
-    """Send OTP to user's email for password reset"""
+    """Send OTP to partner's notification for password reset"""
     # Check if user exists
     user = await db.users.find_one({"email": request.email})
     if not user:
         # Return success even if user doesn't exist (security - don't reveal user existence)
-        return {"message": "If this email is registered, you will receive an OTP shortly"}
+        return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
     
     # Check if user is active
     if not user.get("active", True):
-        return {"message": "If this email is registered, you will receive an OTP shortly"}
+        return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
     
     # Generate OTP
     otp = generate_otp(6)
@@ -682,17 +682,19 @@ async def forgot_password(request: ForgotPasswordRequest):
     otp_dict = prepare_for_mongo(otp_record.dict())
     await db.otp_records.insert_one(otp_dict)
     
-    # Send OTP email
+    # Send OTP to all partners' notification panel instead of email
     user_name = user.get("name", "User")
-    email_sent = await send_otp_email(request.email, otp, user_name)
+    partners = await db.users.find({"role": "partner", "active": True}).to_list(length=None)
     
-    if not email_sent:
-        logger.warning(f"Failed to send OTP email to {request.email}")
+    for partner in partners:
+        await create_notification(
+            user_id=partner["id"],
+            title="Password Reset OTP Request",
+            message=f"{user_name} ({request.email}) has requested a password reset. OTP: {otp} (Valid for 10 minutes)"
+        )
     
-    # DEV MODE: Return OTP for testing (remove in production)
     return {
-        "message": "If this email is registered, you will receive an OTP shortly",
-        "dev_otp": otp  # Remove this line in production
+        "message": "Password reset request submitted. Please contact your partner for the OTP."
     }
 
 @api_router.post("/auth/verify-otp")
