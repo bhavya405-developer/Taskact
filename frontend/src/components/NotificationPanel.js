@@ -158,9 +158,31 @@ const NotificationPanel = () => {
     }
   }, [user, fetchUnreadCount]);
 
+  const markAllAsRead = async () => {
+    try {
+      // Mark all unread notifications as read
+      const unreadNotifications = notifications.filter(n => !n.read);
+      await Promise.all(
+        unreadNotifications.map(notif => 
+          axios.put(`${API}/notifications/${notif.id}/read`)
+        )
+      );
+      
+      // Update local state
+      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
   const togglePanel = () => {
     if (!showPanel) {
       fetchNotifications();
+      // Mark all as read when opening panel
+      setTimeout(() => {
+        markAllAsRead();
+      }, 500);
     }
     setShowPanel(!showPanel);
   };
