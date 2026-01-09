@@ -128,6 +128,20 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
     }
   };
 
+  const handleDeleteTask = async (task) => {
+    try {
+      await axios.delete(`${API}/tasks/${task.id}`);
+      handleCloseTaskDetail();
+      fetchDashboardData();
+      if (onTaskUpdate) {
+        onTaskUpdate();
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert(error.response?.data?.detail || 'Failed to delete task');
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
       {/* Header - Smaller on mobile */}
