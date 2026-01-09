@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import TaskDetailModal from './TaskDetailModal';
+import EditTaskModal from './EditTaskModal';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   BarChart3, 
@@ -16,12 +17,14 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Dashboard = ({ users, tasks }) => {
+const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   const { isPartner } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
