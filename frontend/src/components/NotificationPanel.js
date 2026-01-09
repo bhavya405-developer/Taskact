@@ -180,13 +180,27 @@ const NotificationPanel = () => {
     }
   };
 
-  const togglePanel = () => {
+  const togglePanel = async () => {
     if (!showPanel) {
-      fetchNotifications();
-      // Mark all as read when opening panel
-      setTimeout(() => {
-        markAllAsRead();
-      }, 500);
+      // Fetch notifications and immediately mark all as read
+      try {
+        const response = await axios.get(`${API}/notifications`);
+        const fetchedNotifications = response.data;
+        setNotifications(fetchedNotifications);
+        
+        // Immediately mark all unread as read
+        const unread = fetchedNotifications.filter(n => !n.read);
+        if (unread.length > 0) {
+          await Promise.all(
+            unread.map(notif => axios.put(`${API}/notifications/${notif.id}/read`))
+          );
+          // Update local state to show all as read
+          setNotifications(fetchedNotifications.map(n => ({ ...n, read: true })));
+          setUnreadCount(0);
+        }
+      } catch (error) {
+        console.error('Error fetching/marking notifications:', error);
+      }
     }
     setShowPanel(!showPanel);
   };
