@@ -2698,6 +2698,155 @@ async def get_attendance_report(
         "report": sorted(report, key=lambda x: x["user_name"])
     }
 
+@api_router.get("/attendance/report/export")
+async def export_attendance_report(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    current_user: UserResponse = Depends(get_current_partner)
+):
+    """Export monthly attendance report as Excel file (Partners only)"""
+    now = datetime.now(timezone.utc)
+    report_month = month or now.month
+    report_year = year or now.year
+    
+    # Calculate date range
+    start_date = datetime(report_year, report_month, 1, tzinfo=timezone.utc)
+    if report_month == 12:
+        end_date = datetime(report_year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_date = datetime(report_year, report_month + 1, 1, tzinfo=timezone.utc)
+    
+    # Get attendance rules
+    rules = await db.attendance_rules.find_one({"id": "attendance_rules"})
+    min_hours_full_day = rules.get("min_hours_full_day", 8.0) if rules else 8.0
+    working_days = rules.get("working_days", [0, 1, 2, 3, 4, 5]) if rules else [0, 1, 2, 3, 4, 5]
+    
+    # Get holidays for the month
+    holidays = await db.holidays.find({
+        "date": {"$regex": f"^{report_year}-{report_month:02d}"}
+    }).to_list(length=None)
+    holiday_dates = {h["date"] for h in holidays}
+    
+    # Calculate working days summary
+    total_working_days = 0
+    total_sundays = 0
+    total_holidays = 0
+    current_date = start_date
+    while current_date < end_date:
+        date_str = current_date.strftime("%Y-%m-%d")
+        weekday = current_date.weekday()
+        
+        if weekday == 6:
+            total_sundays += 1
+        elif date_str in holiday_dates:
+            total_holidays += 1
+        elif weekday in working_days:
+            total_working_days += 1
+        
+        current_date += timedelta(days=1)
+    
+    # Get all users
+    users = await db.users.find({"active": True}).to_list(length=None)
+    
+    report_data = []
+    for user in users:
+        # Get attendance records for this user in the month
+        records = await db.attendance.find({
+            "user_id": user["id"],
+            "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
+        }).to_list(length=None)
+        
+        clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
+        clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT.value]
+        
+        full_days = 0
+        half_days = 0
+        total_hours = 0
+        
+        for cin in clock_ins:
+            cin_date = datetime.fromisoformat(cin["timestamp"]).date()
+            matching_out = next(
+                (co for co in clock_outs 
+                 if datetime.fromisoformat(co["timestamp"]).date() == cin_date),
+                None
+            )
+            
+            if matching_out:
+                in_time = datetime.fromisoformat(cin["timestamp"])
+                out_time = datetime.fromisoformat(matching_out["timestamp"])
+                hours = (out_time - in_time).total_seconds() / 3600
+                total_hours += hours
+                
+                if hours >= min_hours_full_day:
+                    full_days += 1
+                else:
+                    half_days += 1
+        
+        # Calculate absent days
+        present_dates = {datetime.fromisoformat(cin["timestamp"]).strftime("%Y-%m-%d") for cin in clock_ins}
+        absent_days = 0
+        current_date = start_date
+        while current_date < end_date and current_date.date() <= now.date():
+            date_str = current_date.strftime("%Y-%m-%d")
+            weekday = current_date.weekday()
+            
+            if weekday != 6 and date_str not in holiday_dates and weekday in working_days:
+                if date_str not in present_dates:
+                    absent_days += 1
+            
+            current_date += timedelta(days=1)
+        
+        effective_days = full_days + (half_days * 0.5)
+        
+        report_data.append({
+            "Name": user["name"],
+            "Department": user.get("department", ""),
+            "Role": user["role"],
+            "Full Days": full_days,
+            "Half Days": half_days,
+            "Effective Days": effective_days,
+            "Absent Days": absent_days,
+            "Total Hours": round(total_hours, 2),
+            "Avg Hours/Day": round(total_hours / (full_days + half_days), 2) if (full_days + half_days) > 0 else 0
+        })
+    
+    # Create summary data
+    month_names = ["January", "February", "March", "April", "May", "June", 
+                   "July", "August", "September", "October", "November", "December"]
+    
+    summary_data = [
+        {"Summary": "Month", "Value": f"{month_names[report_month-1]} {report_year}"},
+        {"Summary": "Working Days", "Value": total_working_days},
+        {"Summary": "Weekly Offs (Sundays)", "Value": total_sundays},
+        {"Summary": "Holidays", "Value": total_holidays},
+        {"Summary": "Min Hours for Full Day", "Value": min_hours_full_day},
+    ]
+    
+    # Add holiday list
+    for i, h in enumerate(holidays):
+        summary_data.append({"Summary": f"Holiday {i+1}", "Value": f"{h['date']}: {h['name']}"})
+    
+    # Create Excel file with multiple sheets
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # Summary sheet
+        df_summary = pd.DataFrame(summary_data)
+        df_summary.to_excel(writer, sheet_name='Summary', index=False)
+        
+        # Report sheet
+        df_report = pd.DataFrame(sorted(report_data, key=lambda x: x["Name"]))
+        df_report.to_excel(writer, sheet_name='Attendance Report', index=False)
+    
+    output.seek(0)
+    
+    filename = f"Attendance_Report_{month_names[report_month-1]}_{report_year}.xlsx"
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # Health check
 @api_router.get("/")
 async def root():
