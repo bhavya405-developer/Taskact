@@ -110,10 +110,33 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   };
 
   const handleEditTask = (task) => {
-    // For now, just close the modal. In a full implementation, 
-    // this would open an edit form
-    handleCloseTaskDetail();
-    // TODO: Implement task editing
+    setShowTaskDetail(false);
+    setTaskToEdit(task);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setTaskToEdit(null);
+    setShowEditModal(false);
+  };
+
+  const handleEditSave = () => {
+    // Refresh dashboard data after edit
+    fetchDashboardData();
+    if (onTaskUpdate) {
+      onTaskUpdate();
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await axios.get(`${API}/dashboard`);
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
