@@ -149,19 +149,23 @@ const NotificationPanel = () => {
     if (user) {
       fetchUnreadCount();
       
-      // Poll for notifications every 30 seconds
+      // Poll for notifications every 30 seconds, but only when panel is closed
       const interval = setInterval(() => {
-        fetchUnreadCount();
+        if (!showPanel) {
+          fetchUnreadCount();
+        }
       }, 30000);
       
       return () => clearInterval(interval);
     }
-  }, [user, fetchUnreadCount]);
+  }, [user, fetchUnreadCount, showPanel]);
 
   const markAllAsRead = async () => {
     try {
       // Mark all unread notifications as read
       const unreadNotifications = notifications.filter(n => !n.read);
+      if (unreadNotifications.length === 0) return;
+      
       await Promise.all(
         unreadNotifications.map(notif => 
           axios.put(`${API}/notifications/${notif.id}/read`)
