@@ -870,6 +870,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
         isOpen={showTaskDetail}
         onClose={handleCloseTaskDetail}
         onEdit={isPartner() ? handleEditTask : null}
+        onDelete={isPartner() ? handleDeleteTask : null}
       />
 
       {/* Edit Task Modal */}
