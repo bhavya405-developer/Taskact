@@ -219,6 +219,25 @@ const NotificationPanel = () => {
                 </svg>
               </button>
             </div>
+
+            {/* Permission Request Banner */}
+            {notificationPermission === 'default' && (
+              <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                <p className="text-sm text-blue-800 mb-2">Enable push notifications to stay updated</p>
+                <button
+                  onClick={requestNotificationPermission}
+                  className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors"
+                >
+                  Enable Notifications
+                </button>
+              </div>
+            )}
+
+            {notificationPermission === 'denied' && (
+              <div className="px-4 py-2 bg-yellow-50 border-b border-yellow-100">
+                <p className="text-xs text-yellow-800">Push notifications are blocked. Enable them in your browser settings.</p>
+              </div>
+            )}
             
             <div className="flex-1 overflow-y-auto">
               {loading ? (
