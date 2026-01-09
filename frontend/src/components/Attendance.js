@@ -343,8 +343,11 @@ const Attendance = () => {
       return;
     }
 
+    setError('');
+    setActionLoading(true);
+    
     try {
-      const location = await getCurrentLocation();
+      const location = await getLocationForSettings();
       const newLocation = {
         name: `Office ${settingsForm.locations.length + 1}`,
         latitude: location.latitude,
@@ -357,7 +360,9 @@ const Attendance = () => {
       }));
       setSuccess('Location added. Click Save to confirm.');
     } catch (err) {
-      setError(err.message || 'Failed to get current location');
+      setError(err.message || 'Failed to get current location. You can also enter coordinates manually.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
