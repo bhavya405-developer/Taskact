@@ -263,19 +263,45 @@ class AttendanceCreate(BaseModel):
 class GeofenceSettings(BaseModel):
     id: str = Field(default="geofence_settings")
     enabled: bool = False
-    office_latitude: Optional[float] = None
-    office_longitude: Optional[float] = None
-    office_address: Optional[str] = None
+    locations: List[dict] = Field(default_factory=list)  # Up to 5 locations
     radius_meters: float = 100  # Default 100 meters
     updated_by: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class GeofenceLocation(BaseModel):
+    name: str
+    latitude: float
+    longitude: float
+    address: Optional[str] = None
+
 class GeofenceSettingsUpdate(BaseModel):
     enabled: Optional[bool] = None
-    office_latitude: Optional[float] = None
-    office_longitude: Optional[float] = None
-    office_address: Optional[str] = None
+    locations: Optional[List[dict]] = None
     radius_meters: Optional[float] = None
+
+class AttendanceRules(BaseModel):
+    id: str = Field(default="attendance_rules")
+    min_hours_full_day: float = 8.0  # Minimum hours for full day
+    working_days: List[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4, 5])  # Mon-Sat (0=Monday)
+    updated_by: Optional[str] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AttendanceRulesUpdate(BaseModel):
+    min_hours_full_day: Optional[float] = None
+    working_days: Optional[List[int]] = None
+
+class Holiday(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    date: str  # YYYY-MM-DD format
+    name: str
+    is_paid: bool = True
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class HolidayCreate(BaseModel):
+    date: str  # YYYY-MM-DD format
+    name: str
+    is_paid: bool = True
 
 class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
