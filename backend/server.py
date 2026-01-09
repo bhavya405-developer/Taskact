@@ -886,6 +886,36 @@ async def reset_user_password(
     
     return {"message": "Password updated successfully"}
 
+class ChangeOwnPasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.put("/auth/change-password")
+async def change_own_password(
+    password_data: ChangeOwnPasswordRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Allow any user to change their own password"""
+    # Get user from database to verify current password
+    user = await db.users.find_one({"id": current_user.id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify current password
+    if not verify_password(password_data.current_password, user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Hash the new password
+    new_password_hash = get_password_hash(password_data.new_password)
+    
+    # Update the password
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    return {"message": "Password changed successfully"}
+
 @api_router.delete("/users/{user_id}")
 async def delete_user(
     user_id: str,
