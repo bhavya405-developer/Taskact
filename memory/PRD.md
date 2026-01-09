@@ -165,6 +165,7 @@ All accounts use password: `password123`
 - `POST /api/attendance/clock-out` - Clock out with GPS location
 - `GET /api/attendance/today` - Get today's attendance status
 - `GET /api/attendance/history` - Get attendance history
+- `DELETE /api/attendance/{id}` - Delete attendance record (Partner only)
 - `GET /api/attendance/report` - Get enhanced monthly attendance report (Partner)
 
 ### Dashboard
