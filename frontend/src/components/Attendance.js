@@ -144,7 +144,7 @@ const Attendance = () => {
                 reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 }
+          { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 }  // Force fresh location even for fallback
         );
       };
 
