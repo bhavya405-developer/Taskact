@@ -1125,10 +1125,10 @@ const Attendance = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Calendar className="w-5 h-5 mr-2" />
-          Attendance History
+          Attendance History {isPartner() && '(All Users)'}
         </h3>
 
-        {Object.keys(groupedHistory).length === 0 ? (
+        {sortedGroupedHistory.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No attendance records found</p>
         ) : (
           <div className="overflow-x-auto">
@@ -1136,6 +1136,9 @@ const Attendance = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
+                  {isPartner() && (
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">User</th>
+                  )}
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Clock In</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Clock Out</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Duration</th>
@@ -1147,7 +1150,7 @@ const Attendance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {Object.entries(groupedHistory).map(([date, records]) => {
+                {sortedGroupedHistory.map(([key, records]) => {
                   let duration = '-';
                   let dayType = '-';
                   if (records.clock_in && records.clock_out) {
@@ -1158,9 +1161,15 @@ const Attendance = () => {
                     dayType = parseFloat(hours) >= (attendanceRules?.min_hours_full_day || 8) ? 'Full' : 'Half';
                   }
 
+                  // Get display date - for partners use the stored date, for non-partners use the key
+                  const displayDate = isPartner() ? records.date : key;
+
                   return (
-                    <tr key={date} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{date}</td>
+                    <tr key={key} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{displayDate}</td>
+                      {isPartner() && (
+                        <td className="px-4 py-3 text-sm text-gray-700">{records.user_name}</td>
+                      )}
                       <td className="px-4 py-3 text-sm text-center text-green-600">
                         {records.clock_in ? formatTime(records.clock_in.timestamp) : '-'}
                       </td>
@@ -1193,7 +1202,7 @@ const Attendance = () => {
                                 className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
                                 title="Delete clock in"
                                 disabled={actionLoading}
-                                data-testid={`delete-clock-in-${date}`}
+                                data-testid={`delete-clock-in-${key}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
