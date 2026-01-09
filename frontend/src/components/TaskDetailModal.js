@@ -246,6 +246,16 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete }) => {
                 Edit Task
               </button>
             )}
+            {onDelete && task.status !== 'completed' && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
+                data-testid="delete-task-button"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </button>
+            )}
             {task.status === 'completed' && (
               <div className="text-sm text-gray-500 italic">
                 ✓ This task is completed and cannot be edited
@@ -259,6 +269,41 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete }) => {
               Close
             </button>
           </div>
+
+          {/* Delete Confirmation Dialog */}
+          {showDeleteConfirm && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 font-medium mb-3">Are you sure you want to delete this task?</p>
+              <p className="text-red-600 text-sm mb-4">This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm flex items-center"
+                  data-testid="confirm-delete-button"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Yes, Delete Task
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="btn-secondary text-sm"
+                  data-testid="cancel-delete-button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
