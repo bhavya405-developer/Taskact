@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationPanel from './NotificationPanel';
+import axios from 'axios';
 import { 
   BarChart3, 
   CheckSquare, 
@@ -13,13 +14,29 @@ import {
   User,
   Menu,
   X,
-  Clock
+  Clock,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Navigation = () => {
   const location = useLocation();
   const { user, logout, isPartner } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
@@ -30,6 +47,40 @@ const Navigation = () => {
     { path: '/clients', name: 'Clients', icon: Building2, partnerOnly: true },
     { path: '/create-task', name: 'Create Task', icon: Plus }
   ];
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await axios.put(`${API_URL}/api/auth/change-password`, {
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword
+      });
+      setPasswordSuccess('Password changed successfully!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (err) {
+      setPasswordError(err.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
