@@ -136,6 +136,14 @@ const Navigation = () => {
                 </div>
               </div>
               <button
+                onClick={() => setShowChangePassword(true)}
+                className="text-sm text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md flex items-center"
+                title="Change Password"
+                data-testid="change-password-button"
+              >
+                <Key size={16} />
+              </button>
+              <button
                 onClick={logout}
                 className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md flex items-center"
                 data-testid="logout-button"
