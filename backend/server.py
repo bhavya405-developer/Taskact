@@ -2464,6 +2464,7 @@ async def clock_out(
         "address": address,
         "is_within_geofence": is_within_geofence,
         "distance_from_office": distance_from_office,
+        "nearest_location": nearest_location,
         "device_info": attendance_data.device_info
     }
     
