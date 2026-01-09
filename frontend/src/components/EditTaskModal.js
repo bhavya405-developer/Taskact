@@ -214,7 +214,7 @@ const EditTaskModal = ({ task, users, isOpen, onClose, onSave }) => {
                 <option value="">Select assignee...</option>
                 {users.map(user => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({user.role})
+                    {user.name}
                   </option>
                 ))}
               </select>
