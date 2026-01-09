@@ -1108,6 +1108,9 @@ const Attendance = () => {
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Duration</th>
                   <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Type</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Location</th>
+                  {isPartner() && (
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -1148,6 +1151,34 @@ const Attendance = () => {
                           </span>
                         ) : '-'}
                       </td>
+                      {isPartner() && (
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {records.clock_in && (
+                              <button
+                                onClick={() => handleDeleteAttendance(records.clock_in.id, 'clock_in')}
+                                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                title="Delete clock in"
+                                disabled={actionLoading}
+                                data-testid={`delete-clock-in-${date}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {records.clock_out && (
+                              <button
+                                onClick={() => handleDeleteAttendance(records.clock_out.id, 'clock_out')}
+                                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                title="Delete clock out"
+                                disabled={actionLoading}
+                                data-testid={`delete-clock-out-${date}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
