@@ -337,6 +337,21 @@ const Attendance = () => {
     }
   };
 
+  const handleDeleteAttendance = async (attendanceId, type) => {
+    if (!window.confirm(`Are you sure you want to delete this ${type === 'clock_in' ? 'clock in' : 'clock out'} record?`)) return;
+
+    try {
+      setActionLoading(true);
+      await axios.delete(`${API}/attendance/${attendanceId}`);
+      setSuccess('Attendance record deleted successfully');
+      await fetchData();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete attendance record');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const addLocation = async () => {
     if (settingsForm.locations.length >= 5) {
       setError('Maximum 5 locations allowed');
