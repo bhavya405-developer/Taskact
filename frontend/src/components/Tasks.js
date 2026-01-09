@@ -856,7 +856,16 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
         task={selectedTask}
         isOpen={showTaskDetail}
         onClose={handleCloseTaskDetail}
-        onEdit={isPartner() ? null : null} // Edit handled through status dropdown
+        onEdit={isPartner() ? handleEditTask : null}
+      />
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        task={taskToEdit}
+        users={users}
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onSave={handleEditSave}
       />
     </div>
   );
