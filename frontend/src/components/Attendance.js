@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Clock, MapPin, LogIn, LogOut, Settings, AlertCircle, 
   CheckCircle, Navigation, Calendar, Users, Plus, Trash2, 
-  CalendarDays, BookOpen
+  CalendarDays, BookOpen, Download
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
