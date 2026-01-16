@@ -305,7 +305,14 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
   const statusOrder = { overdue: 0, pending: 1, on_hold: 2, completed: 3 };
 
   const filteredTasks = tasks.filter(task => {
-    const matchesStatus = filter === 'all' || task.status === filter;
+    let matchesStatus;
+    if (filter === 'all') {
+      matchesStatus = true;
+    } else if (filter === 'pending_overdue') {
+      matchesStatus = task.status === 'pending' || task.status === 'overdue';
+    } else {
+      matchesStatus = task.status === filter;
+    }
     const matchesAssignee = assigneeFilter === 'all' || task.assignee_id === assigneeFilter;
     const matchesClient = clientFilter === 'all' || (task.client_name && task.client_name.toLowerCase().includes(clientFilter.toLowerCase()));
     const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter;
