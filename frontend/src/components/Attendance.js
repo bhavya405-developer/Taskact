@@ -107,10 +107,15 @@ const Attendance = () => {
       const tryHighAccuracy = () => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            const accuracy = position.coords.accuracy;
+            // Warn if accuracy is poor but still allow
+            if (accuracy > 100) {
+              console.warn(`GPS accuracy is ${accuracy}m - location may be imprecise`);
+            }
             resolve({
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy
+              accuracy: accuracy
             });
           },
           (error) => {
@@ -122,7 +127,7 @@ const Attendance = () => {
               reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }  // Force fresh location for attendance
+          { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }  // Increased timeout for better accuracy
         );
       };
 
@@ -150,7 +155,7 @@ const Attendance = () => {
                 reject(new Error('Failed to get location. Please try again.'));
             }
           },
-          { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 }
+          { enableHighAccuracy: false, timeout: 45000, maximumAge: 0 }  // Even longer timeout for fallback
         );
       };
 
