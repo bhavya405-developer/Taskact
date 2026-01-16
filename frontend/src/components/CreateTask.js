@@ -17,7 +17,8 @@ const CreateTask = ({ users, onTaskCreated }) => {
     category: '',
     assignee_id: '',
     priority: 'medium',
-    due_date: ''
+    due_date: '',
+    estimated_hours: ''
   });
 
   // Fetch categories and clients
