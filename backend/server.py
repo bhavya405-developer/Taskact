@@ -2506,6 +2506,7 @@ async def clock_in(
         "timestamp_ist": format_ist_datetime(now_utc),
         "latitude": attendance_data.latitude,
         "longitude": attendance_data.longitude,
+        "accuracy": gps_accuracy,
         "address": address,
         "is_within_geofence": is_within_geofence,
         "distance_from_office": distance_from_office,
