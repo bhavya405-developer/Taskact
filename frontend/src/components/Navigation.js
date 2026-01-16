@@ -57,6 +57,29 @@ const Navigation = () => {
   ];
 
   const [showMastersDropdown, setShowMastersDropdown] = useState(false);
+  const mastersTimeoutRef = useRef(null);
+
+  const handleMastersMouseEnter = () => {
+    if (mastersTimeoutRef.current) {
+      clearTimeout(mastersTimeoutRef.current);
+      mastersTimeoutRef.current = null;
+    }
+    setShowMastersDropdown(true);
+  };
+
+  const handleMastersMouseLeave = () => {
+    mastersTimeoutRef.current = setTimeout(() => {
+      setShowMastersDropdown(false);
+    }, 2000); // 2 second delay
+  };
+
+  const handleMastersItemClick = () => {
+    if (mastersTimeoutRef.current) {
+      clearTimeout(mastersTimeoutRef.current);
+      mastersTimeoutRef.current = null;
+    }
+    setShowMastersDropdown(false);
+  };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
