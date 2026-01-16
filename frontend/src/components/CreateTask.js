@@ -221,8 +221,8 @@ const CreateTask = ({ users, onTaskCreated }) => {
             </select>
           </div>
 
-          {/* Priority and Due Date Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Priority, Due Date, and Estimated Hours Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label htmlFor="priority" className="form-label">
                 Priority
@@ -255,6 +255,24 @@ const CreateTask = ({ users, onTaskCreated }) => {
                 className="form-input"
                 data-testid="due-date-input"
                 min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="estimated_hours" className="form-label">
+                Est. Hours <span className="text-gray-400 text-xs">(optional)</span>
+              </label>
+              <input
+                type="number"
+                id="estimated_hours"
+                name="estimated_hours"
+                value={formData.estimated_hours}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="e.g., 2.5"
+                min="0"
+                step="0.5"
+                data-testid="estimated-hours-input"
               />
             </div>
           </div>
