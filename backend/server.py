@@ -259,6 +259,7 @@ class Attendance(BaseModel):
 class AttendanceCreate(BaseModel):
     latitude: float
     longitude: float
+    accuracy: Optional[float] = None  # GPS accuracy in meters
     device_info: Optional[str] = None
 
 class GeofenceSettings(BaseModel):
