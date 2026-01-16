@@ -718,7 +718,7 @@ async def forgot_password(request: ForgotPasswordRequest):
     
     # Send OTP to all partners' notification panel instead of email
     user_name = user.get("name", "User")
-    partners = await db.users.find({"role": "partner", "active": True}).to_list(length=None)
+    partners = await db.users.find({"role": "partner", "active": True}).to_list(length=5000)
     
     for partner in partners:
         await create_notification(
@@ -828,9 +828,9 @@ async def get_users(
 ):
     """Get all users. Partners can include inactive users."""
     if include_inactive and current_user.role == UserRole.PARTNER:
-        users = await db.users.find({}).to_list(length=None)
+        users = await db.users.find({}).to_list(length=5000)
     else:
-        users = await db.users.find({"active": True}).to_list(length=None)
+        users = await db.users.find({"active": True}).to_list(length=5000)
     return [UserResponse(**parse_from_mongo(user)) for user in users]
 
 @api_router.get("/users/{user_id}", response_model=UserResponse)
@@ -1054,9 +1054,9 @@ async def download_tasks_template(current_user: UserResponse = Depends(get_curre
     """Download Excel template for bulk task import"""
     
     # Get active users, clients, and categories for reference
-    users = await db.users.find({"active": True}).to_list(length=None)
-    clients = await db.clients.find({"active": True}).to_list(length=None)
-    categories = await db.categories.find({"active": True}).to_list(length=None)
+    users = await db.users.find({"active": True}).to_list(length=5000)
+    clients = await db.clients.find({"active": True}).to_list(length=5000)
+    categories = await db.categories.find({"active": True}).to_list(length=5000)
     
     # Create sample data with headers
     template_data = {
@@ -1198,14 +1198,14 @@ async def bulk_import_tasks(
             )
         
         # Get all users for name lookup
-        users = await db.users.find({"active": True}).to_list(length=None)
+        users = await db.users.find({"active": True}).to_list(length=5000)
         name_to_user = {u['name'].lower(): u for u in users}
         
         # Get all clients and categories for validation
-        clients = await db.clients.find({"active": True}).to_list(length=None)
+        clients = await db.clients.find({"active": True}).to_list(length=5000)
         client_names = {c['name'].lower(): c['name'] for c in clients}
         
-        categories = await db.categories.find({"active": True}).to_list(length=None)
+        categories = await db.categories.find({"active": True}).to_list(length=5000)
         category_names = {c['name'].lower(): c['name'] for c in categories}
         
         success_count = 0
@@ -1329,7 +1329,7 @@ async def export_tasks(current_user: UserResponse = Depends(get_current_partner)
     await update_overdue_tasks()
     
     # Get all tasks
-    tasks = await db.tasks.find({}).sort("created_at", -1).to_list(length=None)
+    tasks = await db.tasks.find({}).sort("created_at", -1).to_list(length=5000)
     
     if not tasks:
         raise HTTPException(status_code=404, detail="No tasks found to export")
@@ -1492,7 +1492,7 @@ async def get_tasks(
     if category:
         query["category"] = category
     
-    tasks = await db.tasks.find(query).sort("created_at", -1).to_list(length=None)
+    tasks = await db.tasks.find(query).sort("created_at", -1).to_list(length=5000)
     return [Task(**parse_from_mongo(task)) for task in tasks]
 
 @api_router.get("/tasks/{task_id}", response_model=Task)
@@ -1681,7 +1681,7 @@ async def delete_all_tasks(
 async def get_user_notifications(current_user: UserResponse = Depends(get_current_user)):
     notifications = await db.notifications.find(
         {"user_id": current_user.id}
-    ).sort("created_at", -1).limit(20).to_list(length=None)
+    ).sort("created_at", -1).limit(20).to_list(length=5000)
     return [Notification(**parse_from_mongo(notification)) for notification in notifications]
 
 @api_router.put("/notifications/{notification_id}/read")
@@ -1794,7 +1794,7 @@ async def download_categories_template(current_user: UserResponse = Depends(get_
 
 @api_router.get("/categories", response_model=List[Category])
 async def get_categories(current_user: UserResponse = Depends(get_current_user)):
-    categories = await db.categories.find({"active": True}).sort("name", 1).to_list(length=None)
+    categories = await db.categories.find({"active": True}).sort("name", 1).to_list(length=5000)
     return [Category(**parse_from_mongo(category)) for category in categories]
 
 @api_router.get("/categories/{category_id}", response_model=Category)
@@ -2064,7 +2064,7 @@ async def download_clients_template(current_user: UserResponse = Depends(get_cur
 
 @api_router.get("/clients", response_model=List[Client])
 async def get_clients(current_user: UserResponse = Depends(get_current_user)):
-    clients = await db.clients.find({"active": True}).sort("name", 1).to_list(length=None)
+    clients = await db.clients.find({"active": True}).sort("name", 1).to_list(length=5000)
     return [Client(**parse_from_mongo(client)) for client in clients]
 
 @api_router.get("/clients/{client_id}", response_model=Client)
@@ -2249,7 +2249,7 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     overdue_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.OVERDUE})
     
     # Get overdue tasks (all for partners, own for others)
-    overdue_tasks = await db.tasks.find({**task_query, "status": TaskStatus.OVERDUE}).sort("due_date", 1).to_list(length=None)
+    overdue_tasks = await db.tasks.find({**task_query, "status": TaskStatus.OVERDUE}).sort("due_date", 1).to_list(length=5000)
     
     # Get pending tasks for next 30 days
     today = datetime.now(timezone.utc)
@@ -2264,7 +2264,7 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
             {"due_date": {"$exists": False}}
         ]
     }
-    pending_tasks = await db.tasks.find(pending_query).sort("due_date", 1).to_list(length=None)
+    pending_tasks = await db.tasks.find(pending_query).sort("due_date", 1).to_list(length=5000)
     
     # For backward compatibility, also include recent_tasks
     recent_tasks = overdue_tasks + pending_tasks
@@ -2272,7 +2272,7 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     # Get team performance (only for partners)
     team_stats = []
     if current_user.role == UserRole.PARTNER:
-        users = await db.users.find({"active": True}).to_list(length=None)
+        users = await db.users.find({"active": True}).to_list(length=5000)
         
         for user in users:
             user_tasks = await db.tasks.count_documents({"assignee_id": user["id"]})
@@ -2423,7 +2423,7 @@ async def get_holidays(
     if year:
         query["date"] = {"$regex": f"^{year}"}
     
-    holidays = await db.holidays.find(query).sort("date", 1).to_list(length=None)
+    holidays = await db.holidays.find(query).sort("date", 1).to_list(length=5000)
     return [parse_from_mongo(h) for h in holidays]
 
 @api_router.post("/attendance/holidays")
@@ -2643,7 +2643,7 @@ async def get_today_attendance(current_user: UserResponse = Depends(get_current_
     records = await db.attendance.find({
         "user_id": current_user.id,
         "timestamp": {"$gte": today_start.isoformat(), "$lt": today_end.isoformat()}
-    }).sort("timestamp", 1).to_list(length=None)
+    }).sort("timestamp", 1).to_list(length=5000)
     
     clock_in = None
     clock_out = None
@@ -2745,7 +2745,7 @@ async def get_attendance_report(
     # Get holidays for the month
     holidays = await db.holidays.find({
         "date": {"$regex": f"^{report_year}-{report_month:02d}"}
-    }).to_list(length=None)
+    }).to_list(length=5000)
     holiday_dates = {h["date"] for h in holidays}
     
     # Calculate working days in the month (excluding Sundays and holidays)
@@ -2767,7 +2767,7 @@ async def get_attendance_report(
         current_date += timedelta(days=1)
     
     # Get all users
-    users = await db.users.find({"active": True}).to_list(length=None)
+    users = await db.users.find({"active": True}).to_list(length=5000)
     
     report = []
     for user in users:
@@ -2775,7 +2775,7 @@ async def get_attendance_report(
         records = await db.attendance.find({
             "user_id": user["id"],
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-        }).to_list(length=None)
+        }).to_list(length=5000)
         
         # Group by date
         clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
@@ -2893,7 +2893,7 @@ async def export_attendance_report(
     # Get holidays for the month
     holidays = await db.holidays.find({
         "date": {"$regex": f"^{report_year}-{report_month:02d}"}
-    }).to_list(length=None)
+    }).to_list(length=5000)
     holiday_dates = {h["date"] for h in holidays}
     
     # Calculate working days summary
@@ -2915,7 +2915,7 @@ async def export_attendance_report(
         current_date += timedelta(days=1)
     
     # Get all users
-    users = await db.users.find({"active": True}).to_list(length=None)
+    users = await db.users.find({"active": True}).to_list(length=5000)
     
     report_data = []
     for user in users:
@@ -2923,7 +2923,7 @@ async def export_attendance_report(
         records = await db.attendance.find({
             "user_id": user["id"],
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-        }).to_list(length=None)
+        }).to_list(length=5000)
         
         clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
         clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT.value]
@@ -2986,7 +2986,7 @@ async def export_attendance_report(
         records = await db.attendance.find({
             "user_id": user["id"],
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-        }).to_list(length=None)
+        }).to_list(length=5000)
         
         clock_ins = {datetime.fromisoformat(r["timestamp"]).strftime("%Y-%m-%d"): r 
                      for r in records if r["type"] == AttendanceType.CLOCK_IN.value}
