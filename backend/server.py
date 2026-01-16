@@ -324,6 +324,9 @@ class Task(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
+    # Timesheet fields
+    estimated_hours: Optional[float] = None  # Optional estimate when creating
+    actual_hours: Optional[float] = None  # Required when completing task
     # Status change history - records all status changes with IST timestamps
     status_history: Optional[List[dict]] = None
 
@@ -336,6 +339,7 @@ class TaskCreate(BaseModel):
     creator_id: Optional[str] = None  # Optional - will be set to current user by backend
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
+    estimated_hours: Optional[float] = None  # Optional time estimate
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -346,6 +350,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     due_date: Optional[datetime] = None
+    actual_hours: Optional[float] = None  # Required when completing task
 
 # Helper functions
 # IST timezone (UTC+5:30)
