@@ -221,6 +221,7 @@ const Attendance = () => {
       const response = await axios.post(`${API}/attendance/clock-in`, {
         latitude: location.latitude,
         longitude: location.longitude,
+        accuracy: location.accuracy,  // Send GPS accuracy for better geofencing
         device_info: navigator.userAgent
       });
 
@@ -253,6 +254,7 @@ const Attendance = () => {
       const response = await axios.post(`${API}/attendance/clock-out`, {
         latitude: location.latitude,
         longitude: location.longitude,
+        accuracy: location.accuracy,  // Send GPS accuracy for better geofencing
         device_info: navigator.userAgent
       });
 
