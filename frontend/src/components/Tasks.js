@@ -656,9 +656,11 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               <button
                 onClick={handleExportTasks}
                 disabled={exporting || tasks.length === 0}
-                className="btn-secondary flex items-center text-sm"
+                className={`btn-secondary flex items-center text-sm ${
+                  tasks.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
                 data-testid="export-tasks-btn"
-                title="Export All Tasks"
+                title={tasks.length === 0 ? "No tasks to export" : "Export All Tasks"}
               >
                 {exporting ? (
                   <>
