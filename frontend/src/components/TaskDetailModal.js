@@ -188,6 +188,34 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
             </div>
           </div>
 
+          {/* Quick Status Change */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Change Status</h3>
+            <div className="flex items-center gap-3">
+              <select
+                value={task.status}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={statusUpdating || (task.status === 'completed' && !isPartner)}
+                className="form-input flex-1"
+                data-testid="status-change-select"
+              >
+                <option value="pending">Pending</option>
+                <option value="on_hold">On Hold</option>
+                <option value="completed">Completed</option>
+                <option value="overdue">Overdue</option>
+              </select>
+              {statusUpdating && (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              )}
+            </div>
+            {statusError && (
+              <p className="text-red-600 text-sm mt-2">{statusError}</p>
+            )}
+            {task.status === 'completed' && !isPartner && (
+              <p className="text-gray-500 text-xs mt-2">Only partners can change status of completed tasks</p>
+            )}
+          </div>
+
           {/* Completion Date (if completed) */}
           {task.completed_at && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
