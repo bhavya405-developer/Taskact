@@ -1,12 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, History, Trash2 } from 'lucide-react';
+import axios from 'axios';
 
-const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete }) => {
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, onTaskUpdate }) => {
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [statusError, setStatusError] = useState('');
+
   if (!isOpen || !task) return null;
 
   const handleDelete = () => {
     if (onDelete) {
       onDelete(task);
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === task.status) return;
+    
+    setStatusUpdating(true);
+    setStatusError('');
+    
+    try {
+      await axios.put(`${API}/tasks/${task.id}`, { status: newStatus });
+      if (onTaskUpdate) {
+        await onTaskUpdate();
+      }
+      onClose();
+    } catch (err) {
+      setStatusError(err.response?.data?.detail || 'Failed to update status');
+    } finally {
+      setStatusUpdating(false);
     }
   };
 
