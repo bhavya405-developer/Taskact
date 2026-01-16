@@ -369,6 +369,8 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         onClose={handleCloseTaskDetail}
         onEdit={isPartner() ? handleEditTask : null}
         onDelete={isPartner() ? handleDeleteTask : null}
+        isPartner={isPartner()}
+        onTaskUpdate={onTaskUpdate}
       />
 
       {/* Edit Task Modal */}
