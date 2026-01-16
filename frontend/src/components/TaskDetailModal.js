@@ -128,6 +128,90 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
   // Get status history or create default from task data
   const statusHistory = task.status_history || [];
 
+  // Time Entry Modal (shown when completing task)
+  if (showTimeEntry) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="flex items-center mb-4">
+            <div className="p-3 bg-green-100 rounded-full mr-3">
+              <Timer className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Time Spent on Task</h3>
+              <p className="text-sm text-gray-500">Enter time before completing</p>
+            </div>
+          </div>
+          
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm font-medium text-gray-700 truncate">{task.title}</p>
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              How much time did you spend on this task?
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1">Hours</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={timeHours}
+                  onChange={(e) => setTimeHours(e.target.value)}
+                  className="form-input text-center text-lg"
+                  placeholder="0"
+                  data-testid="time-hours-input"
+                  autoFocus
+                />
+              </div>
+              <span className="text-2xl text-gray-400 mt-4">:</span>
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1">Minutes</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={timeMinutes}
+                  onChange={(e) => setTimeMinutes(e.target.value)}
+                  className="form-input text-center text-lg"
+                  placeholder="0"
+                  data-testid="time-minutes-input"
+                />
+              </div>
+            </div>
+            {statusError && (
+              <p className="text-red-600 text-sm mt-2">{statusError}</p>
+            )}
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={cancelTimeEntry}
+              className="flex-1 btn-secondary"
+              data-testid="cancel-time-entry"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleTimeSubmit}
+              disabled={statusUpdating}
+              className="flex-1 btn-primary flex items-center justify-center"
+              data-testid="submit-time-entry"
+            >
+              {statusUpdating ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : (
+                <>Complete Task</>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div 
