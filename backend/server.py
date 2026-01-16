@@ -429,8 +429,18 @@ async def get_geofence_settings():
         return default_settings
     return parse_from_mongo(settings)
 
-def check_within_any_geofence(lat: float, lon: float, locations: list, radius: float) -> tuple:
-    """Check if coordinates are within any of the geofence locations. Returns (is_within, closest_distance, closest_location_name)"""
+def check_within_any_geofence(lat: float, lon: float, locations: list, radius: float, gps_accuracy: float = 0) -> tuple:
+    """
+    Check if coordinates are within any of the geofence locations.
+    
+    Args:
+        lat, lon: User's GPS coordinates
+        locations: List of office locations
+        radius: Geofence radius in meters
+        gps_accuracy: GPS accuracy in meters (adds tolerance to the check)
+    
+    Returns: (is_within, closest_distance, closest_location_name)
+    """
     if not locations:
         return (None, None, None)
     
@@ -438,13 +448,18 @@ def check_within_any_geofence(lat: float, lon: float, locations: list, radius: f
     closest_location = None
     is_within = False
     
+    # Add GPS accuracy as tolerance (but cap it at 50m to prevent abuse)
+    # This accounts for GPS drift while preventing users from gaming the system
+    tolerance = min(gps_accuracy, 50) if gps_accuracy else 0
+    effective_radius = radius + tolerance
+    
     for loc in locations:
         if loc.get("latitude") and loc.get("longitude"):
             distance = haversine_distance(lat, lon, loc["latitude"], loc["longitude"])
             if distance < closest_distance:
                 closest_distance = distance
                 closest_location = loc.get("name", "Unknown")
-            if distance <= radius:
+            if distance <= effective_radius:
                 is_within = True
     
     return (is_within, round(closest_distance, 2) if closest_distance != float('inf') else None, closest_location)
