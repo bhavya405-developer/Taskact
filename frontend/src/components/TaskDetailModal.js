@@ -311,6 +311,27 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
               <h3 className="text-sm font-medium text-gray-700 mb-2">Created At (IST)</h3>
               <p className="text-gray-900">{formatDateTimeIST(task.created_at)}</p>
             </div>
+
+            {/* Time Tracking */}
+            {(task.estimated_hours || task.actual_hours) && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Time Tracking</h3>
+                <div className="flex items-center gap-4">
+                  {task.estimated_hours && (
+                    <div className="text-gray-600">
+                      <span className="text-xs">Est:</span>
+                      <span className="ml-1 font-medium">{task.estimated_hours}h</span>
+                    </div>
+                  )}
+                  {task.actual_hours && (
+                    <div className="text-green-600">
+                      <span className="text-xs">Actual:</span>
+                      <span className="ml-1 font-medium">{task.actual_hours}h</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quick Status Change */}
