@@ -154,8 +154,8 @@ const Navigation = () => {
               {isPartner() && (
                 <div 
                   className="relative"
-                  onMouseEnter={() => setShowMastersDropdown(true)}
-                  onMouseLeave={() => setShowMastersDropdown(false)}
+                  onMouseEnter={handleMastersMouseEnter}
+                  onMouseLeave={handleMastersMouseLeave}
                 >
                   <button
                     className={`nav-link flex items-center ${
@@ -178,7 +178,7 @@ const Navigation = () => {
                             location.pathname === item.path ? 'bg-blue-50 text-blue-600' : ''
                           }`}
                           data-testid={`nav-${item.name.toLowerCase()}`}
-                          onClick={() => setShowMastersDropdown(false)}
+                          onClick={handleMastersItemClick}
                         >
                           <item.icon size={16} className="mr-3" />
                           {item.name}
