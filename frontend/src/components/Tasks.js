@@ -674,9 +674,15 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               </button>
               <button
                 onClick={() => openBulkDeleteModal('completed')}
-                className="btn-secondary flex items-center text-sm text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                className={`btn-secondary flex items-center text-sm ${
+                  tasks.filter(t => t.status === 'completed').length === 0 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400'
+                }`}
                 data-testid="clear-completed-btn"
-                title="Clear All Completed Tasks"
+                title={tasks.filter(t => t.status === 'completed').length === 0 
+                  ? "No completed tasks to clear" 
+                  : "Clear All Completed Tasks"}
                 disabled={tasks.filter(t => t.status === 'completed').length === 0}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
@@ -684,9 +690,13 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               </button>
               <button
                 onClick={() => openBulkDeleteModal('all')}
-                className="btn-secondary flex items-center text-sm text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                className={`btn-secondary flex items-center text-sm ${
+                  tasks.length === 0 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'text-red-600 hover:text-red-700 border-red-300 hover:border-red-400'
+                }`}
                 data-testid="clear-all-btn"
-                title="Clear All Tasks"
+                title={tasks.length === 0 ? "No tasks to clear" : "Clear All Tasks"}
                 disabled={tasks.length === 0}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
