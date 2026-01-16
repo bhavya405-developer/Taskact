@@ -75,7 +75,8 @@ const CreateTask = ({ users, onTaskCreated }) => {
     try {
       const taskData = {
         ...formData,
-        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null
+        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
+        estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null
       };
 
       await axios.post(`${API}/tasks`, taskData);
