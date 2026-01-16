@@ -140,6 +140,10 @@ const AppContent = () => {
               element={<Attendance />} 
             />
             <Route 
+              path="/timesheet" 
+              element={<Timesheet users={users} />} 
+            />
+            <Route 
               path="/create-task" 
               element={
                 <CreateTask 
