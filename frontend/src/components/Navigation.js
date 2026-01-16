@@ -46,11 +46,17 @@ const Navigation = () => {
     { path: '/tasks', name: 'Tasks', icon: CheckSquare },
     { path: '/timesheet', name: 'Timesheet', icon: Timer },
     { path: '/attendance', name: 'Attendance', icon: Clock },
-    { path: '/team', name: 'Team', icon: Users, partnerOnly: true },
-    { path: '/categories', name: 'Categories', icon: FolderOpen, partnerOnly: true },
-    { path: '/clients', name: 'Clients', icon: Building2, partnerOnly: true },
     { path: '/create-task', name: 'Create Task', icon: Plus }
   ];
+
+  // Masters dropdown items (Partner only)
+  const mastersItems = [
+    { path: '/team', name: 'Team', icon: Users },
+    { path: '/categories', name: 'Categories', icon: FolderOpen },
+    { path: '/clients', name: 'Clients', icon: Building2 }
+  ];
+
+  const [showMastersDropdown, setShowMastersDropdown] = useState(false);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
