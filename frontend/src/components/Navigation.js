@@ -225,10 +225,6 @@ const Navigation = () => {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200 bg-gray-50">
               {navItems.map((item) => {
-                if (item.partnerOnly && !isPartner()) {
-                  return null;
-                }
-                
                 return (
                   <Link
                     key={item.path}
@@ -246,6 +242,31 @@ const Navigation = () => {
                   </Link>
                 );
               })}
+              
+              {/* Masters Section (Partner only) */}
+              {isPartner() && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t border-gray-200 mt-2 pt-3">
+                    Masters
+                  </div>
+                  {mastersItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center px-3 py-3 rounded-md text-base font-medium transition-colors ${
+                        location.pathname === item.path 
+                          ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-500' 
+                          : 'text-gray-700 hover:bg-white hover:text-gray-900'
+                      }`}
+                      data-testid={`mobile-nav-${item.name.toLowerCase()}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon size={20} className="mr-3" />
+                      {item.name}
+                    </Link>
+                  ))}
+                </>
+              )}
               
               {/* Mobile User Info and Logout */}
               <div className="border-t border-gray-200 pt-3 mt-3">
