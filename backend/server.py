@@ -2567,12 +2567,14 @@ async def clock_out(
     is_within_geofence = None
     distance_from_office = None
     nearest_location = None
+    gps_accuracy = attendance_data.accuracy or 0
     
     locations = settings.get("locations", [])
     if locations:
         is_within_geofence, distance_from_office, nearest_location = check_within_any_geofence(
             attendance_data.latitude, attendance_data.longitude,
-            locations, settings.get("radius_meters", 100)
+            locations, settings.get("radius_meters", 100),
+            gps_accuracy
         )
     
     # Reverse geocode the address
@@ -2587,6 +2589,7 @@ async def clock_out(
         "timestamp_ist": format_ist_datetime(now_utc),
         "latitude": attendance_data.latitude,
         "longitude": attendance_data.longitude,
+        "accuracy": gps_accuracy,
         "address": address,
         "is_within_geofence": is_within_geofence,
         "distance_from_office": distance_from_office,
