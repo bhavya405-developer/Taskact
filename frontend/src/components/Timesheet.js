@@ -169,7 +169,7 @@ const Timesheet = ({ users }) => {
                 data-testid="personal-view-btn"
               >
                 <Clock className="w-4 h-4 inline mr-1" />
-                Personal
+                Individual
               </button>
               <button
                 onClick={() => setViewMode('team')}
