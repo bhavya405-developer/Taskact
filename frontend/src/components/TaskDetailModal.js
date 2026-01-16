@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, History, Trash2 } from 'lucide-react';
+import { Clock, History, Trash2, Timer } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -8,6 +8,10 @@ const API = `${BACKEND_URL}/api`;
 const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, onTaskUpdate }) => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState('');
+  const [showTimeEntry, setShowTimeEntry] = useState(false);
+  const [timeHours, setTimeHours] = useState('');
+  const [timeMinutes, setTimeMinutes] = useState('');
+  const [pendingStatus, setPendingStatus] = useState(null);
 
   if (!isOpen || !task) return null;
 
@@ -20,11 +24,27 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
   const handleStatusChange = async (newStatus) => {
     if (newStatus === task.status) return;
     
+    // If changing to completed, show time entry modal
+    if (newStatus === 'completed' && !task.actual_hours) {
+      setPendingStatus(newStatus);
+      setShowTimeEntry(true);
+      return;
+    }
+    
+    await updateTaskStatus(newStatus);
+  };
+
+  const updateTaskStatus = async (newStatus, actualHours = null) => {
     setStatusUpdating(true);
     setStatusError('');
     
     try {
-      await axios.put(`${API}/tasks/${task.id}`, { status: newStatus });
+      const updateData = { status: newStatus };
+      if (actualHours !== null) {
+        updateData.actual_hours = actualHours;
+      }
+      
+      await axios.put(`${API}/tasks/${task.id}`, updateData);
       if (onTaskUpdate) {
         await onTaskUpdate();
       }
@@ -34,6 +54,27 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
     } finally {
       setStatusUpdating(false);
     }
+  };
+
+  const handleTimeSubmit = () => {
+    const hours = parseFloat(timeHours || 0);
+    const minutes = parseFloat(timeMinutes || 0);
+    const totalHours = hours + (minutes / 60);
+    
+    if (totalHours <= 0) {
+      setStatusError('Please enter time spent on this task');
+      return;
+    }
+    
+    setShowTimeEntry(false);
+    updateTaskStatus(pendingStatus, totalHours);
+  };
+
+  const cancelTimeEntry = () => {
+    setShowTimeEntry(false);
+    setPendingStatus(null);
+    setTimeHours('');
+    setTimeMinutes('');
   };
 
   const getStatusDisplay = (status) => {
