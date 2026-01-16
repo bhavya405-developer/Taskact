@@ -1549,6 +1549,15 @@ async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserR
         old_status = existing_task.get("status")
         new_status = update_data["status"]
         
+        # Require actual_hours when completing a task (mandatory for timesheet)
+        if new_status == TaskStatus.COMPLETED:
+            actual_hours = update_data.get("actual_hours") or existing_task.get("actual_hours")
+            if not actual_hours:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Time spent (actual_hours) is required when completing a task for timesheet tracking"
+                )
+        
         # Get existing status history or create new
         status_history = existing_task.get("status_history", [])
         
