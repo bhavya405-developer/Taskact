@@ -42,6 +42,7 @@ const Navigation = () => {
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
     { path: '/tasks', name: 'Tasks', icon: CheckSquare },
+    { path: '/timesheet', name: 'Timesheet', icon: Timer },
     { path: '/attendance', name: 'Attendance', icon: Clock },
     { path: '/team', name: 'Team', icon: Users, partnerOnly: true },
     { path: '/categories', name: 'Categories', icon: FolderOpen, partnerOnly: true },
