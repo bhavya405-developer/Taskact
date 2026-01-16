@@ -285,7 +285,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            {onEdit && task.status !== 'completed' && (
+            {onEdit && (task.status !== 'completed' || isPartner) && (
               <button
                 onClick={() => onEdit(task)}
                 className="btn-secondary"
@@ -294,7 +294,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
                 Edit Task
               </button>
             )}
-            {onDelete && task.status !== 'completed' && (
+            {onDelete && (task.status !== 'completed' || isPartner) && (
               <button
                 onClick={handleDelete}
                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -304,9 +304,9 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
                 <Trash2 className="w-5 h-5" />
               </button>
             )}
-            {task.status === 'completed' && (
+            {task.status === 'completed' && !isPartner && (
               <div className="text-sm text-gray-500 italic">
-                ✓ This task is completed and cannot be edited
+                ✓ This task is completed
               </div>
             )}
             <button
