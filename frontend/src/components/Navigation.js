@@ -112,10 +112,6 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-4">
             <div className="flex items-baseline space-x-4">
               {navItems.map((item) => {
-                if (item.partnerOnly && !isPartner()) {
-                  return null;
-                }
-                
                 return (
                   <Link
                     key={item.path}
@@ -130,6 +126,45 @@ const Navigation = () => {
                   </Link>
                 );
               })}
+              
+              {/* Masters Dropdown (Partner only) */}
+              {isPartner() && (
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setShowMastersDropdown(true)}
+                  onMouseLeave={() => setShowMastersDropdown(false)}
+                >
+                  <button
+                    className={`nav-link flex items-center ${
+                      mastersItems.some(item => location.pathname === item.path) ? 'active' : ''
+                    }`}
+                    data-testid="nav-masters"
+                  >
+                    <Database size={16} className="mr-2" />
+                    Masters
+                    <ChevronDown size={14} className="ml-1" />
+                  </button>
+                  
+                  {showMastersDropdown && (
+                    <div className="absolute left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      {mastersItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                            location.pathname === item.path ? 'bg-blue-50 text-blue-600' : ''
+                          }`}
+                          data-testid={`nav-${item.name.toLowerCase()}`}
+                          onClick={() => setShowMastersDropdown(false)}
+                        >
+                          <item.icon size={16} className="mr-3" />
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="flex items-center space-x-4 ml-6 border-l border-gray-200 pl-6">
