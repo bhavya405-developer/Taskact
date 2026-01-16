@@ -3507,9 +3507,11 @@ async def export_team_timesheet(
                 "Employee": user["name"],
                 "Date": completed_date,
                 "Task": task["title"],
+                "Description": (task.get("description", "") or "")[:150],  # Truncate long descriptions
                 "Client": task.get("client_name", ""),
                 "Category": task.get("category", ""),
-                "Hours": task.get("actual_hours", 0)
+                "Est. Hours": task.get("estimated_hours", ""),
+                "Actual Hours": task.get("actual_hours", 0)
             })
     
     # Sort team by hours
