@@ -2474,18 +2474,24 @@ async def clock_in(
     is_within_geofence = None
     distance_from_office = None
     nearest_location = None
+    gps_accuracy = attendance_data.accuracy or 0
     
     locations = settings.get("locations", [])
     if settings.get("enabled") and locations:
         is_within_geofence, distance_from_office, nearest_location = check_within_any_geofence(
             attendance_data.latitude, attendance_data.longitude,
-            locations, settings.get("radius_meters", 100)
+            locations, settings.get("radius_meters", 100),
+            gps_accuracy
         )
         
         if not is_within_geofence:
+            # Calculate effective radius for error message
+            tolerance = min(gps_accuracy, 50) if gps_accuracy else 0
+            effective_radius = settings.get('radius_meters', 100) + tolerance
+            accuracy_note = f" (GPS accuracy: ±{gps_accuracy:.0f}m)" if gps_accuracy else ""
             raise HTTPException(
                 status_code=400, 
-                detail=f"You are {distance_from_office:.0f}m away from the nearest office ({nearest_location}). Must be within {settings.get('radius_meters', 100):.0f}m to clock in."
+                detail=f"You are {distance_from_office:.0f}m away from the nearest office ({nearest_location}). Must be within {effective_radius:.0f}m to clock in.{accuracy_note}"
             )
     
     # Reverse geocode the address
