@@ -157,11 +157,24 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
 
   // Export tasks
   const handleExportTasks = async () => {
+    if (tasks.length === 0) {
+      alert('No tasks to export');
+      return;
+    }
+    
     setExporting(true);
     try {
       const response = await axios.get(`${API}/tasks/export`, {
         responseType: 'blob'
       });
+      
+      // Check if response is an error (JSON) disguised as blob
+      const contentType = response.headers['content-type'];
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.data.text();
+        const errorData = JSON.parse(text);
+        throw new Error(errorData.detail || 'Export failed');
+      }
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -174,7 +187,18 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting tasks:', error);
-      alert(error.response?.data?.detail || 'Failed to export tasks. Please try again.');
+      // Handle blob error response
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errorData = JSON.parse(text);
+          alert(errorData.detail || 'Failed to export tasks');
+        } catch {
+          alert('Failed to export tasks. Please try again.');
+        }
+      } else {
+        alert(error.message || error.response?.data?.detail || 'Failed to export tasks. Please try again.');
+      }
     } finally {
       setExporting(false);
     }
