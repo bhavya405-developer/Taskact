@@ -1522,8 +1522,8 @@ async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserR
     if current_user.role != UserRole.PARTNER:
         if existing_task["assignee_id"] != current_user.id:
             raise HTTPException(status_code=403, detail="You can only update your own tasks")
-        # Non-partners can only update status
-        allowed_fields = {"status"}
+        # Non-partners can only update status and actual_hours (for completing tasks)
+        allowed_fields = {"status", "actual_hours"}
         update_fields = set(k for k, v in task_update.dict().items() if v is not None)
         if not update_fields.issubset(allowed_fields):
             raise HTTPException(status_code=403, detail="You can only update task status")
