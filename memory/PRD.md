@@ -118,15 +118,28 @@ TaskAct is a comprehensive task management application designed for professional
   - **Clear Completed Tasks**: Delete all completed tasks with password verification
   - **Clear All Tasks**: Delete all tasks with password verification
   - Double confirmation required: Password + Type confirmation text
+- [x] **Timesheet System** (Jan 2026)
+  - Mandatory time entry (actual_hours) when completing tasks
+  - Dedicated "Timesheet" page with Individual/Team views
+  - Excel export for timesheet data
+  - Estimated hours field on task creation
+- [x] **Task Completion for All Users** (Fixed Jan 18, 2026)
+  - Non-partners can now complete tasks with time entry
+  - Backend validation updated to allow `actual_hours` field for all users
+- [x] **Task Export** (Verified Jan 18, 2026)
+  - Export all tasks to Excel (Partners only)
+  - Includes summary sheet with status/priority counts
 
 ### Pending/Future Features
 - [ ] Production email delivery (requires Resend API key from user)
+- [ ] Mobile Push Notifications (PWA Service Worker)
+- [ ] Multi-Tenant Architecture (super-admin, data isolation)
 
 ## Demo Accounts
 All accounts use password: `password123`
 - Partner: bhavika@sundesha.in
 - Partner: bhavya@sundesha.in
-- Associates: namita@example.com, nitish@example.com, etc.
+- Associate: sonurajpurohit980@gmail.com
 
 ## API Endpoints
 
