@@ -430,7 +430,7 @@ const Attendance = () => {
       // Get the auth token
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${API}/attendance/report/export`, {
+      const response = await fetch(`${API}/attendance/report/export?month=${reportMonth}&year=${reportYear}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -452,7 +452,8 @@ const Attendance = () => {
       
       // Get filename from header or generate one
       const contentDisposition = response.headers.get('content-disposition');
-      let filename = 'Attendance_Report.xlsx';
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      let filename = `Attendance_Report_${monthNames[reportMonth-1]}_${reportYear}.xlsx`;
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename=(.+)/);
         if (filenameMatch) {
