@@ -3009,6 +3009,7 @@ async def export_attendance_report(
             day_type = ""
             status = ""
             clock_in_location = ""
+            clock_out_location = ""
             
             # Determine status
             if weekday == 6:
@@ -3032,6 +3033,9 @@ async def export_attendance_report(
                     out_time_ist = out_time + timedelta(hours=5, minutes=30)
                     out_time_str = out_time_ist.strftime("%I:%M %p")
                     
+                    # Get clock-out location
+                    clock_out_location = cout.get("address", "")
+                    
                     hours = (out_time - in_time).total_seconds() / 3600
                     hours_worked = f"{hours:.2f}"
                     day_type = "Full Day" if hours >= min_hours_full_day else "Half Day"
@@ -3051,6 +3055,7 @@ async def export_attendance_report(
                 "Clock In": in_time_str,
                 "Clock In Location": clock_in_location,
                 "Clock Out": out_time_str,
+                "Clock Out Location": clock_out_location,
                 "Hours Worked": hours_worked,
                 "Day Type": day_type,
                 "Status": status
