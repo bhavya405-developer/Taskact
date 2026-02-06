@@ -597,7 +597,10 @@ const Attendance = () => {
               Holidays
             </button>
             <button
-              onClick={fetchReport}
+              onClick={() => {
+                setShowReport(true);
+                fetchReport(reportMonth, reportYear);
+              }}
               className="btn-secondary flex items-center text-sm"
               data-testid="report-btn"
             >
