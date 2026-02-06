@@ -25,6 +25,9 @@ import io
 from tempfile import NamedTemporaryFile
 import resend
 
+# Import auth routes
+from routes.auth import router as auth_router, init_auth_routes
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
