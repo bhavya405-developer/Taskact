@@ -3099,10 +3099,11 @@ async def export_attendance_report(
             'C': 20,  # Employee
             'D': 15,  # Department
             'E': 12,  # Clock In
-            'F': 12,  # Clock Out
-            'G': 14,  # Hours Worked
-            'H': 12,  # Day Type
-            'I': 25,  # Status
+            'F': 40,  # Clock In Location
+            'G': 12,  # Clock Out
+            'H': 14,  # Hours Worked
+            'I': 12,  # Day Type
+            'J': 25,  # Status
         }
         for col, width in column_widths.items():
             worksheet.column_dimensions[col].width = width
