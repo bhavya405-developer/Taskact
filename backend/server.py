@@ -3665,6 +3665,10 @@ async def root():
 # Include routers in the main app
 app.include_router(api_router)
 app.include_router(auth_router, prefix="/api")  # Auth routes from routes/auth.py
+app.include_router(users_router, prefix="/api")  # Users routes
+app.include_router(tasks_router, prefix="/api")  # Tasks routes
+app.include_router(attendance_router, prefix="/api")  # Attendance routes
+app.include_router(timesheets_router, prefix="/api")  # Timesheets routes
 
 app.add_middleware(
     CORSMiddleware,
