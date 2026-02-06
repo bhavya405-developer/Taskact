@@ -52,11 +52,17 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
     );
   }
 
-  const { task_counts, recent_tasks, team_stats, overdue_tasks, pending_tasks_30days } = dashboardData;
+  const { task_counts, recent_tasks, team_stats, overdue_tasks, due_7_days_tasks } = dashboardData;
   
   // Use the new specific task lists from backend (already filtered by role)
-  const overdue_task_list = overdue_tasks || recent_tasks.filter(task => task.status === 'overdue');
-  const pending_task_list = pending_tasks_30days || recent_tasks.filter(task => task.status === 'pending');
+  // Apply partner's "show only my tasks" filter if enabled
+  const filterByPartner = (taskList) => {
+    if (!isPartner() || !showOnlyMyTasks) return taskList || [];
+    return (taskList || []).filter(task => task.assignee_id === user?.id);
+  };
+  
+  const overdue_task_list = filterByPartner(overdue_tasks || recent_tasks.filter(task => task.status === 'overdue'));
+  const due_7_days_list = filterByPartner(due_7_days_tasks || []);
 
   const StatusCard = ({ title, count, status, icon }) => (
     <div className={`stats-card animate-fade-in`} data-testid={`status-card-${status}`}>
