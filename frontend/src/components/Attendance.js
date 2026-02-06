@@ -4,11 +4,21 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Clock, MapPin, LogIn, LogOut, Settings, AlertCircle, 
   CheckCircle, Navigation, Calendar, Users, Plus, Trash2, 
-  CalendarDays, BookOpen, Download
+  CalendarDays, BookOpen, Download, Smartphone
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Mobile detection function
+const isMobileDevice = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  // Check for mobile user agents
+  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+  // Also check screen width as fallback
+  const isSmallScreen = window.innerWidth <= 768;
+  return mobileRegex.test(userAgent.toLowerCase()) || isSmallScreen;
+};
 
 const Attendance = () => {
   const { user, isPartner } = useAuth();
@@ -31,6 +41,19 @@ const Attendance = () => {
   const [success, setSuccess] = useState('');
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationError, setLocationError] = useState('');
+  const [isMobile, setIsMobile] = useState(true);
+  
+  // Check if device is mobile on mount
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+    
+    // Also listen for resize events
+    const handleResize = () => {
+      setIsMobile(isMobileDevice());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Settings form - up to 5 locations
   const [settingsForm, setSettingsForm] = useState({
