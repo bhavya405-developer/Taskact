@@ -294,8 +294,8 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                             {task.client_name ? `Client: ${task.client_name} • ` : ''}Assigned to: {task.assignee_name}
                           </p>
                           <div className="flex items-center space-x-2 mt-2">
-                            <span className="badge status-pending">
-                              Pending
+                            <span className={`badge ${status.class}`}>
+                              {status.label}
                             </span>
                             <span className={`badge ${priority.class}`}>
                               {priority.label}
@@ -307,7 +307,7 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                             )}
                           </div>
                           {task.due_date && (
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="text-xs text-yellow-700 mt-1 font-medium">
                               Due: {new Date(task.due_date).toLocaleDateString()}
                             </p>
                           )}
