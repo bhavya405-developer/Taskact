@@ -901,14 +901,64 @@ const Attendance = () => {
       )}
 
       {/* Monthly Report Panel (Partners only) */}
-      {showReport && report && isPartner() && (
+      {showReport && isPartner() && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Users className="w-5 h-5 mr-2" />
-              Attendance Report - {report.month}/{report.year}
+              Attendance Report
             </h3>
+            <button onClick={() => setShowReport(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
+              ×
+            </button>
+          </div>
+
+          {/* Month/Year Picker */}
+          <div className="flex flex-wrap items-center gap-3 mb-4 p-4 bg-blue-50 rounded-lg">
             <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Month:</label>
+              <select
+                value={reportMonth}
+                onChange={(e) => setReportMonth(parseInt(e.target.value))}
+                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                data-testid="report-month-select"
+              >
+                <option value={1}>January</option>
+                <option value={2}>February</option>
+                <option value={3}>March</option>
+                <option value={4}>April</option>
+                <option value={5}>May</option>
+                <option value={6}>June</option>
+                <option value={7}>July</option>
+                <option value={8}>August</option>
+                <option value={9}>September</option>
+                <option value={10}>October</option>
+                <option value={11}>November</option>
+                <option value={12}>December</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Year:</label>
+              <select
+                value={reportYear}
+                onChange={(e) => setReportYear(parseInt(e.target.value))}
+                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                data-testid="report-year-select"
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => fetchReport(reportMonth, reportYear)}
+              className="btn-secondary flex items-center text-sm"
+              data-testid="load-report-btn"
+            >
+              <Calendar className="w-4 h-4 mr-1" />
+              Load Report
+            </button>
+            {report && (
               <button
                 onClick={downloadReport}
                 disabled={actionLoading}
@@ -918,33 +968,37 @@ const Attendance = () => {
                 <Download className="w-4 h-4 mr-1" />
                 {actionLoading ? 'Downloading...' : 'Download Excel'}
               </button>
-              <button onClick={() => setShowReport(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
-                ×
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Summary */}
-          {report.summary && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-xs text-gray-500">Working Days</p>
-                <p className="text-xl font-bold text-gray-900">{report.summary.total_working_days}</p>
+          {/* Report Content */}
+          {report && (
+            <>
+              <div className="text-sm text-gray-600 mb-3">
+                Showing report for: <span className="font-semibold">{['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][report.month - 1]} {report.year}</span>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Weekly Offs (Sundays)</p>
-                <p className="text-xl font-bold text-gray-900">{report.summary.total_sundays}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Holidays</p>
-                <p className="text-xl font-bold text-gray-900">{report.summary.total_holidays}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Min Hours (Full Day)</p>
-                <p className="text-xl font-bold text-gray-900">{report.summary.min_hours_full_day}h</p>
-              </div>
-            </div>
-          )}
+
+              {/* Summary */}
+              {report.summary && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-xs text-gray-500">Working Days</p>
+                    <p className="text-xl font-bold text-gray-900">{report.summary.total_working_days}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Weekly Offs (Sundays)</p>
+                    <p className="text-xl font-bold text-gray-900">{report.summary.total_sundays}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Holidays</p>
+                    <p className="text-xl font-bold text-gray-900">{report.summary.total_holidays}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Min Hours (Full Day)</p>
+                    <p className="text-xl font-bold text-gray-900">{report.summary.min_hours_full_day}h</p>
+                  </div>
+                </div>
+              )}}
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
