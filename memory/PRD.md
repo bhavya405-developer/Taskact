@@ -60,6 +60,7 @@ TaskAct is a comprehensive task management application designed for professional
 - **Reverse Geocoding**: Addresses displayed using OpenStreetMap (Nominatim API)
 - **Today's Status**: Shows current day's clock in/out times and work duration
 - **Attendance History**: View past attendance records with location details and day type (Full/Half)
+- **Mobile-Only Attendance**: Clock in/out is restricted to mobile devices only for accurate GPS tracking
 - **Multi-Location Geofence Settings** (Partners only):
   - Enable/disable geofence restriction
   - **Up to 5 office locations** supported
@@ -77,7 +78,7 @@ TaskAct is a comprehensive task management application designed for professional
   - Summary: Working days, Weekly offs (Sundays), Holidays, Min hours setting
   - Per user: Full days, Half days, Effective days, Absent days, Total hours, Avg hours
   - Shows holidays for the month
-  - Excel export with selected month filename
+  - Excel export with Clock In/Out locations and selected month filename
 - **Monthly Report** (Partners only): View team attendance statistics
 
 ## Technical Stack
