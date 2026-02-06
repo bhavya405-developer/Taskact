@@ -1144,56 +1144,74 @@ const Attendance = () => {
         </div>
 
         {/* Clock In/Out Buttons */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-4">
-          {!todayStatus?.clock_in && (
-            <button
-              onClick={handleClockIn}
-              disabled={actionLoading}
-              className="btn-primary flex items-center justify-center flex-1 py-3"
-              data-testid="clock-in-btn"
-            >
-              {actionLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {locationFetching ? 'Getting location...' : 'Clocking in...'}
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Clock In
-                </>
-              )}
-            </button>
-          )}
-
-          {todayStatus?.is_clocked_in && !todayStatus?.clock_out && (
-            <button
-              onClick={handleClockOut}
-              disabled={actionLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center flex-1 transition-colors"
-              data-testid="clock-out-btn"
-            >
-              {actionLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {locationFetching ? 'Getting location...' : 'Clocking out...'}
-                </>
-              ) : (
-                <>
-                  <LogOut className="w-5 h-5 mr-2" />
-                  Clock Out
-                </>
-              )}
-            </button>
-          )}
-
-          {todayStatus?.clock_in && todayStatus?.clock_out && (
-            <div className="flex-1 text-center p-3 bg-gray-100 rounded-lg text-gray-600">
-              <CheckCircle className="w-5 h-5 inline mr-2" />
-              Attendance complete for today
+        {!isMobile ? (
+          /* Desktop restriction message */
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start">
+              <Smartphone className="w-6 h-6 text-amber-600 mr-3 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-amber-800">Mobile Device Required</h4>
+                <p className="text-sm text-amber-700 mt-1">
+                  Attendance marking is only available on mobile devices. Please use your smartphone to clock in/out.
+                </p>
+                <p className="text-xs text-amber-600 mt-2">
+                  This ensures accurate GPS location tracking for geofencing verification.
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col sm:flex-row gap-4">
+            {!todayStatus?.clock_in && (
+              <button
+                onClick={handleClockIn}
+                disabled={actionLoading}
+                className="btn-primary flex items-center justify-center flex-1 py-3"
+                data-testid="clock-in-btn"
+              >
+                {actionLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    {locationFetching ? 'Getting location...' : 'Clocking in...'}
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5 mr-2" />
+                    Clock In
+                  </>
+                )}
+              </button>
+            )}
+
+            {todayStatus?.is_clocked_in && !todayStatus?.clock_out && (
+              <button
+                onClick={handleClockOut}
+                disabled={actionLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center flex-1 transition-colors"
+                data-testid="clock-out-btn"
+              >
+                {actionLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    {locationFetching ? 'Getting location...' : 'Clocking out...'}
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-5 h-5 mr-2" />
+                    Clock Out
+                  </>
+                )}
+              </button>
+            )}
+
+            {todayStatus?.clock_in && todayStatus?.clock_out && (
+              <div className="flex-1 text-center p-3 bg-gray-100 rounded-lg text-gray-600">
+                <CheckCircle className="w-5 h-5 inline mr-2" />
+                Attendance complete for today
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Geofence Info - Only show to partners */}
         {isPartner() && geofenceSettings?.enabled && geofenceSettings?.locations?.length > 0 && (
