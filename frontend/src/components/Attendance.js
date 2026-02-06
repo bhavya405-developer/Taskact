@@ -412,9 +412,9 @@ const Attendance = () => {
     }));
   };
 
-  const fetchReport = async () => {
+  const fetchReport = async (month = reportMonth, year = reportYear) => {
     try {
-      const response = await axios.get(`${API}/attendance/report`);
+      const response = await axios.get(`${API}/attendance/report?month=${month}&year=${year}`);
       setReport(response.data);
       setShowReport(true);
     } catch (err) {
