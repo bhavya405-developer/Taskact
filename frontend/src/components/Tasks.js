@@ -737,6 +737,7 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
               data-testid="status-filter"
             >
               <option value="all">All Statuses</option>
+              <option value="due_7_days">Due in Next 7 Days</option>
               <option value="pending_overdue">Pending + Overdue</option>
               <option value="pending">Pending</option>
               <option value="on_hold">On Hold</option>
