@@ -2275,23 +2275,19 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     # Get overdue tasks (all for partners, own for others)
     overdue_tasks = await db.tasks.find({**task_query, "status": TaskStatus.OVERDUE}).sort("due_date", 1).to_list(length=5000)
     
-    # Get pending tasks for next 30 days
+    # Get tasks due in next 7 days (pending/overdue with due date within 7 days)
     today = datetime.now(timezone.utc)
-    thirty_days_later = today + timedelta(days=30)
+    seven_days_later = today + timedelta(days=7)
     
-    pending_query = {
+    due_7_days_query = {
         **task_query,
-        "status": TaskStatus.PENDING,
-        "$or": [
-            {"due_date": {"$lte": thirty_days_later.isoformat(), "$gte": today.isoformat()}},
-            {"due_date": None},  # Include tasks without due date
-            {"due_date": {"$exists": False}}
-        ]
+        "status": {"$in": [TaskStatus.PENDING, TaskStatus.OVERDUE]},
+        "due_date": {"$lte": seven_days_later.isoformat(), "$gte": today.strftime("%Y-%m-%d")}
     }
-    pending_tasks = await db.tasks.find(pending_query).sort("due_date", 1).to_list(length=5000)
+    due_7_days_tasks = await db.tasks.find(due_7_days_query).sort("due_date", 1).to_list(length=5000)
     
     # For backward compatibility, also include recent_tasks
-    recent_tasks = overdue_tasks + pending_tasks
+    recent_tasks = overdue_tasks + due_7_days_tasks
     
     # Get team performance (only for partners)
     team_stats = []
