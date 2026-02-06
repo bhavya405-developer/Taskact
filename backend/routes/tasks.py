@@ -500,7 +500,6 @@ async def create_task(task_data: dict, current_user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Assignee or creator not found")
     
     # Get current IST time
-    now_ist = get_ist_now()
     now_utc = datetime.now(timezone.utc)
     
     task_dict = task_data.copy()
