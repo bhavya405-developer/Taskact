@@ -158,7 +158,7 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         <BarChart3 size={24} className="text-blue-600 mr-2 md:mr-3 md:w-8 md:h-8" />
         <div>
           <h2 className="text-xl md:text-3xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-sm md:text-base text-gray-600">Overview of your team's productivity</p>
+          <p className="text-sm md:text-base text-gray-600">Overview of your team&apos;s productivity</p>
         </div>
       </div>
 
