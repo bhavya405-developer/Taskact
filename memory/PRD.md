@@ -204,13 +204,17 @@ All accounts use password: `password123`
 - JWT secret is stored in SECRET_KEY environment variable
 - Geolocation requires HTTPS in production (works on localhost for testing)
 
-## Code Structure (Refactoring Progress)
+## Code Structure (Refactoring Complete - Feb 2026)
 ```
 backend/
-├── server.py          # Main app (~3300 lines, being reduced)
+├── server.py          # Main app (~1430 lines) - Shared models, helpers, dashboard, notifications, categories, clients routes
 ├── routes/
-│   ├── __init__.py
-│   └── auth.py        # Auth routes extracted (~270 lines)
+│   ├── __init__.py    # Re-exports all routers and init functions
+│   ├── auth.py        # Auth routes (login, forgot password, OTP)
+│   ├── users.py       # User management routes (CRUD, deactivate/reactivate)
+│   ├── tasks.py       # Task routes (CRUD, bulk import/export, templates)
+│   ├── attendance.py  # Attendance routes (clock in/out, geofence, reports)
+│   └── timesheets.py  # Timesheet routes (individual/team, export)
 └── requirements.txt
 
 frontend/
@@ -218,9 +222,11 @@ frontend/
     └── components/    # React components
 ```
 
-### Refactoring Status
+### Refactoring Status (Complete)
 - [x] Auth routes extracted to `routes/auth.py`
-- [ ] Tasks routes (pending)
-- [ ] Users routes (pending)
-- [ ] Attendance routes (pending)
-- [ ] Timesheet routes (pending)
+- [x] Users routes extracted to `routes/users.py`
+- [x] Tasks routes extracted to `routes/tasks.py`
+- [x] Attendance routes extracted to `routes/attendance.py`
+- [x] Timesheet routes extracted to `routes/timesheets.py`
+- [x] Removed duplicate route definitions from `server.py`
+- [x] server.py reduced from ~3700 lines to ~1430 lines (61% reduction)
