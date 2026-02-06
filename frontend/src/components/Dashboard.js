@@ -167,14 +167,28 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         {/* Overdue Tasks */}
         <div className="bg-white rounded-lg shadow-sm border border-red-200">
           <div className="px-6 py-4 border-b border-red-200 bg-red-50">
-            <div className="flex items-center">
-              <AlertCircle size={20} className="text-red-600 mr-2" />
-              <h3 className="text-lg font-semibold text-red-900" data-testid="overdue-tasks-title">
-                Overdue Tasks ({overdue_task_list.length})
-              </h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertCircle size={20} className="text-red-600 mr-2" />
+                <h3 className="text-lg font-semibold text-red-900" data-testid="overdue-tasks-title">
+                  Overdue Tasks ({overdue_task_list.length})
+                </h3>
+              </div>
+              {isPartner() && (
+                <button
+                  onClick={() => setShowOnlyMyTasks(!showOnlyMyTasks)}
+                  className={`p-1.5 rounded-md transition-colors ${showOnlyMyTasks ? 'bg-red-200 text-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
+                  title={showOnlyMyTasks ? "Showing my tasks only - Click to show all" : "Click to show only my tasks"}
+                  data-testid="filter-my-tasks-btn"
+                >
+                  {showOnlyMyTasks ? <User size={16} /> : <UsersRound size={16} />}
+                </button>
+              )}
             </div>
             {isPartner() && (
-              <p className="text-xs text-red-700 mt-1">Showing all team members</p>
+              <p className="text-xs text-red-700 mt-1">
+                {showOnlyMyTasks ? "Showing only your tasks" : "Showing all team members"}
+              </p>
             )}
           </div>
           <div className="p-6">
@@ -228,35 +242,50 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
           </div>
         </div>
 
-        {/* Pending Tasks */}
+        {/* Due in Next 7 Days */}
         <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
           <div className="px-6 py-4 border-b border-yellow-200 bg-yellow-50">
-            <div className="flex items-center">
-              <Clock size={20} className="text-yellow-600 mr-2" />
-              <h3 className="text-lg font-semibold text-yellow-900" data-testid="pending-tasks-title">
-                Pending Tasks ({pending_task_list.length})
-              </h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Calendar size={20} className="text-yellow-600 mr-2" />
+                <h3 className="text-lg font-semibold text-yellow-900" data-testid="due-7-days-title">
+                  Due in Next 7 Days ({due_7_days_list.length})
+                </h3>
+              </div>
+              {isPartner() && (
+                <button
+                  onClick={() => setShowOnlyMyTasks(!showOnlyMyTasks)}
+                  className={`p-1.5 rounded-md transition-colors ${showOnlyMyTasks ? 'bg-yellow-200 text-yellow-800' : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'}`}
+                  title={showOnlyMyTasks ? "Showing my tasks only - Click to show all" : "Click to show only my tasks"}
+                  data-testid="filter-my-tasks-btn-2"
+                >
+                  {showOnlyMyTasks ? <User size={16} /> : <UsersRound size={16} />}
+                </button>
+              )}
             </div>
             {isPartner() && (
-              <p className="text-xs text-yellow-700 mt-1">Showing all team members • Next 30 days</p>
+              <p className="text-xs text-yellow-700 mt-1">
+                {showOnlyMyTasks ? "Showing only your tasks" : "Showing all team members"}
+              </p>
             )}
           </div>
           <div className="p-6">
-            {pending_task_list.length === 0 ? (
+            {due_7_days_list.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p>No pending tasks for next 30 days</p>
+                <p>No tasks due in next 7 days</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {pending_task_list.map((task) => {
+                {due_7_days_list.map((task) => {
                   const priority = getPriorityDisplay(task.priority);
+                  const status = getStatusDisplay(task.status);
                   
                   return (
                     <div 
                       key={task.id} 
                       className="border border-yellow-200 rounded-lg p-4 card-hover cursor-pointer bg-yellow-50" 
                       onClick={() => handleTaskClick(task)}
-                      data-testid={`pending-task-${task.id}`}
+                      data-testid={`due-7-days-task-${task.id}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
