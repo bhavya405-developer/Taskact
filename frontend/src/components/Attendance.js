@@ -25,6 +25,8 @@ const Attendance = () => {
   const [showHolidays, setShowHolidays] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState(null);
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1); // 1-12
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [currentLocation, setCurrentLocation] = useState(null);
