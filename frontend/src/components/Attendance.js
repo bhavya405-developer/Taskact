@@ -1044,6 +1044,8 @@ const Attendance = () => {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       )}
 
