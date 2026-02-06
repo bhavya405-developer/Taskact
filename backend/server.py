@@ -2344,7 +2344,7 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
         },
         "recent_tasks": [Task(**parse_from_mongo(task)) for task in recent_tasks],
         "overdue_tasks": [Task(**parse_from_mongo(task)) for task in overdue_tasks],
-        "pending_tasks_30days": [Task(**parse_from_mongo(task)) for task in pending_tasks],
+        "due_7_days_tasks": [Task(**parse_from_mongo(task)) for task in due_7_days_tasks],
         "team_stats": team_stats,  # Empty for non-partners
         "client_stats": sorted(client_stats, key=lambda x: x["total_tasks"], reverse=True) if client_stats else [],
         "category_stats": sorted(category_stats, key=lambda x: x["task_count"], reverse=True) if category_stats else []
