@@ -40,9 +40,15 @@ TaskAct is a comprehensive task management application designed for professional
 
 ### 5. Dashboard
 - Task counts by status
-- **Team-wide overdue and pending tasks** (partners only)
+- **Team-wide overdue and Due in 7 Days tasks** (partners only)
+- **Partner Filter Button**: Partners can toggle to view only their own tasks
 - Team performance analytics (partners only)
 - Client and category analytics
+
+### 6. Task Filtering
+- Filter by Status: All, Due in Next 7 Days, Pending + Overdue, individual statuses
+- Filter by Assignee, Client, Category
+- **Due in Next 7 Days filter**: Shows pending/overdue tasks with due date within 7 days
 
 ### 6. Notifications
 - Task assignment notifications
