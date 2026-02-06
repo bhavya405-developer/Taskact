@@ -1001,7 +1001,7 @@ const Attendance = () => {
                     <p className="text-xl font-bold text-gray-900">{report.summary.min_hours_full_day}h</p>
                   </div>
                 </div>
-              )}}
+              )}
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
