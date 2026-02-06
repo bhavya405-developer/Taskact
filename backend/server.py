@@ -53,9 +53,6 @@ if RESEND_API_KEY:
 security = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Logger setup
-logger = logging.getLogger(__name__)
-
 # Enums
 class TaskStatus(str, Enum):
     PENDING = "pending"
