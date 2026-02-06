@@ -15,67 +15,55 @@
 **User's preferred language**: English
 
 **what currently exists?**
-The TaskAct application is a full-stack FastAPI/React/MongoDB solution. It features a robust authentication system, comprehensive CRUD operations for tasks, users, clients, and categories. The GPS attendance system is fully implemented with multi-location geofencing, configurable attendance rules, holiday management, and detailed monthly reports with Excel export.
+TaskAct is a full-stack FastAPI/React/MongoDB application with a comprehensive feature set. It includes role-based authentication, full CRUD for tasks, users, clients, and categories, and a detailed GPS attendance system with multi-location support and reporting. A timesheet module tracks hours against tasks.
 
-A complete timesheet management system has been added, requiring users to log hours upon task completion. This data populates a new Timesheet page with individual and team views, various filtering options, and an Excel export feature.
-
-Numerous UI/UX enhancements have been implemented, including refactoring the navigation bar to group master data under a single dropdown, improving geofencing accuracy, and allowing partners to manage all tasks and attendance records. The backend has also been optimized by fixing deployment blockers and adding limits to database queries.
+Recent additions include:
+- A month-picker for attendance reports.
+- Clock-in and clock-out locations in the attendance export.
+- A Due in next 7 days filter on the Tasks page and Dashboard.
+- A partner-only filter on the Dashboard to view their own tasks.
+- A restriction to allow attendance marking from mobile devices only.
+- The backend refactoring process has begun, with authentication routes extracted into their own module.
 
 **Last working item**:
-- **Last item agent was working**: The user reported two issues: 1) some users, particularly non-partners, are unable to complete tasks even after entering the required time, and 2) the task export functionality is still failing. The agent identified that the backend was incorrectly restricting non-partners from submitting  and has applied a fix. The agent is now re-investigating the export issue.
-- **Status**: IN PROGRESS
-- **Agent Testing Done**: N
+- **Last item agent was working**: The user requested a series of new features and to continue refactoring the backend. The agent successfully implemented all features and began the refactoring by extracting the authentication routes. The user then asked about the best time to fork the session to continue the refactoring, and the agent recommended forking immediately. The user agreed and initiated the fork. The next step is to continue the refactoring.
+- **Status**: NOT STARTED
+- **Agent Testing Done**: Y
 - **Which testing method agent to use?**: backend testing agent
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: Task Export is failing for the user. (P0)
-- **Issue 2**: Some users are unable to complete tasks. (P0)
-
-**Issues Detail**:
-- **Issue 1: Task Export is failing for the user.**
-    - **Attempted fixes**: The agent previously identified the issue was due to no tasks existing in the database. After creating tasks, the agent is re-investigating why the user is still facing this problem. The frontend error handling for blob responses was also improved.
-    - **Next debug checklist**: Re-run the  command to test the  endpoint now that tasks exist in the database. If the API call is successful, investigate the frontend  function in  to ensure the file download is being triggered correctly in the browser.
-    - **Why fix this issue and what will be achieved with the fix?**: This is a core feature that allows users to get their data out of the system. Fixing it is essential for data portability.
-    - **Status**: IN PROGRESS
-    - **Is recurring issue?**: Y
-    - **Should Test frontend/backend/both after fix?**: both
-
-- **Issue 2: Some users are unable to complete tasks.**
-    - **Attempted fixes**: The agent found that the backend validation for non-partners was too strict, preventing the  field from being submitted. A fix was applied in  to add  to the list of fields that non-partners are allowed to update.
-    - **Next debug checklist**: Re-run the  test to update a task as a non-partner, ensuring both  and  are sent. Confirm the API returns a success response. Then, verify the fix from the UI.
-    - **Why fix this issue and what will be achieved with the fix?**: This is a critical bug blocking the core workflow of the application, as users cannot complete their work and log time for the new timesheet feature.
-    - **Status**: IN PROGRESS
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: both
+- None. Both critical bugs (task completion for non-partners and task export failure) were resolved and verified in the previous session.
 
 **In progress Task List**:
-- None
+- **Task 1: Refactor ** (P0)
+
+**Task Detail**:
+- **Task 1: Refactor **
+    - **Where to resume**: The  routes have already been extracted to . The user has requested to continue by refactoring the remaining parts of . The next logical step is to extract routes for tasks, users, attendance, and timesheets into their own files within the  directory.
+    - **What will be achieved with this?**: This will significantly improve code maintainability, reduce complexity, and make future development faster and less error-prone by breaking down the monolithic  file into smaller, single-responsibility modules.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: backend
+    - **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
-
 **Upcoming Tasks:**
--   **P0: Finalize Forgot Password Feature**: The current implementation sends the OTP to the partner's notification panel. It still uses a placeholder for the email service. The next step is to integrate a live email service (e.g., Resend).
--   **P1: Implement Mobile Push Notifications**: Implement a PWA Service Worker for full background push notifications, as the current implementation is browser-based.
+-   **P0: Continue Refactoring **: Extract routes for tasks, users, attendance, and timesheets into separate modules.
+-   **P1: Finalize Forgot Password Feature**: The current implementation sends the OTP to the partner's notification panel. It still uses a placeholder for the email service. The next step is to integrate a live email service (e.g., Resend).
+-   **P2: Implement Mobile Push Notifications**: Implement a PWA Service Worker for full background push notifications, as the current implementation is browser-based.
 
 **Future Tasks:**
 -   **Multi-Tenant Architecture**: Implement the discussed architecture to support multiple companies with isolated data and a super-admin role.
--   **Refactor **: The main backend file is very large and should be broken down into smaller, more manageable modules (e.g., , , etc.) for better maintainability.
 
 **Completed work in this session**
-- **Feature**: Implemented a comprehensive Timesheet system, including mandatory time entry on task completion, a dedicated Timesheet page with individual/team views and Excel export, and an estimated hours field on task creation.
-- **Feature**: Added partner functionality to delete individual attendance records and bulk-delete tasks (all or completed) with password confirmation.
-- **Bug Fix**: **Resolved a critical bug preventing non-partners from completing tasks** by adjusting backend validation to accept the  field.
-- **Bug Fix**: Fixed a recurring notification bug by implementing a bulk mark all as read endpoint.
-- **Bug Fix**: Corrected deployment blockers identified by the deployment agent, including  misconfigurations and unoptimized database queries.
-- **Enhancement**: Significantly improved geofencing accuracy by validating the user's GPS accuracy from the frontend and applying a tolerance buffer on the backend for both clock-in and clock-out.
-- **UI/UX**:
-    - Reorganized the main navigation by grouping Team, Client, and Categories under a Masters dropdown for partners, which includes a hover delay for better usability.
-    - Added a Pending + Overdue filter to the tasks list.
-    - Enabled all users to change a task's status directly from the task detail modal.
-    - Granted partners the ability to edit and change the status of even completed tasks.
-    - Renamed the Personal tab in timesheets to Individual for clarity.
-- **Attendance**: The partner's attendance view now defaults to showing all users' records for the current day, and the monthly report export includes a new Daily Details sheet.
+- **Bug Fix**: **Resolved critical bug preventing non-partners from completing tasks**. Verified via API and UI testing that non-partners can now submit  and complete tasks.
+- **Bug Fix**: **Fixed failing Task Export**. Verified via  that the  endpoint returns a valid Excel file.
+- **Feature**: **Attendance Report Month Picker**: Added a month/year selector to the attendance report page, allowing partners to generate and download reports for any selected month.
+- **Feature**: **Enhanced Attendance Export**: Added Clock In Location and Clock Out Location columns to the Daily Details sheet of the exported attendance report.
+- **Feature**: **Due in 7 Days Filter**: Added a new filter option on the Tasks page and replaced the Pending Tasks list on the Dashboard with a Due in Next 7 Days list.
+- **Feature**: **Partner's Task Filter on Dashboard**: Added a button on the dashboard for partners to filter the task lists to show only tasks assigned to them.
+- **Feature**: **Mobile-Only Attendance**: Restricted the clock-in/out functionality to mobile devices only, displaying an informational message to desktop users.
+- **Refactor**: **Extracted Auth Routes**: Began the backend refactoring by creating  and moving all authentication-related endpoints from  into it.
 
 **Earlier issues found/mentioned but not fixed**
 - None.
@@ -88,63 +76,57 @@ Numerous UI/UX enhancements have been implemented, including refactoring the nav
 
 **Key Technical Concepts**
 -   **Backend**: FastAPI, Pydantic, Motor, , , .
--   **Frontend**: React, React Router, Axios, Tailwind CSS, Shadcn UI.
+-   **Frontend**: React, React Router, Axios, Tailwind CSS, Shadcn UI, .
 -   **Database**: MongoDB.
 -   **Geolocation**: Browser Geolocation API () and OpenStreetMap (Nominatim API).
--   **Database Optimization**: Adding  to unbounded  queries to prevent performance issues in production.
+-   **Refactoring**: Started breaking down a monolithic FastAPI application into modular routers.
 
 **key DB schema**
--   **tasks**: Added , .
--   **attendance**: Added  to records to improve geofence validation.
+- No changes in this session.
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   
--   
--   
--   
--   
--   
--   
+-    (Modified)
+-    (Created)
+-    (Modified)
+-    (Modified)
+-    (Modified)
+-    (Updated)
 
 **Areas that need refactoring**:
--   The  file has grown significantly and is the highest priority for refactoring. It should be broken down into separate modules for routes, models, and utilities to improve maintainability.
+-   The  file is still large and is the primary target for refactoring. The next step is to extract the routes for Tasks, Users, Attendance, and Timesheets into their own respective files under .
 
 **key api endpoints**
--    (New)
--    (New)
--    &  (New)
--    (Logic updated to allow  on completion and partner edits on completed tasks)
--    &  (Updated to accept )
--    (Under investigation)
--   All unbounded database queries now have limits.
+-   : All authentication endpoints now live under the  defined in .
+-   : Logic updated to return .
+-   : Now accepts  and  query parameters.
+-   : Logic updated to include clock-in and clock-out locations. Now accepts  and  query parameters.
 
 **Critical Info for New Agent**
--   The immediate priority is to resolve the two user-reported issues: task completion for all users and failing task exports.
--   The task completion bug's root cause was identified in the backend validation logic in , which wrongly disallowed the  field for non-partners. A fix has been applied but needs to be fully tested.
--   The task export functionality is reported as failing. You need to verify if the backend endpoint  works correctly now that tasks exist, and then debug the frontend if the API is working.
+-   The immediate priority is to continue the backend refactoring as requested by the user. You have a stable starting point with all features working and the  routes already extracted.
+-   The plan is to create new route files (e.g., , , ) in , move the corresponding endpoints from , and include these new routers in the main FastAPI app.
+-   Pay close attention to shared dependencies (like , , Pydantic models, helper functions) and manage imports carefully to avoid circular dependencies. The approach used for  (passing dependencies via an  function) is a good pattern to follow.
 
 **documents and test reports created in this job**
 -    (Updated)
--    (Temporary file created during testing)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Some users can't complete tasks even with time entry, and task export is failing. - **Status: In Progress**
-2.  **User**: Error on task export and 'Clear' buttons seem unresponsive. - **Status: Completed**
-3.  **User**: Shared deployment logs and asked for fixes. - **Status: Completed**
-4.  **User**: Masters dropdown should have a 2-second hover delay. - **Status: Completed**
-5.  **User**: Requested UI changes: rename Personal to Individual, add columns to timesheet export, and group tabs under a Masters dropdown. - **Status: Completed**
-6.  **User**: Requested a full timesheet feature. - **Status: Completed**
-7.  **User**: Reported Cannot edit completed tasks error. - **Status: Completed**
-8.  **User**: Requested Pending + Overdue filter and new permissions for status changes. - **Status: Completed**
-9.  **User**: Requested geofencing accuracy fix be applied to clock-out as well. - **Status: Completed**
-10. **User**: Reported geofencing was inaccurate in the deployed app. - **Status: Completed**
+1.  **User**: Fork - **Status: Completed** (User initiated the fork)
+2.  **User**: should we fork the session before continuing refactoring or first complete refactoring and then fort the session? - **Status: Completed** (Agent provided recommendation to fork now)
+3.  **User**: Add clock-out location to export AND extract auth routes to separate file - **Status: Completed**
+4.  **User**: if not exact then can give a range for expected credit utilisation? - **Status: Completed** (Agent explained limitations and proposed an incremental approach)
+5.  **User**: how much credit will be used to refactor? - **Status: Completed** (Agent explained it's not possible to give an exact number)
+6.  **User**: what about refactor? does that help? - **Status: Completed** (Agent explained the long-term benefits of refactoring)
+7.  **User**: how to optimise use of credits for any development for this app? - **Status: Completed** (Agent provided tips on credit optimization)
+8.  **User**: Add the column of geofencing location details of clock in time in the daily detail sheet in the monthly attendance report exported in excel - **Status: Completed**
+9.  **User**: for downloading monthly attendance report under Attendance tab, give option to Partner to select the month of which the report is to be exported - **Status: Completed**
+10. **User**: In tasks, filter by status add a option of Due in next 7 days and In dashboard, instead of pending tasks show tasks Due in next 7 days... Also, for partner users, give a small symbol kind of button to filter to view only respective partners task... allow users to mark attendance only from mobile applications... furthermore, continue refactoring the balance - **Status: Completed**
 
 **Project Health Check:**
--   **Broken**: Task Export functionality is reported as failing by the user and is under investigation. The task completion workflow was broken but a fix is in progress.
--   **Mocked**: The Forgot Password feature still uses a placeholder for the email sending service, pending a user-provided API key.
+-   **Broken**: None.
+-   **Mocked**: The Forgot Password feature still uses a placeholder for the email sending service, pending a user-provided API key for a service like Resend.
 
 **3rd Party Integrations**
 -   **OpenStreetMap (Nominatim)**: Used for free reverse geocoding. No key required. Status: **Active**.
@@ -154,7 +136,7 @@ Numerous UI/UX enhancements have been implemented, including refactoring the nav
 -   **Testing agent used after significant changes**: NO
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: []
--   **Known regressions**: Task export functionality is reported as failing.
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
 All user passwords are .
@@ -162,4 +144,4 @@ All user passwords are .
 -   **Associate:** 
 
 **What agent forgot to execute**
-- The agent has been diligent in addressing all user requests and has not forgotten any tasks. The current focus is on fixing the latest reported bugs.</analysis>
+- The agent successfully addressed all user requests from the session. The refactoring task was started as requested and is the main pending item for the next session.</analysis>
