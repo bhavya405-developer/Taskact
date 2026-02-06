@@ -67,9 +67,11 @@ TaskAct is a comprehensive task management application designed for professional
   - Add/delete office holidays (paid holidays)
   - Holidays excluded from working day calculations
 - **Enhanced Monthly Report** (Partners only):
+  - **Month/Year Picker**: Select any month to view/download report
   - Summary: Working days, Weekly offs (Sundays), Holidays, Min hours setting
   - Per user: Full days, Half days, Effective days, Absent days, Total hours, Avg hours
   - Shows holidays for the month
+  - Excel export with selected month filename
 - **Monthly Report** (Partners only): View team attendance statistics
 
 ## Technical Stack
