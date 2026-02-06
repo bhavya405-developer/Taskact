@@ -11,20 +11,23 @@ import {
   Calendar,
   Pause,
   Users,
-  Building2
+  Building2,
+  User,
+  UsersRound
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Dashboard = ({ users, tasks, onTaskUpdate }) => {
-  const { isPartner } = useAuth();
+  const { isPartner, user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
+  const [showOnlyMyTasks, setShowOnlyMyTasks] = useState(false); // Partner filter for own tasks
 
   const fetchDashboardData = async () => {
     try {
