@@ -81,22 +81,6 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   const overdue_task_list = filterByPartner(overdue_tasks || recent_tasks.filter(task => task.status === 'overdue'));
   const due_7_days_list = filterByPartner(due_7_days_tasks || []);
 
-  const StatusCard = ({ title, count, status, icon }) => (
-    <div className={`stats-card animate-fade-in`} data-testid={`status-card-${status}`}>
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <div className="w-8 h-8 flex items-center justify-center text-lg">
-            {icon}
-          </div>
-        </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{count}</p>
-        </div>
-      </div>
-    </div>
-  );
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
