@@ -669,6 +669,93 @@ async def update_overdue_tasks():
     
     return updated_count
 
+# ==================== INITIALIZE ROUTE MODULES ====================
+# Initialize auth routes with dependencies
+init_auth_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _token_expire=ACCESS_TOKEN_EXPIRE_MINUTES,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _create_notification=create_notification,
+    _logger=logger
+)
+
+# Initialize users routes with dependencies
+init_users_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _user_create=UserCreate,
+    _user_profile_update=UserProfileUpdate,
+    _password_reset_request=PasswordResetRequest,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _create_notification=create_notification,
+    _logger=logger
+)
+
+# Initialize tasks routes with dependencies
+init_tasks_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _task=Task,
+    _task_create=TaskCreate,
+    _task_update=TaskUpdate,
+    _task_status=TaskStatus,
+    _bulk_import_result=BulkImportResult,
+    _password_verify_request=PasswordVerifyRequest,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _create_notification=create_notification,
+    _update_overdue_tasks=update_overdue_tasks,
+    _get_ist_now=get_ist_now,
+    _format_ist_datetime=format_ist_datetime,
+    _logger=logger
+)
+
+# Initialize attendance routes with dependencies
+init_attendance_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _attendance_type=AttendanceType,
+    _attendance_create=AttendanceCreate,
+    _geofence_settings_update=GeofenceSettingsUpdate,
+    _attendance_rules_update=AttendanceRulesUpdate,
+    _holiday_create=HolidayCreate,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _create_notification=create_notification,
+    _get_geofence_settings=get_geofence_settings,
+    _check_within_any_geofence=check_within_any_geofence,
+    _reverse_geocode=reverse_geocode,
+    _format_ist_datetime=format_ist_datetime,
+    _logger=logger
+)
+
+# Initialize timesheets routes with dependencies
+init_timesheets_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _task_status=TaskStatus,
+    _parse_mongo=parse_from_mongo,
+    _logger=logger
+)
+
 # API Routes
 
 # Authentication endpoints
