@@ -551,6 +551,20 @@ async def create_notification(user_id: str, title: str, message: str, task_id: s
     await db.notifications.insert_one(notification_dict)
     return notification
 
+# Initialize auth routes with dependencies
+init_auth_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _token_expire=ACCESS_TOKEN_EXPIRE_MINUTES,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _create_notification=create_notification,
+    _logger=logger
+)
+
 def generate_otp(length: int = 6) -> str:
     """Generate a random numeric OTP"""
     return ''.join(random.choices(string.digits, k=length))
