@@ -143,7 +143,7 @@ async def update_attendance_settings(
         {"id": "geofence_settings"},
         {"$set": update_data},
         upsert=True
-    )
+    )  # noqa: F841
     
     settings = await get_geofence_settings()
     return settings
