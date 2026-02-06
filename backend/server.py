@@ -3583,8 +3583,9 @@ async def export_team_timesheet(
 async def root():
     return {"message": "TaskAct API is running"}
 
-# Include the router in the main app
+# Include routers in the main app
 app.include_router(api_router)
+app.include_router(auth_router, prefix="/api")  # Auth routes from routes/auth.py
 
 app.add_middleware(
     CORSMiddleware,
