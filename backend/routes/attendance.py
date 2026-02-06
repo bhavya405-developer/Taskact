@@ -139,11 +139,11 @@ async def update_attendance_settings(
                 if address:
                     loc["address"] = address
     
-    result = await db.geofence_settings.update_one(
+    await db.geofence_settings.update_one(
         {"id": "geofence_settings"},
         {"$set": update_data},
         upsert=True
-    )  # noqa: F841
+    )
     
     settings = await get_geofence_settings()
     return settings
