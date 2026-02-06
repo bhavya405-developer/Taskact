@@ -5,8 +5,7 @@ Handles task CRUD, bulk import/export, and task templates
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 import uuid
 import jwt
@@ -334,7 +333,7 @@ async def bulk_import_tasks(
                             # Fallback: try pandas date parsing for Excel date values
                             due_date = pd.to_datetime(row['Due Date'])
                         due_date = due_date.replace(tzinfo=timezone.utc)
-                    except Exception as e:
+                    except Exception:
                         errors.append(f"Row {index + 2}: Invalid date format '{row['Due Date']}'. Use DD-MMM-YYYY (e.g., 15-Jan-2025)")
                         error_count += 1
                         continue

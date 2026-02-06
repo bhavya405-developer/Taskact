@@ -4,8 +4,6 @@ Handles user CRUD, activation/deactivation, password management
 """
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 import jwt
