@@ -203,3 +203,24 @@ All accounts use password: `password123`
 - For production email, configure RESEND_API_KEY in backend/.env
 - JWT secret is stored in SECRET_KEY environment variable
 - Geolocation requires HTTPS in production (works on localhost for testing)
+
+## Code Structure (Refactoring Progress)
+```
+backend/
+├── server.py          # Main app (~3300 lines, being reduced)
+├── routes/
+│   ├── __init__.py
+│   └── auth.py        # Auth routes extracted (~270 lines)
+└── requirements.txt
+
+frontend/
+└── src/
+    └── components/    # React components
+```
+
+### Refactoring Status
+- [x] Auth routes extracted to `routes/auth.py`
+- [ ] Tasks routes (pending)
+- [ ] Users routes (pending)
+- [ ] Attendance routes (pending)
+- [ ] Timesheet routes (pending)
