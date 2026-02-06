@@ -3008,6 +3008,7 @@ async def export_attendance_report(
             hours_worked = ""
             day_type = ""
             status = ""
+            clock_in_location = ""
             
             # Determine status
             if weekday == 6:
@@ -3022,6 +3023,9 @@ async def export_attendance_report(
                 in_time = datetime.fromisoformat(cin["timestamp"])
                 in_time_ist = in_time + timedelta(hours=5, minutes=30)
                 in_time_str = in_time_ist.strftime("%I:%M %p")
+                
+                # Get clock-in location
+                clock_in_location = cin.get("address", "")
                 
                 if cout:
                     out_time = datetime.fromisoformat(cout["timestamp"])
@@ -3045,6 +3049,7 @@ async def export_attendance_report(
                 "Employee": user["name"],
                 "Department": user.get("department", ""),
                 "Clock In": in_time_str,
+                "Clock In Location": clock_in_location,
                 "Clock Out": out_time_str,
                 "Hours Worked": hours_worked,
                 "Day Type": day_type,
