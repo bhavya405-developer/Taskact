@@ -334,6 +334,15 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
       matchesStatus = true;
     } else if (filter === 'pending_overdue') {
       matchesStatus = task.status === 'pending' || task.status === 'overdue';
+    } else if (filter === 'due_7_days') {
+      // Due in next 7 days (pending/overdue tasks with due date within 7 days)
+      if (!task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      const today = new Date();
+      const sevenDaysLater = new Date();
+      sevenDaysLater.setDate(today.getDate() + 7);
+      matchesStatus = (task.status === 'pending' || task.status === 'overdue') && 
+                      dueDate <= sevenDaysLater;
     } else {
       matchesStatus = task.status === filter;
     }
