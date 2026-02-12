@@ -15,6 +15,46 @@ router = APIRouter(tags=["Timesheets"])
 
 security = HTTPBearer()
 
+
+def parse_datetime(date_value):
+    """
+    Safely parse a date value to datetime object.
+    Handles both datetime objects (from MongoDB Atlas) and ISO strings (from local MongoDB).
+    Returns None if value is None or invalid.
+    """
+    if date_value is None:
+        return None
+    try:
+        if isinstance(date_value, datetime):
+            return date_value
+        elif isinstance(date_value, str):
+            return datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+        else:
+            return None
+    except Exception:
+        return None
+
+
+def format_date_for_display(date_value, format_str="%Y-%m-%d"):
+    """
+    Safely format a date value for display.
+    Handles both datetime objects and ISO strings.
+    Returns empty string if value is None or invalid.
+    """
+    if date_value is None:
+        return ''
+    try:
+        if isinstance(date_value, datetime):
+            return date_value.strftime(format_str)
+        elif isinstance(date_value, str):
+            dt = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+            return dt.strftime(format_str)
+        else:
+            return str(date_value)[:10] if date_value else ''
+    except Exception:
+        return ''
+
+
 # These will be set by server.py when including the router
 db = None
 SECRET_KEY = None
