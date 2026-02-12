@@ -377,8 +377,8 @@ async def export_timesheet(
         total_hours += actual_hours
         
         completed_at = task.get("completed_at")
-        if completed_at:
-            completed_dt = datetime.fromisoformat(completed_at)
+        completed_dt = parse_datetime(completed_at)
+        if completed_dt:
             completed_ist = completed_dt + timedelta(hours=5, minutes=30)
             completed_date = completed_ist.strftime("%d-%b-%Y")
             day_name = completed_ist.strftime("%A")
