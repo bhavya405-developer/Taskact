@@ -22,7 +22,6 @@ import jwt
 from passlib.context import CryptContext
 import pandas as pd
 import io
-from tempfile import NamedTemporaryFile
 import resend
 
 # Import route modules
