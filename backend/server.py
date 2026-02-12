@@ -630,9 +630,10 @@ async def update_overdue_tasks():
     """Automatically update tasks to overdue status if past due date"""
     current_time = datetime.now(timezone.utc)
     
-    # Get all pending and on_hold tasks with due dates (with reasonable limit)
+    # Only check PENDING tasks for overdue - ON_HOLD tasks should stay on hold
+    # regardless of due date (user explicitly put them on hold)
     tasks = await db.tasks.find({
-        "status": {"$in": [TaskStatus.PENDING, TaskStatus.ON_HOLD]},
+        "status": TaskStatus.PENDING,
         "due_date": {"$ne": None}
     }).to_list(length=5000)
     
