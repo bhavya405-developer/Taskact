@@ -458,7 +458,6 @@ async def export_tasks(current_user=Depends(get_current_partner)):
             'Created At': format_date_for_display(task.get('created_at')),
             'Updated At': format_date_for_display(task.get('updated_at')),
             'Completed At': format_date_for_display(task.get('completed_at'))
-            'Completed At': completed_at[:10] if completed_at else ''
         })
     
     df = pd.DataFrame(export_data)
