@@ -256,8 +256,8 @@ async def verify_otp_endpoint(request: VerifyOTPRequest):
     if not otp_record:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     
-    expires_at = datetime.fromisoformat(otp_record["expires_at"])
-    if datetime.now(timezone.utc) > expires_at:
+    expires_at = parse_datetime(otp_record["expires_at"])
+    if expires_at and datetime.now(timezone.utc) > expires_at:
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one")
     
     return {"message": "OTP verified successfully", "valid": True}
@@ -275,8 +275,8 @@ async def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
     if not otp_record:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     
-    expires_at = datetime.fromisoformat(otp_record["expires_at"])
-    if datetime.now(timezone.utc) > expires_at:
+    expires_at = parse_datetime(otp_record["expires_at"])
+    if expires_at and datetime.now(timezone.utc) > expires_at:
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one")
     
     user = await db.users.find_one({"email": request.email})
