@@ -775,26 +775,35 @@ async def export_attendance_report(
         total_hours = 0
         
         for cin in clock_ins:
-            cin_date = datetime.fromisoformat(cin["timestamp"]).date()
+            cin_dt = parse_datetime(cin["timestamp"])
+            if not cin_dt:
+                continue
+            cin_date = cin_dt.date()
             matching_out = next(
                 (co for co in clock_outs 
-                 if datetime.fromisoformat(co["timestamp"]).date() == cin_date),
+                 if parse_datetime(co["timestamp"]) and parse_datetime(co["timestamp"]).date() == cin_date),
                 None
             )
             
             if matching_out:
-                in_time = datetime.fromisoformat(cin["timestamp"])
-                out_time = datetime.fromisoformat(matching_out["timestamp"])
-                hours = (out_time - in_time).total_seconds() / 3600
-                total_hours += hours
-                
-                if hours >= min_hours_full_day:
-                    full_days += 1
-                else:
-                    half_days += 1
+                in_time = parse_datetime(cin["timestamp"])
+                out_time = parse_datetime(matching_out["timestamp"])
+                if in_time and out_time:
+                    hours = (out_time - in_time).total_seconds() / 3600
+                    total_hours += hours
+                    
+                    if hours >= min_hours_full_day:
+                        full_days += 1
+                    else:
+                        half_days += 1
         
         # Calculate absent days
-        present_dates = {datetime.fromisoformat(cin["timestamp"]).strftime("%Y-%m-%d") for cin in clock_ins}
+        present_dates = set()
+        for cin in clock_ins:
+            cin_dt = parse_datetime(cin["timestamp"])
+            if cin_dt:
+                present_dates.add(cin_dt.strftime("%Y-%m-%d"))
+        
         absent_days = 0
         current_date = start_date
         while current_date < end_date and current_date.date() <= now.date():
@@ -830,10 +839,17 @@ async def export_attendance_report(
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
         }).to_list(length=5000)
         
-        clock_ins = {datetime.fromisoformat(r["timestamp"]).strftime("%Y-%m-%d"): r 
-                     for r in records if r["type"] == AttendanceType.CLOCK_IN.value}
-        clock_outs = {datetime.fromisoformat(r["timestamp"]).strftime("%Y-%m-%d"): r 
-                      for r in records if r["type"] == AttendanceType.CLOCK_OUT.value}
+        # Build dictionaries safely handling datetime objects
+        clock_ins = {}
+        clock_outs = {}
+        for r in records:
+            r_dt = parse_datetime(r["timestamp"])
+            if r_dt:
+                date_key = r_dt.strftime("%Y-%m-%d")
+                if r["type"] == AttendanceType.CLOCK_IN.value:
+                    clock_ins[date_key] = r
+                elif r["type"] == AttendanceType.CLOCK_OUT.value:
+                    clock_outs[date_key] = r
         
         # Iterate through each day of the month
         current_date = start_date
