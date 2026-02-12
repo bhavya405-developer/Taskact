@@ -879,24 +879,27 @@ async def export_attendance_report(
                 status = "Weekly Off"
             elif cin:
                 # Convert to IST for display
-                in_time = datetime.fromisoformat(cin["timestamp"])
-                in_time_ist = in_time + timedelta(hours=5, minutes=30)
-                in_time_str = in_time_ist.strftime("%I:%M %p")
+                in_time = parse_datetime(cin["timestamp"])
+                if in_time:
+                    in_time_ist = in_time + timedelta(hours=5, minutes=30)
+                    in_time_str = in_time_ist.strftime("%I:%M %p")
                 
                 # Get clock-in location
                 clock_in_location = cin.get("address", "")
                 
                 if cout:
-                    out_time = datetime.fromisoformat(cout["timestamp"])
-                    out_time_ist = out_time + timedelta(hours=5, minutes=30)
-                    out_time_str = out_time_ist.strftime("%I:%M %p")
+                    out_time = parse_datetime(cout["timestamp"])
+                    if out_time:
+                        out_time_ist = out_time + timedelta(hours=5, minutes=30)
+                        out_time_str = out_time_ist.strftime("%I:%M %p")
                     
                     # Get clock-out location
                     clock_out_location = cout.get("address", "")
                     
-                    hours = (out_time - in_time).total_seconds() / 3600
-                    hours_worked = f"{hours:.2f}"
-                    day_type = "Full Day" if hours >= min_hours_full_day else "Half Day"
+                    if in_time and out_time:
+                        hours = (out_time - in_time).total_seconds() / 3600
+                        hours_worked = f"{hours:.2f}"
+                        day_type = "Full Day" if hours >= min_hours_full_day else "Half Day"
                     status = "Present"
                 else:
                     status = "Clocked In (No Clock Out)"
