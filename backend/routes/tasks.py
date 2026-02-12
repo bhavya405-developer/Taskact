@@ -444,12 +444,6 @@ async def export_tasks(current_user=Depends(get_current_partner)):
     # Prepare data for export
     export_data = []
     for task in tasks:
-        # Handle None values for date fields
-        due_date = task.get('due_date')
-        created_at = task.get('created_at')
-        updated_at = task.get('updated_at')
-        completed_at = task.get('completed_at')
-        
         export_data.append({
             'Task ID': task['id'],
             'Title': task['title'],
@@ -460,9 +454,10 @@ async def export_tasks(current_user=Depends(get_current_partner)):
             'Creator': task.get('creator_name') or '',
             'Status': task.get('status') or '',
             'Priority': task.get('priority') or '',
-            'Due Date': due_date[:10] if due_date else '',
-            'Created At': created_at[:10] if created_at else '',
-            'Updated At': updated_at[:10] if updated_at else '',
+            'Due Date': format_date_for_display(task.get('due_date')),
+            'Created At': format_date_for_display(task.get('created_at')),
+            'Updated At': format_date_for_display(task.get('updated_at')),
+            'Completed At': format_date_for_display(task.get('completed_at'))
             'Completed At': completed_at[:10] if completed_at else ''
         })
     
