@@ -165,7 +165,8 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
     setExporting(true);
     try {
       const response = await axios.get(`${API}/tasks/export`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        timeout: 30000  // 30 second timeout
       });
       
       // Check if response is an error (JSON) disguised as blob
@@ -176,15 +177,24 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
         throw new Error(errorData.detail || 'Export failed');
       }
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Create blob with explicit type
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const today = new Date().toISOString().split('T')[0];
       link.setAttribute('download', `tasks_export_${today}.xlsx`);
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      
+      // Cleanup after a short delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
       console.error('Error exporting tasks:', error);
       // Handle blob error response
@@ -196,6 +206,8 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
         } catch {
           alert('Failed to export tasks. Please try again.');
         }
+      } else if (error.code === 'ECONNABORTED') {
+        alert('Export timed out. Please try again.');
       } else {
         alert(error.message || error.response?.data?.detail || 'Failed to export tasks. Please try again.');
       }
