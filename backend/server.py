@@ -641,11 +641,16 @@ async def update_overdue_tasks():
     bulk_operations = []
     
     for task in tasks:
-        due_date_str = task.get('due_date')
-        if due_date_str:
+        due_date_value = task.get('due_date')
+        if due_date_value:
             try:
-                # Parse the due date string to datetime object
-                due_date = datetime.fromisoformat(due_date_str)
+                # Handle both datetime objects (MongoDB Atlas) and ISO strings (local MongoDB)
+                if isinstance(due_date_value, datetime):
+                    due_date = due_date_value
+                elif isinstance(due_date_value, str):
+                    due_date = datetime.fromisoformat(due_date_value.replace('Z', '+00:00'))
+                else:
+                    continue
                 
                 # Ensure timezone awareness for comparison
                 if due_date.tzinfo is None:
