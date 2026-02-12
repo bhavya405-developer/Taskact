@@ -443,9 +443,12 @@ async def clock_out(
     await db.attendance.insert_one(attendance_dict)
     
     # Calculate work duration
-    clock_in_time = datetime.fromisoformat(existing_clock_in["timestamp"])
-    work_duration = now_utc - clock_in_time
-    hours = work_duration.total_seconds() / 3600
+    clock_in_time = parse_datetime(existing_clock_in["timestamp"])
+    if clock_in_time:
+        work_duration = now_utc - clock_in_time
+        hours = work_duration.total_seconds() / 3600
+    else:
+        hours = 0
     
     # Create notification
     await create_notification(
@@ -485,9 +488,10 @@ async def get_today_attendance(current_user=Depends(get_current_user)):
     
     work_duration = None
     if clock_in and clock_out:
-        in_time = clock_in["timestamp"] if isinstance(clock_in["timestamp"], datetime) else datetime.fromisoformat(clock_in["timestamp"])
-        out_time = clock_out["timestamp"] if isinstance(clock_out["timestamp"], datetime) else datetime.fromisoformat(clock_out["timestamp"])
-        work_duration = round((out_time - in_time).total_seconds() / 3600, 2)
+        in_time = parse_datetime(clock_in["timestamp"])
+        out_time = parse_datetime(clock_out["timestamp"])
+        if in_time and out_time:
+            work_duration = round((out_time - in_time).total_seconds() / 3600, 2)
     
     return {
         "clock_in": clock_in,
