@@ -624,34 +624,38 @@ async def get_attendance_report(
         daily_details = []
         
         for cin in clock_ins:
-            cin_date = datetime.fromisoformat(cin["timestamp"]).date()
+            cin_dt = parse_datetime(cin["timestamp"])
+            if not cin_dt:
+                continue
+            cin_date = cin_dt.date()
             date_str = cin_date.strftime("%Y-%m-%d")
             
             matching_out = next(
                 (co for co in clock_outs 
-                 if datetime.fromisoformat(co["timestamp"]).date() == cin_date),
+                 if parse_datetime(co["timestamp"]) and parse_datetime(co["timestamp"]).date() == cin_date),
                 None
             )
             
             if matching_out:
-                in_time = datetime.fromisoformat(cin["timestamp"])
-                out_time = datetime.fromisoformat(matching_out["timestamp"])
-                hours = (out_time - in_time).total_seconds() / 3600
-                total_hours += hours
-                
-                # Determine if full day or half day
-                if hours >= min_hours_full_day:
-                    full_days += 1
-                    day_type = "full"
-                else:
-                    half_days += 1
-                    day_type = "half"
-                
-                daily_details.append({
-                    "date": date_str,
-                    "hours": round(hours, 2),
-                    "type": day_type
-                })
+                in_time = parse_datetime(cin["timestamp"])
+                out_time = parse_datetime(matching_out["timestamp"])
+                if in_time and out_time:
+                    hours = (out_time - in_time).total_seconds() / 3600
+                    total_hours += hours
+                    
+                    # Determine if full day or half day
+                    if hours >= min_hours_full_day:
+                        full_days += 1
+                        day_type = "full"
+                    else:
+                        half_days += 1
+                        day_type = "half"
+                    
+                    daily_details.append({
+                        "date": date_str,
+                        "hours": round(hours, 2),
+                        "type": day_type
+                    })
             else:
                 # Clock in without clock out - mark as incomplete
                 daily_details.append({
