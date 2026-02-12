@@ -1332,13 +1332,13 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     # Get overdue tasks (all for partners, own for others)
     overdue_tasks = await db.tasks.find({**task_query, "status": TaskStatus.OVERDUE}).sort("due_date", 1).to_list(length=5000)
     
-    # Get tasks due in next 7 days (pending/overdue with due date within 7 days)
+    # Get tasks due in next 7 days (PENDING only, exclude OVERDUE)
     today = datetime.now(timezone.utc)
     seven_days_later = today + timedelta(days=7)
     
     due_7_days_query = {
         **task_query,
-        "status": {"$in": [TaskStatus.PENDING, TaskStatus.OVERDUE]},
+        "status": TaskStatus.PENDING,  # Only pending tasks, not overdue
         "due_date": {"$lte": seven_days_later.isoformat(), "$gte": today.strftime("%Y-%m-%d")}
     }
     due_7_days_tasks = await db.tasks.find(due_7_days_query).sort("due_date", 1).to_list(length=5000)
