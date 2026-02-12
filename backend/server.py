@@ -647,6 +647,10 @@ async def update_overdue_tasks():
                 # Parse the due date string to datetime object
                 due_date = datetime.fromisoformat(due_date_str)
                 
+                # Ensure timezone awareness for comparison
+                if due_date.tzinfo is None:
+                    due_date = due_date.replace(tzinfo=timezone.utc)
+                
                 # Check if task is actually overdue
                 if due_date < current_time:
                     bulk_operations.append(
