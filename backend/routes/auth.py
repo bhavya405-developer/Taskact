@@ -93,11 +93,13 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class VerifyOTPRequest(BaseModel):
+    company_code: str  # Added for multi-tenant
     email: EmailStr
     otp: str
 
 
 class ResetPasswordWithOTPRequest(BaseModel):
+    company_code: str  # Added for multi-tenant
     email: EmailStr
     otp: str
     new_password: str
