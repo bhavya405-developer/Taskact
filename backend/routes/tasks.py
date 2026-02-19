@@ -599,11 +599,16 @@ async def get_tasks(
     client_name: Optional[str] = None,
     category: Optional[str] = None
 ):
-    """Get all tasks with optional filters"""
+    """Get all tasks with optional filters (tenant-filtered)"""
     # Update overdue tasks before fetching
     await update_overdue_tasks()
     
+    # Get tenant_id for filtering
+    tenant_id = await get_tenant_id(current_user)
+    
     query = {}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     
     # Non-partners can only see their own tasks unless they're partners
     if current_user.role != UserRole.PARTNER:
@@ -625,7 +630,13 @@ async def get_tasks(
 @router.get("/tasks/{task_id}")
 async def get_task(task_id: str, current_user=Depends(get_current_user)):
     """Get a specific task by ID"""
-    task = await db.tasks.find_one({"id": task_id})
+    tenant_id = await get_tenant_id(current_user)
+    
+    query = {"id": task_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    task = await db.tasks.find_one(query)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -639,8 +650,14 @@ async def get_task(task_id: str, current_user=Depends(get_current_user)):
 @router.put("/tasks/{task_id}")
 async def update_task(task_id: str, task_update: dict, current_user=Depends(get_current_user)):
     """Update a task"""
-    # Get the existing task
-    existing_task = await db.tasks.find_one({"id": task_id})
+    tenant_id = await get_tenant_id(current_user)
+    
+    # Get the existing task (within tenant)
+    query = {"id": task_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    existing_task = await db.tasks.find_one(query)
     if not existing_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -657,6 +674,7 @@ async def update_task(task_id: str, task_update: dict, current_user=Depends(get_
         update_fields = set(k for k, v in task_update.items() if v is not None)
         if not update_fields.issubset(allowed_fields):
             raise HTTPException(status_code=403, detail="You can only update task status")
+    
     
     update_data = {k: v for k, v in task_update.items() if v is not None}
     
