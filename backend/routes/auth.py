@@ -76,6 +76,7 @@ def init_auth_routes(
 # ==================== MODELS ====================
 
 class LoginRequest(BaseModel):
+    company_code: str  # 4-8 alphanumeric company code
     email: str
     password: str
 
@@ -87,6 +88,7 @@ class LoginResponse(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
+    company_code: str  # Added for multi-tenant
     email: EmailStr
 
 
