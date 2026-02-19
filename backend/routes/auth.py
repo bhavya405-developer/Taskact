@@ -249,9 +249,14 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
 
 @router.post("/auth/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
-    """Send OTP to partner's notification for password reset"""
-    # Check if user exists
-    user = await db.users.find_one({"email": request.email})
+    """Send OTP to partner's notification for password reset (tenant-aware)"""
+    # First, verify the company code (tenant)
+    tenant = await db.tenants.find_one({"code": request.company_code.upper(), "active": True})
+    if not tenant:
+        return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
+    
+    # Check if user exists within the tenant
+    user = await db.users.find_one({"email": request.email, "tenant_id": tenant["id"]})
     if not user:
         return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
     
@@ -263,24 +268,29 @@ async def forgot_password(request: ForgotPasswordRequest):
     otp = generate_otp(6)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     
-    # Invalidate any existing OTPs for this email
+    # Invalidate any existing OTPs for this email within the tenant
     await db.otp_records.update_many(
-        {"email": request.email, "used": False},
+        {"email": request.email, "tenant_id": tenant["id"], "used": False},
         {"$set": {"used": True}}
     )
     
-    # Store OTP in database
+    # Store OTP in database with tenant_id
     otp_record = OTPRecord(
         email=request.email,
         otp=otp,
         expires_at=expires_at
     )
     otp_dict = prepare_for_mongo(otp_record.dict())
+    otp_dict["tenant_id"] = tenant["id"]
     await db.otp_records.insert_one(otp_dict)
     
-    # Send OTP to all partners' notification panel
+    # Send OTP to all partners' notification panel within the same tenant
     user_name = user.get("name", "User")
-    partners = await db.users.find({"role": "partner", "active": True}).to_list(length=5000)
+    partners = await db.users.find({
+        "role": "partner",
+        "active": True,
+        "tenant_id": tenant["id"]
+    }).to_list(length=5000)
     
     for partner in partners:
         await create_notification(
@@ -294,9 +304,15 @@ async def forgot_password(request: ForgotPasswordRequest):
 
 @router.post("/auth/verify-otp")
 async def verify_otp_endpoint(request: VerifyOTPRequest):
-    """Verify OTP without resetting password"""
+    """Verify OTP without resetting password (tenant-aware)"""
+    # Verify the company code
+    tenant = await db.tenants.find_one({"code": request.company_code.upper(), "active": True})
+    if not tenant:
+        raise HTTPException(status_code=400, detail="Invalid company code")
+    
     otp_record = await db.otp_records.find_one({
         "email": request.email,
+        "tenant_id": tenant["id"],
         "otp": request.otp,
         "used": False
     })
@@ -313,9 +329,15 @@ async def verify_otp_endpoint(request: VerifyOTPRequest):
 
 @router.post("/auth/reset-password")
 async def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
-    """Reset password using OTP"""
+    """Reset password using OTP (tenant-aware)"""
+    # Verify the company code
+    tenant = await db.tenants.find_one({"code": request.company_code.upper(), "active": True})
+    if not tenant:
+        raise HTTPException(status_code=400, detail="Invalid company code")
+    
     otp_record = await db.otp_records.find_one({
         "email": request.email,
+        "tenant_id": tenant["id"],
         "otp": request.otp,
         "used": False
     })
@@ -327,7 +349,7 @@ async def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
     if expires_at and datetime.now(timezone.utc) > expires_at:
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one")
     
-    user = await db.users.find_one({"email": request.email})
+    user = await db.users.find_one({"email": request.email, "tenant_id": tenant["id"]})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
