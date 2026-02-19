@@ -101,8 +101,7 @@ async def get_tenant_id(current_user):
 async def create_user(user_data: dict, current_user=Depends(get_current_partner)):
     """Create a new user (Partners only) - within same tenant"""
     # Get tenant_id from current user
-    user_doc = await db.users.find_one({"id": current_user.id})
-    tenant_id = user_doc.get("tenant_id") if user_doc else None
+    tenant_id = await get_tenant_id(current_user)
     
     if not tenant_id:
         raise HTTPException(status_code=400, detail="Tenant not found")
@@ -139,8 +138,7 @@ async def get_users(
 ):
     """Get all users within the same tenant. Partners can include inactive users."""
     # Get tenant_id from current user
-    user_doc = await db.users.find_one({"id": current_user.id})
-    tenant_id = user_doc.get("tenant_id") if user_doc else None
+    tenant_id = await get_tenant_id(current_user)
     
     query = {"tenant_id": tenant_id} if tenant_id else {}
     
