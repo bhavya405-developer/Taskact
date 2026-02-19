@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, KeyRound, Eye, EyeOff, Building2 } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -8,16 +8,20 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const Login = () => {
   const { login } = useAuth();
   const [formData, setFormData] = useState({
+    companyCode: '',
     email: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [companyName, setCompanyName] = useState('');
+  const [verifyingCode, setVerifyingCode] = useState(false);
   
   // Forgot password states
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
-  const [forgotPasswordStep, setForgotPasswordStep] = useState(1); // 1: email, 2: otp, 3: new password
+  const [forgotPasswordStep, setForgotPasswordStep] = useState(1); // 1: company+email, 2: otp, 3: new password
+  const [forgotCompanyCode, setForgotCompanyCode] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -28,8 +32,31 @@ const Login = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'companyCode' ? value.toUpperCase() : value
     }));
+    
+    // Clear company name when code changes
+    if (name === 'companyCode') {
+      setCompanyName('');
+    }
+  };
+
+  const verifyCompanyCode = async () => {
+    if (formData.companyCode.length < 4) return;
+    
+    setVerifyingCode(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/tenant/lookup/${formData.companyCode}`);
+      setCompanyName(response.data.name);
+      setError('');
+    } catch (err) {
+      setCompanyName('');
+      if (formData.companyCode.length >= 4) {
+        setError('Invalid company code');
+      }
+    } finally {
+      setVerifyingCode(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -37,7 +64,7 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.companyCode, formData.email, formData.password);
     
     if (!result.success) {
       setError(result.error);
@@ -53,7 +80,10 @@ const Login = () => {
     setSuccessMessage('');
 
     try {
-      await axios.post(`${API_URL}/api/auth/forgot-password`, { email: forgotEmail });
+      await axios.post(`${API_URL}/api/auth/forgot-password`, { 
+        company_code: forgotCompanyCode,
+        email: forgotEmail 
+      });
       setSuccessMessage('Password reset request submitted. Please contact your partner for the OTP.');
       setForgotPasswordStep(2);
     } catch (err) {
@@ -70,7 +100,11 @@ const Login = () => {
     setSuccessMessage('');
 
     try {
-      await axios.post(`${API_URL}/api/auth/verify-otp`, { email: forgotEmail, otp });
+      await axios.post(`${API_URL}/api/auth/verify-otp`, { 
+        company_code: forgotCompanyCode,
+        email: forgotEmail, 
+        otp 
+      });
       setSuccessMessage('OTP verified! Please set your new password.');
       setForgotPasswordStep(3);
     } catch (err) {
@@ -100,6 +134,7 @@ const Login = () => {
 
     try {
       await axios.post(`${API_URL}/api/auth/reset-password`, {
+        company_code: forgotCompanyCode,
         email: forgotEmail,
         otp,
         new_password: newPassword
@@ -119,6 +154,7 @@ const Login = () => {
   const resetForgotPassword = () => {
     setForgotPasswordMode(false);
     setForgotPasswordStep(1);
+    setForgotCompanyCode('');
     setForgotEmail('');
     setOtp('');
     setNewPassword('');
@@ -194,9 +230,29 @@ const Login = () => {
               </div>
             )}
 
-            {/* Step 1: Enter Email */}
+            {/* Step 1: Enter Company Code + Email */}
             {forgotPasswordStep === 1 && (
               <form onSubmit={handleForgotPassword} className="space-y-6">
+                <div>
+                  <label htmlFor="forgot-company-code" className="form-label">
+                    Company Code
+                  </label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      id="forgot-company-code"
+                      type="text"
+                      value={forgotCompanyCode}
+                      onChange={(e) => setForgotCompanyCode(e.target.value.toUpperCase())}
+                      required
+                      maxLength={8}
+                      className="form-input pl-10 uppercase"
+                      placeholder="e.g., SCO1"
+                      data-testid="forgot-company-code-input"
+                    />
+                  </div>
+                </div>
+                
                 <div>
                   <label htmlFor="forgot-email" className="form-label">
                     Email address
@@ -215,13 +271,13 @@ const Login = () => {
                     />
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    We'll send a 6-digit OTP to this email
+                    OTP will be sent to your partner's notification panel
                   </p>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || forgotCompanyCode.length < 4}
                   className="w-full btn-primary"
                   data-testid="send-otp-button"
                 >
@@ -399,36 +455,85 @@ const Login = () => {
               </div>
             )}
 
+            {/* Company Code Field */}
+            <div>
+              <label htmlFor="companyCode" className="form-label">
+                Company Code
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="companyCode"
+                  name="companyCode"
+                  type="text"
+                  value={formData.companyCode}
+                  onChange={handleChange}
+                  onBlur={verifyCompanyCode}
+                  required
+                  maxLength={8}
+                  className="form-input pl-10 uppercase"
+                  placeholder="e.g., SCO1"
+                  data-testid="company-code-input"
+                />
+                {verifyingCode && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                  </div>
+                )}
+              </div>
+              {companyName && (
+                <p className="mt-1 text-sm text-green-600 flex items-center">
+                  <span className="mr-1">✓</span> {companyName}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Enter your organization's company code (4-8 characters)
+              </p>
+            </div>
+
             <div>
               <label htmlFor="email" className="form-label">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="form-input"
-                data-testid="email-input"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="form-input pl-10"
+                  data-testid="email-input"
+                />
+              </div>
             </div>
 
             <div>
               <label htmlFor="password" className="form-label">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="form-input"
-                data-testid="password-input"
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="form-input pl-10 pr-10"
+                  data-testid="password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
 
             {/* Forgot Password Link */}
@@ -446,8 +551,8 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full btn-primary"
+                disabled={loading || !companyName}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="login-button"
               >
                 {loading ? (
