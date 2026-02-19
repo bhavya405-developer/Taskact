@@ -8,6 +8,7 @@ __all__ = [
     'attendance_router', 'init_attendance_routes',
     'timesheets_router', 'init_timesheets_routes',
     'tenants_router', 'init_tenants_routes',
+    'projects_router', 'init_projects_routes',
 ]
 
 from .auth import router as auth_router
@@ -22,3 +23,5 @@ from .timesheets import router as timesheets_router
 from .timesheets import init_timesheets_routes
 from .tenants import router as tenants_router
 from .tenants import init_tenants_routes
+from .projects import router as projects_router
+from .projects import init_projects_routes
