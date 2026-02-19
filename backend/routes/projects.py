@@ -149,10 +149,10 @@ class Project(BaseModel):
     progress: float = 0.0  # Percentage of completed sub-tasks
     tenant_id: Optional[str] = None
     from_template_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    allocated_at: Optional[str] = None
-    completed_at: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    allocated_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
 
 
 class ProjectTemplate(BaseModel):
