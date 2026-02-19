@@ -13,6 +13,7 @@ import ClientManager from "./components/ClientManager";
 import Navigation from "./components/Navigation";
 import Attendance from "./components/Attendance";
 import Timesheet from "./components/Timesheet";
+import SuperAdminApp from "./components/SuperAdminApp";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,6 +32,41 @@ const DashboardRedirect = () => {
   }, [user, navigate, location.pathname]);
   
   return null;
+};
+
+// Impersonation Banner Component
+const ImpersonationBanner = () => {
+  const impersonationData = localStorage.getItem('impersonation');
+  
+  if (!impersonationData) return null;
+  
+  try {
+    const data = JSON.parse(impersonationData);
+    
+    const endImpersonation = () => {
+      // Clear impersonation and redirect to admin
+      localStorage.removeItem('token');
+      localStorage.removeItem('tenant');
+      localStorage.removeItem('impersonation');
+      window.location.href = '/admin';
+    };
+    
+    return (
+      <div className="bg-amber-500 text-amber-900 px-4 py-2 text-center text-sm font-medium">
+        <span className="mr-2">
+          You are impersonating this user as support. Actions are logged.
+        </span>
+        <button
+          onClick={endImpersonation}
+          className="underline hover:no-underline font-semibold"
+        >
+          End Impersonation
+        </button>
+      </div>
+    );
+  } catch {
+    return null;
+  }
 };
 
 const AppContent = () => {
@@ -98,6 +134,7 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50">
+        <ImpersonationBanner />
         <DashboardRedirect />
         <Navigation />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -161,7 +198,15 @@ const AppContent = () => {
   );
 };
 
+// Main App with Super Admin Route
 function App() {
+  // Check if we're on the admin route
+  const path = window.location.pathname;
+  
+  if (path === '/admin' || path.startsWith('/admin/')) {
+    return <SuperAdminApp />;
+  }
+  
   return (
     <div className="App">
       <AuthProvider>
