@@ -131,7 +131,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
-        tenant_id: str = payload.get("tenant_id")
         if user_id is None:
             raise credentials_exception
     except jwt.PyJWTError:
@@ -141,9 +140,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if user is None:
         raise credentials_exception
     
-    user_response = UserResponse(**parse_from_mongo(user))
-    user_response.tenant_id = user.get("tenant_id") or tenant_id
-    return user_response
+    return UserResponse(**parse_from_mongo(user))
 
 
 async def get_current_partner(current_user=Depends(get_current_user)):
