@@ -131,6 +131,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
+        tenant_id: str = payload.get("tenant_id")
         if user_id is None:
             raise credentials_exception
     except jwt.PyJWTError:
@@ -139,7 +140,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user = await db.users.find_one({"id": user_id, "active": True})
     if user is None:
         raise credentials_exception
-    return UserResponse(**parse_from_mongo(user))
+    
+    user_response = UserResponse(**parse_from_mongo(user))
+    user_response.tenant_id = user.get("tenant_id") or tenant_id
+    return user_response
 
 
 async def get_current_partner(current_user=Depends(get_current_user)):
@@ -151,17 +155,28 @@ async def get_current_partner(current_user=Depends(get_current_user)):
     return current_user
 
 
+async def get_tenant_id(current_user):
+    """Helper to get tenant_id from current user"""
+    user_doc = await db.users.find_one({"id": current_user.id})
+    return user_doc.get("tenant_id") if user_doc else None
+
+
 # ==================== ROUTES ====================
 
 # Task Template and Bulk Import/Export endpoints (Partners only) - Must come before parameterized routes
 @router.get("/tasks/download-template")
 async def download_tasks_template(current_user=Depends(get_current_partner)):
     """Download Excel template for bulk task import"""
+    tenant_id = await get_tenant_id(current_user)
     
-    # Get active users, clients, and categories for reference
-    users = await db.users.find({"active": True}).to_list(length=5000)
-    clients = await db.clients.find({"active": True}).to_list(length=5000)
-    categories = await db.categories.find({"active": True}).to_list(length=5000)
+    # Get active users, clients, and categories for reference (within tenant)
+    query = {"active": True}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    users = await db.users.find(query).to_list(length=5000)
+    clients = await db.clients.find(query).to_list(length=5000)
+    categories = await db.categories.find(query).to_list(length=5000)
     
     # Create sample data with headers
     template_data = {
