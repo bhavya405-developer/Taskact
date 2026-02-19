@@ -178,7 +178,25 @@ def generate_otp(length: int = 6) -> str:
 
 @router.post("/auth/login")
 async def login(login_data: LoginRequest):
-    user = await db.users.find_one({"email": login_data.email, "active": True})
+    """
+    Tenant user login with company code.
+    Requires: company_code, email, password
+    """
+    # First, verify the company code (tenant)
+    tenant = await db.tenants.find_one({"code": login_data.company_code.upper(), "active": True})
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid company code"
+        )
+    
+    # Find user within the tenant
+    user = await db.users.find_one({
+        "email": login_data.email,
+        "tenant_id": tenant["id"],
+        "active": True
+    })
+    
     if not user or not verify_password(login_data.password, user.get("password_hash", "")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -187,20 +205,46 @@ async def login(login_data: LoginRequest):
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["id"]}, expires_delta=access_token_expires
+        data={
+            "sub": user["id"],
+            "tenant_id": tenant["id"]
+        },
+        expires_delta=access_token_expires
     )
     
     user_response = UserResponse(**parse_from_mongo(user))
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": user_response.dict()
+        "user": user_response.dict(),
+        "tenant": {
+            "id": tenant["id"],
+            "name": tenant["name"],
+            "code": tenant["code"]
+        }
     }
 
 
 @router.get("/auth/me")
 async def get_current_user_info(current_user = Depends(get_current_user)):
-    return current_user
+    # Get tenant info for the user
+    user_doc = await db.users.find_one({"id": current_user.id})
+    tenant_id = user_doc.get("tenant_id") if user_doc else None
+    
+    tenant_info = None
+    if tenant_id:
+        tenant = await db.tenants.find_one({"id": tenant_id})
+        if tenant:
+            tenant_info = {
+                "id": tenant["id"],
+                "name": tenant["name"],
+                "code": tenant["code"]
+            }
+    
+    return {
+        **current_user.dict(),
+        "tenant": tenant_info
+    }
 
 
 @router.post("/auth/forgot-password")
