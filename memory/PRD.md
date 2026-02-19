@@ -1,232 +1,293 @@
-# TaskAct - Product Requirements Document
+# TaskAct - Professional Task Management Platform
 
-## Overview
-TaskAct is a comprehensive task management application designed for professional firms. It enables teams to create, assign, track, and manage tasks with role-based access control.
+## Product Requirements Document (PRD)
 
-## Core Features
+---
 
-### 1. Authentication & Authorization
-- JWT-based authentication
-- Role-based access: Partner, Associate, Junior, Intern
-- **Forgot Password with OTP** (Dev Mode - OTP shown on screen for testing)
-  - 3-step flow: Email → OTP Verification → New Password
-  - OTP valid for 10 minutes
-  - Uses Resend email service (requires API key for production)
+## 1. Overview
 
-### 2. Task Management
+**TaskAct** is a comprehensive task management application designed for professional firms (CA, CS, Law firms, etc.). It enables efficient task tracking, team management, attendance monitoring, timesheets, and now supports **multi-tenant architecture** for managing multiple companies/organizations.
+
+---
+
+## 2. Core Features
+
+### 2.1 Authentication & Authorization
+- **Multi-Tenant Login**: Users login with Company Code (4-8 alphanumeric) + Email + Password
+- **Role-Based Access**: Partner (admin), Associate (team member)
+- **Super Admin Portal**: Separate portal at `/admin` for platform administrators
+- **Forgot Password**: OTP-based password reset via partner notification
+
+### 2.2 Multi-Tenant Architecture ✅ NEW
+- **Tenant/Company Management**: Each company has unique code (e.g., SCO1)
+- **Data Isolation**: All data filtered by tenant_id
+- **Super Admin Features**:
+  - View all tenants with statistics
+  - Create/deactivate tenants
+  - Impersonate users for support
+- **Existing Tenant**: Sundesha & Co LLP (Code: SCO1)
+
+### 2.3 Task Management
 - Create, view, edit, delete tasks
-- Task attributes: title, description, client, category, assignee, priority, due date
-- 4-status system: Pending (default), On Hold, Overdue (auto), Completed
-- Completed tasks are immutable
-- Automatic overdue detection
-- **Status History**: All status changes are recorded with IST timestamps
-- **Sortable Columns**: Click column headers to sort tasks
-- **Horizontal Scrolling**: Wide tables support horizontal scroll
+- Assign tasks to team members
+- Task status workflow: Pending → In Progress → Completed/On Hold
+- Priority levels: High, Medium, Low
+- Due date tracking with overdue alerts
+- Task history with timestamps (IST)
+- Bulk import/export via Excel
 
-### 3. Team Management
-- Partners can add/edit team members
-- **Delete/Deactivate Users**: Delete if no task history, deactivate otherwise
-- View team performance stats (partners only)
-- Password reset by partners
+### 2.4 Project Management ✅ NEW
+- **Projects with Sub-tasks**: Create projects containing multiple sub-tasks
+- **Project Templates**: Save and reuse project structures
+- **Project Status**: Draft → Ready → Allocated → In Progress → Completed
+- **Template Scopes**: Global (all tenants) or Tenant-specific
+- **Progress Tracking**: Visual progress bar based on sub-task completion
 
-### 4. Data Management
-- Master lists for Clients and Categories
-- Bulk import/export via Excel templates
-- **Bulk Task Import/Export** (Partners only)
-  - Uses assignee names (not emails)
-  - DD-MMM-YYYY date format
-- **Simplified Client Import**: Name only required
-- MongoDB database
+### 2.5 Team Management
+- Add/edit/deactivate team members
+- View team performance metrics
+- Role assignment (Partner/Associate)
 
-### 5. Dashboard
-- Task counts by status
-- **Team-wide overdue and Due in 7 Days tasks** (partners only)
-- **Partner Filter Button**: Partners can toggle to view only their own tasks
-- Team performance analytics (partners only)
-- Client and category analytics
+### 2.6 GPS Attendance
+- Clock in/out with GPS location capture
+- Multiple office locations support (up to 5)
+- Attendance rules and geofencing
+- Holiday calendar management
 
-### 6. Task Filtering
-- Filter by Status: All, Due in Next 7 Days, Pending + Overdue, individual statuses
-- Filter by Assignee, Client, Category
-- **Due in Next 7 Days filter**: Shows pending/overdue tasks with due date within 7 days
+### 2.7 Timesheet Management
+- Log time against tasks
+- Daily/weekly/monthly timesheet views
+- Excel export functionality
+- Automatic timesheet generation
 
-### 6. Notifications
+### 2.8 PWA & Push Notifications ✅ NEW
+- Service Worker for offline support
+- Push notification infrastructure
 - Task assignment notifications
-- Task update notifications
-- Password reset notifications
+- Deadline reminder alerts
 
-### 7. GPS-Based Attendance (Enhanced - Jan 2026)
-- **Clock In/Out**: Users can clock in and out with GPS location capture
-- **Reverse Geocoding**: Addresses displayed using OpenStreetMap (Nominatim API)
-- **Today's Status**: Shows current day's clock in/out times and work duration
-- **Attendance History**: View past attendance records with location details and day type (Full/Half)
-- **Mobile-Only Attendance**: Clock in/out is restricted to mobile devices only for accurate GPS tracking
-- **Multi-Location Geofence Settings** (Partners only):
-  - Enable/disable geofence restriction
-  - **Up to 5 office locations** supported
-  - Set radius for all locations
-  - Add locations using current GPS coordinates
-- **Attendance Rules** (Partners only):
-  - **Minimum hours for full day**: Default 8 hours (configurable)
-  - **Working days**: Monday to Saturday (Sunday is weekly off by default)
-  - Hours below minimum = Half Day
-- **Holiday Management** (Partners only):
-  - Add/delete office holidays (paid holidays)
-  - Holidays excluded from working day calculations
-- **Enhanced Monthly Report** (Partners only):
-  - **Month/Year Picker**: Select any month to view/download report
-  - Summary: Working days, Weekly offs (Sundays), Holidays, Min hours setting
-  - Per user: Full days, Half days, Effective days, Absent days, Total hours, Avg hours
-  - Shows holidays for the month
-  - Excel export with Clock In/Out locations and selected month filename
-- **Monthly Report** (Partners only): View team attendance statistics
+### 2.9 Dashboard
+- Overview statistics (Total, Pending, Completed, Overdue)
+- Overdue tasks panel
+- Upcoming tasks panel (Due in 7 days)
+- Team performance metrics (Partners)
 
-## Technical Stack
-- **Backend**: FastAPI (Python), Motor (async MongoDB), httpx (HTTP client)
-- **Frontend**: React, Tailwind CSS, Shadcn UI, Lucide React
-- **Database**: MongoDB
-- **Authentication**: JWT with bcrypt password hashing
-- **Email**: Resend (for OTP delivery)
-- **Geolocation**: Browser Geolocation API + OpenStreetMap Nominatim (reverse geocoding)
+---
 
-## What's Been Implemented (Jan 2026)
+## 3. Technical Architecture
 
-### Completed Features
-- [x] Full authentication system with JWT
-- [x] Role-based access control (Partner, Associate, Junior, Intern)
-- [x] Task CRUD with all attributes
-- [x] 4-status task system with auto-overdue
-- [x] Completed tasks immutability
-- [x] **IST Timestamps**: Task creation and status changes recorded in IST
-- [x] **Sortable Task Columns**: Click headers to sort
-- [x] **Horizontal Scrolling**: Wide tables support horizontal scroll
-- [x] Team management (add, edit users)
-- [x] **Team Member Delete/Deactivate**
-- [x] **Department Categories Updated**: Audit and Assurance, Tax and Regulatory Compliance, Accounting, Certification, Tax Litigation, Advisory, Administrative, Management, Others
-- [x] Client and Category management
-- [x] Bulk import/export with Excel templates (Clients, Categories)
-- [x] **Bulk Task Import/Export** (Partners only) - Uses names & DD-MMM-YYYY format
-- [x] **Simplified Client Import** - Name only required
-- [x] Dashboard with analytics
-- [x] **Partner Dashboard**: Team-wide overdue/pending tasks
-- [x] Notification system
-- [x] Mobile responsive design (hamburger menu, card layout)
-- [x] Custom TaskAct branding (logo, favicon)
-- [x] **Forgot Password with OTP** (Dev Mode)
-- [x] **GPS-Based Attendance** (Enhanced)
-  - Clock in/out with GPS location
-  - Reverse geocoding (addresses)
-  - Today's status view with Full/Half day indicator
-  - Attendance history with day type
-  - **Multi-location geofence** (up to 5 locations)
-  - **Attendance rules** (min hours, working days)
-  - **Holiday management** (add/delete paid holidays)
-  - **Enhanced monthly report** (full/half days, absents, effective days)
-  - **Delete attendance records** (Partners can delete any attendance record)
-- [x] **Bulk Task Operations** (Partners only - Jan 2026)
-  - **Clear Completed Tasks**: Delete all completed tasks with password verification
-  - **Clear All Tasks**: Delete all tasks with password verification
-  - Double confirmation required: Password + Type confirmation text
-- [x] **Timesheet System** (Jan 2026)
-  - Mandatory time entry (actual_hours) when completing tasks
-  - Dedicated "Timesheet" page with Individual/Team views
-  - Excel export for timesheet data
-  - Estimated hours field on task creation
-- [x] **Task Completion for All Users** (Fixed Jan 18, 2026)
-  - Non-partners can now complete tasks with time entry
-  - Backend validation updated to allow `actual_hours` field for all users
-- [x] **Task Export** (Verified Jan 18, 2026)
-  - Export all tasks to Excel (Partners only)
-  - Includes summary sheet with status/priority counts
+### 3.1 Backend
+- **Framework**: FastAPI (Python)
+- **Database**: MongoDB (Motor async driver)
+- **Authentication**: JWT tokens
+- **Architecture**: Modular routers
 
-### Pending/Future Features
-- [ ] Production email delivery (requires Resend API key from user)
-- [ ] Mobile Push Notifications (PWA Service Worker)
-- [ ] Multi-Tenant Architecture (super-admin, data isolation)
+```
+/app/backend/
+├── server.py              # Main app, remaining routes
+├── routes/
+│   ├── __init__.py
+│   ├── auth.py            # Authentication
+│   ├── users.py           # User management
+│   ├── tasks.py           # Task management
+│   ├── attendance.py      # Attendance
+│   ├── timesheets.py      # Timesheets
+│   ├── tenants.py         # Multi-tenant management
+│   └── projects.py        # Project management
+├── requirements.txt
+└── .env
+```
 
-## Demo Accounts
-All accounts use password: `password123`
-- Partner: bhavika@sundesha.in
-- Partner: bhavya@sundesha.in
-- Associate: sonurajpurohit980@gmail.com
+### 3.2 Frontend
+- **Framework**: React 18
+- **Styling**: Tailwind CSS + Shadcn UI
+- **Routing**: React Router v6
+- **HTTP Client**: Axios
+- **Icons**: Lucide React
 
-## API Endpoints
+```
+/app/frontend/
+├── public/
+│   ├── service-worker.js  # PWA Service Worker
+│   └── manifest.json      # PWA Manifest
+├── src/
+│   ├── components/
+│   │   ├── Login.js              # Multi-tenant login
+│   │   ├── SuperAdminApp.js      # Super Admin portal
+│   │   ├── SuperAdminDashboard.js
+│   │   ├── Projects.js           # Project management
+│   │   └── NotificationSettings.js
+│   ├── services/
+│   │   └── pushNotificationService.js
+│   └── contexts/
+│       └── AuthContext.js        # Tenant-aware auth
+└── package.json
+```
+
+### 3.3 Database Schema (Key Collections)
+
+**tenants**
+```json
+{
+  "id": "uuid",
+  "name": "Company Name",
+  "code": "SCO1",
+  "plan": "premium",
+  "max_users": 100,
+  "active": true
+}
+```
+
+**users** (includes tenant_id)
+```json
+{
+  "id": "uuid",
+  "tenant_id": "tenant_uuid",
+  "email": "user@company.com",
+  "role": "partner|associate"
+}
+```
+
+**projects**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "tenant_uuid",
+  "title": "Project Name",
+  "status": "draft|ready|allocated|in_progress|completed",
+  "sub_tasks": [{
+    "id": "uuid",
+    "title": "Sub-task",
+    "status": "pending|completed"
+  }],
+  "progress": 0.0
+}
+```
+
+**project_templates**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "tenant_uuid|null",
+  "scope": "global|tenant",
+  "name": "Template Name",
+  "sub_tasks": [...]
+}
+```
+
+---
+
+## 4. API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/request-otp` - Request password reset OTP
+- `POST /api/auth/login` - Login with company_code, email, password
+- `GET /api/auth/me` - Get current user with tenant info
+- `POST /api/auth/forgot-password` - Request password reset
 - `POST /api/auth/verify-otp` - Verify OTP
-- `POST /api/auth/reset-password` - Reset password with OTP
+- `POST /api/auth/reset-password` - Reset password
 
-### Tasks
-- `GET /api/tasks` - List tasks
-- `POST /api/tasks` - Create task
-- `GET /api/tasks/{id}` - Get task details
-- `PUT /api/tasks/{id}` - Update task
-- `DELETE /api/tasks/{id}` - Delete task
-- `GET /api/tasks/template` - Download bulk import template (Partner)
-- `POST /api/tasks/bulk-import` - Bulk import tasks from Excel (Partner)
-- `GET /api/tasks/export` - Export all tasks to Excel (Partner)
-- `POST /api/tasks/bulk-delete/completed` - Delete all completed tasks (Partner, requires password)
-- `POST /api/tasks/bulk-delete/all` - Delete all tasks (Partner, requires password)
+### Tenants
+- `GET /api/tenant/lookup/{code}` - Public tenant lookup
+- `POST /api/tenants` - Create tenant (Super Admin)
+- `GET /api/tenants` - List tenants (Super Admin)
+- `PUT /api/tenants/{id}` - Update tenant (Super Admin)
+- `DELETE /api/tenants/{id}` - Deactivate tenant (Super Admin)
 
-### Users
-- `GET /api/users` - List users (partners can add `?include_inactive=true`)
-- `POST /api/users` - Create user
-- `PUT /api/users/{id}` - Update user
-- `PUT /api/users/{id}/password` - Reset password (by Partner)
-- `DELETE /api/users/{id}` - Delete user (only if no tasks)
-- `PUT /api/users/{id}/deactivate` - Deactivate user
-- `PUT /api/users/{id}/reactivate` - Reactivate user
+### Super Admin
+- `POST /api/super-admin/login` - Super admin login
+- `GET /api/super-admin/dashboard` - Dashboard statistics
+- `POST /api/super-admin/impersonate` - Impersonate user
 
-### Attendance (Enhanced)
-- `GET /api/attendance/settings` - Get geofence settings (multi-location)
-- `PUT /api/attendance/settings` - Update geofence settings (Partner)
-- `GET /api/attendance/rules` - Get attendance rules
-- `PUT /api/attendance/rules` - Update attendance rules (Partner)
-- `GET /api/attendance/holidays` - Get holidays for a year
-- `POST /api/attendance/holidays` - Add a holiday (Partner)
-- `DELETE /api/attendance/holidays/{id}` - Delete a holiday (Partner)
-- `POST /api/attendance/clock-in` - Clock in with GPS location
-- `POST /api/attendance/clock-out` - Clock out with GPS location
-- `GET /api/attendance/today` - Get today's attendance status
-- `GET /api/attendance/history` - Get attendance history
-- `DELETE /api/attendance/{id}` - Delete attendance record (Partner only)
-- `GET /api/attendance/report` - Get enhanced monthly attendance report (Partner)
+### Projects
+- `POST /api/projects` - Create project
+- `GET /api/projects` - List projects
+- `PUT /api/projects/{id}` - Update project
+- `POST /api/projects/{id}/allocate` - Allocate project
+- `POST /api/projects/{id}/subtasks` - Add sub-task
+- `PUT /api/projects/{id}/subtasks/{id}` - Update sub-task
 
-### Dashboard
-- `GET /api/dashboard` - Dashboard analytics
+### Project Templates
+- `POST /api/project-templates` - Create template
+- `GET /api/project-templates` - List templates
+- `POST /api/project-templates/{id}/use` - Create project from template
 
-## Notes
-- OTP is currently shown on screen (Dev Mode) for testing
-- For production email, configure RESEND_API_KEY in backend/.env
-- JWT secret is stored in SECRET_KEY environment variable
-- Geolocation requires HTTPS in production (works on localhost for testing)
+---
 
-## Code Structure (Refactoring Complete - Feb 2026)
-```
-backend/
-├── server.py          # Main app (~1430 lines) - Shared models, helpers, dashboard, notifications, categories, clients routes
-├── routes/
-│   ├── __init__.py    # Re-exports all routers and init functions
-│   ├── auth.py        # Auth routes (login, forgot password, OTP)
-│   ├── users.py       # User management routes (CRUD, deactivate/reactivate)
-│   ├── tasks.py       # Task routes (CRUD, bulk import/export, templates)
-│   ├── attendance.py  # Attendance routes (clock in/out, geofence, reports)
-│   └── timesheets.py  # Timesheet routes (individual/team, export)
-└── requirements.txt
+## 5. User Credentials
 
-frontend/
-└── src/
-    └── components/    # React components
-```
+### Tenant Users (Sundesha & Co LLP - Code: SCO1)
+- **Partner**: bhavika@sundesha.in / password123
+- **Associate**: sonurajpurohit980@gmail.com / password123
 
-### Refactoring Status (Complete)
-- [x] Auth routes extracted to `routes/auth.py`
-- [x] Users routes extracted to `routes/users.py`
-- [x] Tasks routes extracted to `routes/tasks.py`
-- [x] Attendance routes extracted to `routes/attendance.py`
-- [x] Timesheet routes extracted to `routes/timesheets.py`
-- [x] Removed duplicate route definitions from `server.py`
-- [x] server.py reduced from ~3700 lines to ~1430 lines (61% reduction)
+### Super Admin
+- **Email**: admin@taskact.com
+- **Password**: admin123
+- **Access**: /admin route
+
+---
+
+## 6. What's Implemented ✅
+
+### February 2026 Session
+1. **Multi-Tenant Architecture**
+   - Company code login flow
+   - Tenant management (create, edit, deactivate)
+   - Data isolation by tenant_id
+   - Migration of existing data to SCO1
+
+2. **Super Admin Portal**
+   - Separate login at /admin
+   - Dashboard with tenant statistics
+   - User impersonation for support
+   - Tenant CRUD operations
+
+3. **Project Management**
+   - Projects with sub-tasks
+   - Project templates (Global + Tenant-specific)
+   - Project allocation workflow
+   - Progress tracking
+
+4. **PWA Service Worker**
+   - Service worker registration
+   - Push notification infrastructure
+   - Offline support foundation
+
+---
+
+## 7. Backlog / Future Tasks
+
+### P1 - High Priority
+- [ ] Finalize Forgot Password with real email service (Resend integration)
+- [ ] Complete backend refactoring (notifications, categories, clients, dashboard routes)
+
+### P2 - Medium Priority
+- [ ] Real push notification server (VAPID keys)
+- [ ] Project-to-Task conversion (convert project sub-tasks to regular tasks)
+- [ ] Project reports and analytics
+
+### P3 - Low Priority / Future
+- [ ] Mobile app (React Native)
+- [ ] Advanced reporting and analytics
+- [ ] Integration with external calendars
+- [ ] Client portal for task visibility
+
+---
+
+## 8. Known Mocked Features
+
+- **Push Notifications**: VAPID keys are placeholder - needs real push server for production
+- **Forgot Password Email**: Using notification panel instead of actual email
+
+---
+
+## 9. Testing
+
+### Test Credentials
+See Section 5 above.
+
+### Test Reports
+- `/app/test_reports/iteration_2.json` - Latest test results (100% pass rate)
+
+---
+
+*Last Updated: February 2026*
