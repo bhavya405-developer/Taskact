@@ -30,6 +30,7 @@ from routes.users import router as users_router, init_users_routes
 from routes.tasks import router as tasks_router, init_tasks_routes
 from routes.attendance import router as attendance_router, init_attendance_routes
 from routes.timesheets import router as timesheets_router, init_timesheets_routes
+from routes.tenants import router as tenants_router, init_tenants_routes
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
