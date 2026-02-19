@@ -182,6 +182,10 @@ const AppContent = () => {
               element={<Timesheet users={users} />} 
             />
             <Route 
+              path="/projects" 
+              element={<Projects users={users} />} 
+            />
+            <Route 
               path="/create-task" 
               element={
                 <CreateTask 
