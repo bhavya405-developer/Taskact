@@ -1439,6 +1439,7 @@ app.include_router(users_router, prefix="/api")  # Users routes
 app.include_router(tasks_router, prefix="/api")  # Tasks routes
 app.include_router(attendance_router, prefix="/api")  # Attendance routes
 app.include_router(timesheets_router, prefix="/api")  # Timesheets routes
+app.include_router(tenants_router, prefix="/api")  # Tenants routes (Multi-tenant)
 
 app.add_middleware(
     CORSMiddleware,
