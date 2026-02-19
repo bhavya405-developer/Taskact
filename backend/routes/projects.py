@@ -165,7 +165,7 @@ class ProjectTemplate(BaseModel):
     scope: TemplateScope = TemplateScope.TENANT
     tenant_id: Optional[str] = None  # None for global templates
     created_by: str
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
     active: bool = True
 
 
