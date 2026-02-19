@@ -778,6 +778,19 @@ init_tenants_routes(
     _logger=logger
 )
 
+# Initialize projects routes with dependencies
+init_projects_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _user_role=UserRole,
+    _user_response=UserResponse,
+    _task_status=TaskStatus,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _logger=logger
+)
+
 # Notification endpoints
 @api_router.get("/notifications", response_model=List[Notification])
 async def get_user_notifications(current_user: UserResponse = Depends(get_current_user)):
