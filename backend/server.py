@@ -766,6 +766,17 @@ init_timesheets_routes(
     _logger=logger
 )
 
+# Initialize tenants routes with dependencies
+init_tenants_routes(
+    _db=db,
+    _secret_key=SECRET_KEY,
+    _algorithm=ALGORITHM,
+    _token_expire=ACCESS_TOKEN_EXPIRE_MINUTES,
+    _parse_mongo=parse_from_mongo,
+    _prepare_mongo=prepare_for_mongo,
+    _logger=logger
+)
+
 # Notification endpoints
 @api_router.get("/notifications", response_model=List[Notification])
 async def get_user_notifications(current_user: UserResponse = Depends(get_current_user)):
