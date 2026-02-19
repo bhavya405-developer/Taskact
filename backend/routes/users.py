@@ -68,6 +68,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
+        tenant_id: str = payload.get("tenant_id")
         if user_id is None:
             raise credentials_exception
     except jwt.PyJWTError:
@@ -76,7 +77,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user = await db.users.find_one({"id": user_id, "active": True})
     if user is None:
         raise credentials_exception
-    return UserResponse(**parse_from_mongo(user))
+    
+    # Create response and attach tenant_id for later use
+    user_response = UserResponse(**parse_from_mongo(user))
+    user_response.tenant_id = user.get("tenant_id") or tenant_id
+    return user_response
 
 
 async def get_current_partner(current_user=Depends(get_current_user)):
@@ -92,14 +97,24 @@ async def get_current_partner(current_user=Depends(get_current_user)):
 
 @router.post("/users")
 async def create_user(user_data: dict, current_user=Depends(get_current_partner)):
-    """Create a new user (Partners only)"""
+    """Create a new user (Partners only) - within same tenant"""
+    # Get tenant_id from current user
+    user_doc = await db.users.find_one({"id": current_user.id})
+    tenant_id = user_doc.get("tenant_id") if user_doc else None
+    
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant not found")
+    
     # Hash the password
     password_hash = get_password_hash(user_data.get("password"))
     
-    # Check if email already exists
-    existing_user = await db.users.find_one({"email": user_data.get("email")})
+    # Check if email already exists within the same tenant
+    existing_user = await db.users.find_one({
+        "email": user_data.get("email"),
+        "tenant_id": tenant_id
+    })
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email already registered in this organization")
     
     user_dict = user_data.copy()
     user_dict.pop("password", None)  # Remove plain password
@@ -107,6 +122,7 @@ async def create_user(user_data: dict, current_user=Depends(get_current_partner)
     user_dict["id"] = str(uuid.uuid4())
     user_dict["created_at"] = datetime.now(timezone.utc)
     user_dict["active"] = True
+    user_dict["tenant_id"] = tenant_id  # Add tenant_id
     
     user_dict = prepare_for_mongo(user_dict)
     await db.users.insert_one(user_dict)
@@ -119,11 +135,17 @@ async def get_users(
     current_user=Depends(get_current_user),
     include_inactive: bool = False
 ):
-    """Get all users. Partners can include inactive users."""
-    if include_inactive and current_user.role == UserRole.PARTNER:
-        users = await db.users.find({}).to_list(length=5000)
-    else:
-        users = await db.users.find({"active": True}).to_list(length=5000)
+    """Get all users within the same tenant. Partners can include inactive users."""
+    # Get tenant_id from current user
+    user_doc = await db.users.find_one({"id": current_user.id})
+    tenant_id = user_doc.get("tenant_id") if user_doc else None
+    
+    query = {"tenant_id": tenant_id} if tenant_id else {}
+    
+    if not (include_inactive and current_user.role == UserRole.PARTNER):
+        query["active"] = True
+    
+    users = await db.users.find(query).to_list(length=5000)
     return [UserResponse(**parse_from_mongo(user)) for user in users]
 
 
