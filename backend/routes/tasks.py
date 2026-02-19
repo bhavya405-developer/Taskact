@@ -547,9 +547,16 @@ async def export_tasks(current_user=Depends(get_current_partner)):
 
 @router.post("/tasks")
 async def create_task(task_data: dict, current_user=Depends(get_current_user)):
-    """Create a new task"""
-    # Get assignee and creator names
-    assignee = await db.users.find_one({"id": task_data.get("assignee_id")})
+    """Create a new task (tenant-aware)"""
+    # Get tenant_id
+    tenant_id = await get_tenant_id(current_user)
+    
+    # Get assignee and creator names (within tenant)
+    assignee_query = {"id": task_data.get("assignee_id")}
+    if tenant_id:
+        assignee_query["tenant_id"] = tenant_id
+    
+    assignee = await db.users.find_one(assignee_query)
     creator = await db.users.find_one({"id": current_user.id})  # Use current user as creator
     
     if not assignee or not creator:
@@ -566,6 +573,7 @@ async def create_task(task_data: dict, current_user=Depends(get_current_user)):
     task_dict["updated_at"] = now_utc
     task_dict["id"] = str(uuid.uuid4())
     task_dict["status"] = task_dict.get("status", TaskStatus.PENDING)
+    task_dict["tenant_id"] = tenant_id  # Add tenant_id
     
     # Initialize status history with creation entry
     task_dict["status_history"] = [{
