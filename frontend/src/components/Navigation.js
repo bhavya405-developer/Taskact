@@ -130,6 +130,14 @@ const Navigation = () => {
                 style={{ maxWidth: '160px' }}
               />
             </div>
+            {/* Tenant Badge */}
+            {tenant && (
+              <div className="ml-4 hidden sm:flex items-center px-3 py-1 bg-indigo-50 rounded-full border border-indigo-200">
+                <Building className="h-3.5 w-3.5 text-indigo-600 mr-1.5" />
+                <span className="text-xs font-medium text-indigo-700">{tenant.name}</span>
+                <span className="ml-2 text-xs text-indigo-500 font-mono">{tenant.code}</span>
+              </div>
+            )}
           </div>
 
           {/* Desktop Navigation */}
