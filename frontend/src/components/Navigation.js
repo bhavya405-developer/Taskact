@@ -20,14 +20,15 @@ import {
   EyeOff,
   Timer,
   ChevronDown,
-  Database
+  Database,
+  Building
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Navigation = () => {
   const location = useLocation();
-  const { user, logout, isPartner } = useAuth();
+  const { user, tenant, logout, isPartner } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
