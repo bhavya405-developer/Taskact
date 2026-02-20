@@ -472,7 +472,6 @@ const Login = () => {
                   required
                   maxLength={8}
                   className="form-input pl-10 uppercase"
-                  placeholder="e.g., SCO1"
                   data-testid="company-code-input"
                 />
                 {verifyingCode && (
