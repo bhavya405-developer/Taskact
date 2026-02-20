@@ -158,8 +158,14 @@ const Navigation = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`nav-link flex items-center whitespace-nowrap ${
-                      location.pathname === item.path ? 'active' : ''
+                    className={`flex items-center whitespace-nowrap px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isDarkTheme 
+                        ? location.pathname === item.path 
+                          ? 'bg-slate-700 text-white' 
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                        : location.pathname === item.path 
+                          ? 'text-blue-600 bg-blue-50' 
+                          : 'text-gray-600 hover:text-blue-600'
                     }`}
                     data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
                   >
@@ -170,16 +176,22 @@ const Navigation = () => {
                 );
               })}
               
-              {/* Masters Dropdown (Partner only) */}
-              {isPartner() && (
+              {/* Masters Dropdown (Partner only, not for super admin) */}
+              {isPartner() && !isSuperAdmin() && (
                 <div 
                   className="relative"
                   onMouseEnter={handleMastersMouseEnter}
                   onMouseLeave={handleMastersMouseLeave}
                 >
                   <button
-                    className={`nav-link flex items-center ${
-                      mastersItems.some(item => location.pathname === item.path) ? 'active' : ''
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isDarkTheme 
+                        ? mastersItems.some(item => location.pathname === item.path) 
+                          ? 'bg-slate-700 text-white' 
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                        : mastersItems.some(item => location.pathname === item.path) 
+                          ? 'text-blue-600 bg-blue-50' 
+                          : 'text-gray-600 hover:text-blue-600'
                     }`}
                     data-testid="nav-masters"
                   >
@@ -189,13 +201,21 @@ const Navigation = () => {
                   </button>
                   
                   {showMastersDropdown && (
-                    <div className="absolute left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className={`absolute left-0 mt-1 w-48 rounded-lg shadow-lg py-1 z-50 ${
+                      isDarkTheme ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-gray-200'
+                    }`}>
                       {mastersItems.map((item) => (
                         <Link
                           key={item.path}
                           to={item.path}
-                          className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-                            location.pathname === item.path ? 'bg-blue-50 text-blue-600' : ''
+                          className={`flex items-center px-4 py-2 text-sm ${
+                            isDarkTheme
+                              ? location.pathname === item.path 
+                                ? 'bg-slate-600 text-white' 
+                                : 'text-slate-300 hover:bg-slate-600 hover:text-white'
+                              : location.pathname === item.path 
+                                ? 'bg-blue-50 text-blue-600' 
+                                : 'text-gray-700 hover:bg-gray-100'
                           }`}
                           data-testid={`nav-${item.name.toLowerCase()}`}
                           onClick={handleMastersItemClick}
@@ -211,23 +231,25 @@ const Navigation = () => {
             </div>
             
             {/* Right side - Notifications and Profile */}
-            <div className="flex items-center space-x-2 ml-4 border-l border-gray-200 pl-4">
+            <div className={`flex items-center space-x-2 ml-4 border-l pl-4 ${isDarkTheme ? 'border-slate-600' : 'border-gray-200'}`}>
               <NotificationPanel />
               
               {/* Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button 
-                    className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors"
+                    className={`flex items-center space-x-2 rounded-lg px-2 py-1.5 transition-colors ${
+                      isDarkTheme ? 'hover:bg-slate-700' : 'hover:bg-gray-100'
+                    }`}
                     data-testid="profile-dropdown-trigger"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shadow-sm">
+                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
                       <span className="text-white font-medium text-sm">
                         {user?.name?.charAt(0)?.toUpperCase()}
                       </span>
                     </div>
                     <div className="hidden lg:block text-left">
-                      <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">{user?.name}</div>
+                      <div className={`text-sm font-medium max-w-[120px] truncate ${isDarkTheme ? 'text-white' : 'text-gray-700'}`}>{user?.name}</div>
                       <div className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</div>
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-400 hidden lg:block" />
