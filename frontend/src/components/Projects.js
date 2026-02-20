@@ -52,8 +52,10 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [editingProjectId, setEditingProjectId] = useState(null);
   
   // Form states
   const [projectForm, setProjectForm] = useState({
