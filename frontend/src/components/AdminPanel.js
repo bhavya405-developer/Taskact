@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Building2, Users, ClipboardList, Plus, Search, Edit2,
   ChevronRight, X, Check, Save, FolderKanban, FileText,
-  Clock, Trash2
+  Clock, Trash2, Shield
 } from 'lucide-react';
 import {
   Dialog,
@@ -27,12 +27,23 @@ const AdminPanel = () => {
   
   // Modal states
   const [showEditTenant, setShowEditTenant] = useState(false);
+  const [showCreateTenant, setShowCreateTenant] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   
   // Form states
   const [tenantForm, setTenantForm] = useState({
     name: '',
+    contact_email: '',
+    contact_phone: '',
+    plan: 'standard',
+    max_users: 50
+  });
+  
+  // New tenant form
+  const [newTenant, setNewTenant] = useState({
+    name: '',
+    code: '',
     contact_email: '',
     contact_phone: '',
     plan: 'standard',
