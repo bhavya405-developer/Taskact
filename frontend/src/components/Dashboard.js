@@ -286,14 +286,14 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
               )}
             </div>
             {isPartner() && (
-              <p className="text-xs text-yellow-700 mt-1">
+              <p className={`text-xs mt-1 ${isDark ? 'text-yellow-400' : 'text-yellow-700'}`}>
                 {showOnlyMyTasks ? "Showing only your tasks" : "Showing all team members"}
               </p>
             )}
           </div>
           <div className="p-6">
             {due_7_days_list.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className={`text-center py-8 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 <p>No tasks due in next 7 days</p>
               </div>
             ) : (
@@ -305,14 +305,18 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                   return (
                     <div 
                       key={task.id} 
-                      className="border border-yellow-200 rounded-lg p-4 card-hover cursor-pointer bg-yellow-50" 
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        isDark 
+                          ? 'border-yellow-900/50 bg-yellow-900/20 hover:bg-yellow-900/30' 
+                          : 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
+                      }`}
                       onClick={() => handleTaskClick(task)}
                       data-testid={`due-7-days-task-${task.id}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{task.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{task.title}</h4>
+                          <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
                             {task.client_name ? `Client: ${task.client_name} • ` : ''}Assigned to: {task.assignee_name}
                           </p>
                           <div className="flex items-center space-x-2 mt-2">
@@ -323,13 +327,15 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                               {priority.label}
                             </span>
                             {task.category && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'
+                              }`}>
                                 {task.category}
                               </span>
                             )}
                           </div>
                           {task.due_date && (
-                            <p className="text-xs text-yellow-700 mt-1 font-medium">
+                            <p className={`text-xs mt-1 font-medium ${isDark ? 'text-yellow-400' : 'text-yellow-700'}`}>
                               Due: {new Date(task.due_date).toLocaleDateString()}
                             </p>
                           )}
@@ -350,13 +356,15 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
           title="Total Tasks"
           count={task_counts.total}
           status="total"
-          icon={<BarChart3 size={20} className="text-blue-600" />}
+          icon={<BarChart3 size={20} className={isDark ? 'text-indigo-400' : 'text-blue-600'} />}
+          isDark={isDark}
         />
         <StatusCard
           title="Pending"
           count={task_counts.pending}
           status="pending"
-          icon={<Clock size={20} className="text-yellow-600" />}
+          icon={<Clock size={20} className="text-yellow-500" />}
+          isDark={isDark}
         />
         <StatusCard
           title="On Hold"
