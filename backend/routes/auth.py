@@ -181,6 +181,7 @@ async def login(login_data: LoginRequest):
     """
     Tenant user login with company code.
     Requires: company_code, email, password
+    Special handling for super_admin (TASKACT1)
     """
     # First, verify the company code (tenant)
     tenant = await db.tenants.find_one({"code": login_data.company_code.upper(), "active": True})
@@ -203,17 +204,21 @@ async def login(login_data: LoginRequest):
             detail="Incorrect email or password"
         )
     
+    # Check if this is a super_admin login
+    is_super_admin = user.get("role") == "super_admin" or tenant.get("is_admin_tenant")
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={
             "sub": user["id"],
-            "tenant_id": tenant["id"]
+            "tenant_id": tenant["id"],
+            "is_super_admin": is_super_admin
         },
         expires_delta=access_token_expires
     )
     
     user_response = UserResponse(**parse_from_mongo(user))
-    return {
+    response_data = {
         "access_token": access_token,
         "token_type": "bearer",
         "user": user_response.dict(),
@@ -223,6 +228,12 @@ async def login(login_data: LoginRequest):
             "code": tenant["code"]
         }
     }
+    
+    # Add super_admin flag if applicable
+    if is_super_admin:
+        response_data["is_super_admin"] = True
+    
+    return response_data
 
 
 @router.get("/auth/me")
@@ -230,6 +241,7 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
     # Get tenant info for the user
     user_doc = await db.users.find_one({"id": current_user.id})
     tenant_id = user_doc.get("tenant_id") if user_doc else None
+    is_super_admin = user_doc.get("role") == "super_admin" if user_doc else False
     
     tenant_info = None
     if tenant_id:
@@ -240,11 +252,19 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
                 "name": tenant["name"],
                 "code": tenant["code"]
             }
+            # Check if admin tenant
+            if tenant.get("is_admin_tenant"):
+                is_super_admin = True
     
-    return {
+    response = {
         **current_user.dict(),
         "tenant": tenant_info
     }
+    
+    if is_super_admin:
+        response["is_super_admin"] = True
+    
+    return response
 
 
 @router.post("/auth/forgot-password")
