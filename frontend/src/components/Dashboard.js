@@ -68,10 +68,13 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   if (loading || !dashboardData) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${isSuperAdmin() ? 'border-indigo-400' : 'border-blue-600'}`}></div>
       </div>
     );
   }
+
+  // Check if super admin for dark theme
+  const isDark = isSuperAdmin();
 
   const { task_counts, recent_tasks, team_stats, overdue_tasks, due_7_days_tasks } = dashboardData;
   
