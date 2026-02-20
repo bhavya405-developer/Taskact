@@ -163,29 +163,33 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
     <div className="space-y-6 md:space-y-8 animate-fade-in">
       {/* Header - Smaller on mobile */}
       <div className="text-center lg:text-left flex items-center justify-center lg:justify-start">
-        <BarChart3 size={24} className="text-blue-600 mr-2 md:mr-3 md:w-8 md:h-8" />
+        <BarChart3 size={24} className={`mr-2 md:mr-3 md:w-8 md:h-8 ${isDark ? 'text-indigo-400' : 'text-blue-600'}`} />
         <div>
-          <h2 className="text-xl md:text-3xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-sm md:text-base text-gray-600">Overview of your team&apos;s productivity</p>
+          <h2 className={`text-xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Dashboard</h2>
+          <p className={`text-sm md:text-base ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Overview of your team&apos;s productivity</p>
         </div>
       </div>
 
       {/* Priority Tasks Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Overdue Tasks */}
-        <div className="bg-white rounded-lg shadow-sm border border-red-200">
-          <div className="px-6 py-4 border-b border-red-200 bg-red-50">
+        <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-red-900/50' : 'bg-white border-red-200'}`}>
+          <div className={`px-6 py-4 border-b ${isDark ? 'border-red-900/50 bg-red-900/30' : 'border-red-200 bg-red-50'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <AlertCircle size={20} className="text-red-600 mr-2" />
-                <h3 className="text-lg font-semibold text-red-900" data-testid="overdue-tasks-title">
+                <AlertCircle size={20} className={isDark ? 'text-red-400 mr-2' : 'text-red-600 mr-2'} />
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-red-300' : 'text-red-900'}`} data-testid="overdue-tasks-title">
                   Overdue Tasks ({overdue_task_list.length})
                 </h3>
               </div>
               {isPartner() && (
                 <button
                   onClick={() => setShowOnlyMyTasks(!showOnlyMyTasks)}
-                  className={`p-1.5 rounded-md transition-colors ${showOnlyMyTasks ? 'bg-red-200 text-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    isDark 
+                      ? showOnlyMyTasks ? 'bg-red-800 text-red-200' : 'bg-red-900/50 text-red-300 hover:bg-red-800'
+                      : showOnlyMyTasks ? 'bg-red-200 text-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'
+                  }`}
                   title={showOnlyMyTasks ? "Showing my tasks only - Click to show all" : "Click to show only my tasks"}
                   data-testid="filter-my-tasks-btn"
                 >
@@ -194,14 +198,14 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
               )}
             </div>
             {isPartner() && (
-              <p className="text-xs text-red-700 mt-1">
+              <p className={`text-xs mt-1 ${isDark ? 'text-red-400' : 'text-red-700'}`}>
                 {showOnlyMyTasks ? "Showing only your tasks" : "Showing all team members"}
               </p>
             )}
           </div>
           <div className="p-6">
             {overdue_task_list.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className={`text-center py-8 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 <p>No overdue tasks! 🎉</p>
               </div>
             ) : (
