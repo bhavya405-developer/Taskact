@@ -885,6 +885,114 @@ const AdminPanel = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Deactivate Tenant Confirmation Modal */}
+      <Dialog open={showDeactivateConfirm} onOpenChange={setShowDeactivateConfirm}>
+        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center">
+              <Power className="h-5 w-5 text-amber-400 mr-2" />
+              Deactivate Tenant
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              This will prevent all users in this tenant from logging in.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {formError && (
+            <div className="bg-red-900/50 border border-red-500 rounded-md p-3">
+              <div className="text-sm text-red-300">{formError}</div>
+            </div>
+          )}
+          
+          <div className="bg-slate-700/50 rounded-lg p-4">
+            <p className="text-sm text-slate-300">
+              <strong>Company:</strong> {selectedTenant?.name}
+            </p>
+            <p className="text-sm text-slate-300">
+              <strong>Code:</strong> {selectedTenant?.code}
+            </p>
+            <p className="text-sm text-slate-400 mt-2">
+              Users: {selectedTenant?.user_count || 0}
+            </p>
+          </div>
+          
+          <p className="text-sm text-amber-300">
+            You can reactivate this tenant later if needed.
+          </p>
+          
+          <DialogFooter>
+            <button
+              onClick={() => setShowDeactivateConfirm(false)}
+              className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeactivateTenant}
+              disabled={formLoading}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+              data-testid="confirm-deactivate"
+            >
+              {formLoading ? 'Deactivating...' : 'Deactivate Tenant'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Tenant Confirmation Modal */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
+              Delete Tenant Permanently
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              This action cannot be undone. All data will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {formError && (
+            <div className="bg-red-900/50 border border-red-500 rounded-md p-3">
+              <div className="text-sm text-red-300">{formError}</div>
+            </div>
+          )}
+          
+          <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-4">
+            <p className="text-sm text-slate-300">
+              <strong>Company:</strong> {selectedTenant?.name}
+            </p>
+            <p className="text-sm text-slate-300">
+              <strong>Code:</strong> {selectedTenant?.code}
+            </p>
+            <p className="text-sm text-slate-400 mt-2">
+              Users: {selectedTenant?.user_count || 0} | Tasks: {selectedTenant?.task_count || 0}
+            </p>
+          </div>
+          
+          <p className="text-sm text-red-300 font-medium">
+            WARNING: All users, tasks, projects, and data associated with this tenant will be permanently deleted.
+          </p>
+          
+          <DialogFooter>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteTenant}
+              disabled={formLoading}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+              data-testid="confirm-delete"
+            >
+              {formLoading ? 'Deleting...' : 'Delete Permanently'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
