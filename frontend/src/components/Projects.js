@@ -951,6 +951,200 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Project Modal */}
+      <Dialog open={showEditProject} onOpenChange={(open) => { setShowEditProject(open); if (!open) { setEditingProjectId(null); resetProjectForm(); } }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Update project details and add new tasks.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleUpdateProject} className="space-y-4">
+            {formError && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{formError}</p>
+              </div>
+            )}
+            
+            {/* Project Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
+                <input
+                  type="text"
+                  value={projectForm.name}
+                  onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter project name"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={projectForm.description}
+                  onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Project description"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                <select
+                  value={projectForm.client_id}
+                  onChange={(e) => setProjectForm({ ...projectForm, client_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Client</option>
+                  {effectiveClients.map(client => (
+                    <option key={client.id} value={client.id}>{client.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  value={projectForm.category}
+                  onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Category</option>
+                  {effectiveCategories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                <input
+                  type="date"
+                  value={projectForm.due_date}
+                  onChange={(e) => setProjectForm({ ...projectForm, due_date: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            {/* Existing Tasks Section */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Existing Tasks</h4>
+              
+              {projectForm.tasks.filter(t => t.id).length > 0 ? (
+                <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                  {projectForm.tasks.filter(t => t.id).map((task, idx) => (
+                    <div key={task.id} className={`flex items-center gap-2 p-2 rounded ${
+                      task.status === 'completed' ? 'bg-green-50' : 'bg-gray-50'
+                    }`}>
+                      <div className="flex-1">
+                        <span className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
+                          {task.title}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          → {users.find(u => u.id === task.assignee_id)?.name || 'Unassigned'}
+                        </span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        task.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                        task.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100'
+                      }`}>
+                        {task.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-4">No existing tasks</p>
+              )}
+            </div>
+            
+            {/* Add New Tasks Section */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Tasks</h4>
+              
+              {/* Pending new tasks */}
+              {projectForm.tasks.filter(t => !t.id).length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {projectForm.tasks.filter(t => !t.id).map((task, idx) => {
+                    const actualIdx = projectForm.tasks.findIndex(t => t === task);
+                    return (
+                      <div key={idx} className="flex items-center gap-2 bg-blue-50 p-2 rounded border border-blue-200">
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-blue-800">{task.title}</span>
+                          <span className="text-xs text-blue-600 ml-2">
+                            → {users.find(u => u.id === task.assignee_id)?.name || 'Unassigned'}
+                          </span>
+                          <span className="text-xs bg-blue-200 text-blue-800 px-1 rounded ml-2">NEW</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeTaskFromForm(actualIdx)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* Add new task form */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  placeholder="New task title"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={newTask.assignee_id}
+                  onChange={(e) => setNewTask({ ...newTask, assignee_id: e.target.value })}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Assign to</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={addTaskToForm}
+                  className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => { setShowEditProject(false); setEditingProjectId(null); resetProjectForm(); }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              >
+                {formLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Create Template Modal */}
       <Dialog open={showCreateTemplate} onOpenChange={setShowCreateTemplate}>
         <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
