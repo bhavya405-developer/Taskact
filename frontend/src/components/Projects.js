@@ -368,9 +368,13 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
   );
 
   const getClientName = (clientId) => {
-    const client = clients.find(c => c.id === clientId);
+    const client = clientsList.find(c => c.id === clientId);
     return client?.name || '';
   };
+  
+  // Use internal state for clients and categories (fallback to props for backward compatibility)
+  const effectiveClients = clientsList.length > 0 ? clientsList : clients;
+  const effectiveCategories = categoriesList.length > 0 ? categoriesList : categories;
 
   if (loading) {
     return (
