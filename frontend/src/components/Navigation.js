@@ -138,8 +138,9 @@ const Navigation = () => {
     <nav className={`${isDarkTheme ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} shadow-sm border-b`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo and Badge Container */}
+          <div className="flex items-center space-x-4">
+            {/* Logo */}
             <div className="flex-shrink-0">
               <img 
                 src="/taskact-logo.svg" 
@@ -148,6 +149,17 @@ const Navigation = () => {
                 style={{ maxWidth: '160px', filter: isDarkTheme ? 'brightness(0) invert(1)' : 'none' }}
               />
             </div>
+            
+            {/* Tenant Badge - Only for regular tenant users, NOT super admin */}
+            {!isSuperAdmin() && tenant && tenant.code !== 'TASKACT1' && (
+              <>
+                <div className="hidden sm:block h-6 w-px bg-gray-200"></div>
+                <div className="hidden sm:flex items-center px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-100 shadow-sm">
+                  <Building className="h-3.5 w-3.5 text-indigo-500 mr-2" />
+                  <span className="text-xs font-semibold text-indigo-700 max-w-[140px] truncate">{tenant.name}</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Desktop Navigation */}
