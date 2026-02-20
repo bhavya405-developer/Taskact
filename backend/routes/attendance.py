@@ -511,6 +511,10 @@ async def get_attendance_history(
     """Get attendance history. Partners can view all users, others only their own."""
     query = {}
     
+    # Filter by tenant_id
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    
     # Non-partners can only view their own attendance
     if current_user.role != UserRole.PARTNER:
         query["user_id"] = current_user.id
