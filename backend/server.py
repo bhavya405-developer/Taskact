@@ -86,6 +86,7 @@ class UserRole(str, Enum):
     ASSOCIATE = "associate"
     JUNIOR = "junior"
     INTERN = "intern"
+    SUPER_ADMIN = "super_admin"
 
 # Models
 class User(BaseModel):
