@@ -14,6 +14,7 @@ import Navigation from "./components/Navigation";
 import Attendance from "./components/Attendance";
 import Timesheet from "./components/Timesheet";
 import Projects from "./components/Projects";
+import AdminPanel from "./components/AdminPanel";
 import SuperAdminApp from "./components/SuperAdminApp";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
