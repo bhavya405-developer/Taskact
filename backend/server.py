@@ -331,10 +331,10 @@ class Task(BaseModel):
     description: Optional[str] = None
     client_name: Optional[str] = None
     category: Optional[str] = None
-    assignee_id: str
-    assignee_name: str
-    creator_id: str
-    creator_name: str
+    assignee_id: Optional[str] = None  # Made optional for legacy data
+    assignee_name: Optional[str] = None  # Made optional for legacy data
+    creator_id: Optional[str] = None  # Made optional for legacy data
+    creator_name: Optional[str] = None  # Made optional for legacy data
     status: TaskStatus = TaskStatus.PENDING
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
@@ -346,6 +346,9 @@ class Task(BaseModel):
     actual_hours: Optional[float] = None  # Required when completing task
     # Status change history - records all status changes with IST timestamps
     status_history: Optional[List[dict]] = None
+    # Project reference
+    project_id: Optional[str] = None
+    project_name: Optional[str] = None
 
 class TaskCreate(BaseModel):
     title: str
