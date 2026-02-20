@@ -229,7 +229,8 @@ const Navigation = () => {
               )}
             </div>
             
-            <div className="flex items-center space-x-3 ml-6 border-l border-gray-200 pl-6">
+            {/* Right side - Notifications and Profile */}
+            <div className="flex items-center space-x-2 ml-4 border-l border-gray-200 pl-4">
               <NotificationPanel />
               
               {/* Profile Dropdown */}
@@ -239,14 +240,14 @@ const Navigation = () => {
                     className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors"
                     data-testid="profile-dropdown-trigger"
                   >
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium text-sm">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-white font-medium text-sm">
                         {user?.name?.charAt(0)?.toUpperCase()}
                       </span>
                     </div>
                     <div className="hidden lg:block text-left">
-                      <div className="text-sm font-medium text-gray-700">{user?.name}</div>
-                      <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
+                      <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">{user?.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</div>
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-400 hidden lg:block" />
                   </button>
