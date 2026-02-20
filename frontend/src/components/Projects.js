@@ -252,6 +252,54 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
     }
   };
 
+  const handleEditTemplate = (template) => {
+    setTemplateForm({
+      name: template.name || '',
+      description: template.description || '',
+      client_id: template.client_id || '',
+      category: template.category || '',
+      tasks: template.tasks?.map(t => ({
+        title: t.title,
+        description: t.description || '',
+        priority: t.priority || 'medium',
+        category: t.category || ''
+      })) || []
+    });
+    setEditingTemplateId(template.id);
+    setShowEditTemplate(true);
+  };
+
+  const handleUpdateTemplate = async (e) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError('');
+
+    try {
+      if (!templateForm.name) {
+        throw new Error('Template name is required');
+      }
+
+      const payload = {
+        name: templateForm.name,
+        description: templateForm.description,
+        client_id: templateForm.client_id || null,
+        category: templateForm.category || null,
+        tasks: templateForm.tasks
+      };
+
+      await axios.put(`${API_URL}/api/project-templates/${editingTemplateId}`, payload);
+      
+      setShowEditTemplate(false);
+      setEditingTemplateId(null);
+      resetTemplateForm();
+      fetchTemplates();
+    } catch (error) {
+      setFormError(error.response?.data?.detail || error.message || 'Failed to update template');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const handleViewProject = async (projectId) => {
     try {
       const response = await axios.get(`${API_URL}/api/projects/${projectId}`);
