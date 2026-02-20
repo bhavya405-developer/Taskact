@@ -212,6 +212,61 @@ const AdminPanel = () => {
     }
   };
 
+  const handleDeactivateTenant = async () => {
+    if (!selectedTenant) return;
+    setFormLoading(true);
+    setFormError('');
+    
+    try {
+      await axios.delete(`${API_URL}/api/tenants/${selectedTenant.id}`);
+      setShowDeactivateConfirm(false);
+      setSelectedTenant(null);
+      fetchData();
+    } catch (error) {
+      setFormError(error.response?.data?.detail || 'Failed to deactivate tenant');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleReactivateTenant = async (tenant) => {
+    try {
+      await axios.put(`${API_URL}/api/tenants/${tenant.id}/reactivate`);
+      fetchData();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to reactivate tenant');
+    }
+  };
+
+  const handleDeleteTenant = async () => {
+    if (!selectedTenant) return;
+    setFormLoading(true);
+    setFormError('');
+    
+    try {
+      await axios.delete(`${API_URL}/api/tenants/${selectedTenant.id}/permanent`);
+      setShowDeleteConfirm(false);
+      setSelectedTenant(null);
+      fetchData();
+    } catch (error) {
+      setFormError(error.response?.data?.detail || 'Failed to delete tenant');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const openDeactivateConfirm = (tenant) => {
+    setSelectedTenant(tenant);
+    setFormError('');
+    setShowDeactivateConfirm(true);
+  };
+
+  const openDeleteConfirm = (tenant) => {
+    setSelectedTenant(tenant);
+    setFormError('');
+    setShowDeleteConfirm(true);
+  };
+
   if (!isSuperAdmin()) {
     return (
       <div className="text-center py-12">
