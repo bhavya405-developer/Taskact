@@ -365,7 +365,6 @@ const Login = () => {
                       required
                       minLength={6}
                       className="form-input pl-10 pr-10"
-                      placeholder="Enter new password"
                       data-testid="new-password-input"
                     />
                     <button
@@ -392,7 +391,6 @@ const Login = () => {
                       required
                       minLength={6}
                       className="form-input pl-10"
-                      placeholder="Confirm new password"
                       data-testid="confirm-password-input"
                     />
                   </div>
