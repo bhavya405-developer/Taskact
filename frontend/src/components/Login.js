@@ -247,7 +247,6 @@ const Login = () => {
                       required
                       maxLength={8}
                       className="form-input pl-10 uppercase"
-                      placeholder="e.g., SCO1"
                       data-testid="forgot-company-code-input"
                     />
                   </div>
@@ -266,13 +265,9 @@ const Login = () => {
                       onChange={(e) => setForgotEmail(e.target.value)}
                       required
                       className="form-input pl-10"
-                      placeholder="Enter your registered email"
                       data-testid="forgot-email-input"
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    OTP will be sent to your partner's notification panel
-                  </p>
                 </div>
 
                 <button
