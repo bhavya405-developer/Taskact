@@ -341,6 +341,7 @@ async def clock_in(
         "id": str(uuid.uuid4()),
         "user_id": current_user.id,
         "user_name": current_user.name,
+        "tenant_id": current_user.tenant_id,  # Add tenant_id for multi-tenancy
         "type": AttendanceType.CLOCK_IN.value,
         "timestamp": now_utc.isoformat(),
         "timestamp_ist": format_ist_datetime(now_utc),
