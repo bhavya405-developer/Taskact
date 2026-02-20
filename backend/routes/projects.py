@@ -444,8 +444,10 @@ async def create_project(
                     "due_date": project_data.due_date
                 })
     else:
-        # Direct task creation
+        # Direct task creation - title is required
         for task in project_data.tasks:
+            if not task.title:
+                raise HTTPException(status_code=400, detail="Task title is required when creating directly")
             task_definitions.append({
                 "title": task.title,
                 "description": task.description,
