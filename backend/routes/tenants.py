@@ -148,7 +148,6 @@ async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(se
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         admin_id: str = payload.get("sub")
-        role: str = payload.get("role")
         is_super_admin_flag: bool = payload.get("is_super_admin", False)
         
         if admin_id is None:
