@@ -401,6 +401,74 @@ async def reactivate_tenant(tenant_id: str, admin=Depends(get_super_admin)):
     return {"message": f"Tenant '{tenant['name']}' has been reactivated"}
 
 
+@router.delete("/tenants/{tenant_id}/permanent")
+async def delete_tenant_permanently(tenant_id: str, admin=Depends(get_super_admin)):
+    """
+    Permanently delete a tenant and all associated data (Super Admin only)
+    WARNING: This action cannot be undone!
+    """
+    tenant = await db.tenants.find_one({"id": tenant_id})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    # Prevent deleting the main admin tenant
+    if tenant.get("code") == "TASKACT1":
+        raise HTTPException(status_code=403, detail="Cannot delete the platform admin tenant")
+    
+    tenant_name = tenant["name"]
+    tenant_code = tenant["code"]
+    
+    # Delete all associated data
+    # Delete users
+    deleted_users = await db.users.delete_many({"tenant_id": tenant_id})
+    
+    # Delete tasks
+    deleted_tasks = await db.tasks.delete_many({"tenant_id": tenant_id})
+    
+    # Delete projects
+    deleted_projects = await db.projects.delete_many({"tenant_id": tenant_id})
+    
+    # Delete project templates (tenant-specific)
+    deleted_templates = await db.project_templates.delete_many({"tenant_id": tenant_id})
+    
+    # Delete categories
+    deleted_categories = await db.categories.delete_many({"tenant_id": tenant_id})
+    
+    # Delete clients
+    deleted_clients = await db.clients.delete_many({"tenant_id": tenant_id})
+    
+    # Delete attendance records
+    deleted_attendance = await db.attendance.delete_many({"tenant_id": tenant_id})
+    
+    # Delete timesheet entries
+    deleted_timesheets = await db.timesheets.delete_many({"tenant_id": tenant_id})
+    
+    # Delete notifications
+    deleted_notifications = await db.notifications.delete_many({"tenant_id": tenant_id})
+    
+    # Finally delete the tenant itself
+    await db.tenants.delete_one({"id": tenant_id})
+    
+    logger.warning(f"Tenant PERMANENTLY DELETED: {tenant_name} (Code: {tenant_code}) by admin {admin['email']}")
+    logger.info(f"Deleted data: {deleted_users.deleted_count} users, {deleted_tasks.deleted_count} tasks, "
+                f"{deleted_projects.deleted_count} projects")
+    
+    return {
+        "message": f"Tenant '{tenant_name}' and all associated data have been permanently deleted",
+        "deleted": {
+            "users": deleted_users.deleted_count,
+            "tasks": deleted_tasks.deleted_count,
+            "projects": deleted_projects.deleted_count,
+            "templates": deleted_templates.deleted_count,
+            "categories": deleted_categories.deleted_count,
+            "clients": deleted_clients.deleted_count,
+            "attendance": deleted_attendance.deleted_count,
+            "timesheets": deleted_timesheets.deleted_count,
+            "notifications": deleted_notifications.deleted_count
+        }
+    }
+
+
 # ==================== TENANT USER MANAGEMENT ====================
 
 @router.get("/tenants/{tenant_id}/users")
