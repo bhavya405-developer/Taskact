@@ -607,16 +607,22 @@ async def get_attendance_report(
         
         current_date += timedelta(days=1)
     
-    # Get all users
-    users = await db.users.find({"active": True}).to_list(length=5000)
+    # Get all users (filtered by tenant_id)
+    user_query = {"active": True}
+    if current_user.tenant_id:
+        user_query["tenant_id"] = current_user.tenant_id
+    users = await db.users.find(user_query).to_list(length=5000)
     
     report = []
     for user in users:
-        # Get attendance records for this user in the month
-        records = await db.attendance.find({
+        # Get attendance records for this user in the month (filtered by tenant_id)
+        record_query = {
             "user_id": user["id"],
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-        }).to_list(length=5000)
+        }
+        if current_user.tenant_id:
+            record_query["tenant_id"] = current_user.tenant_id
+        records = await db.attendance.find(record_query).to_list(length=5000)
         
         # Group by date
         clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
