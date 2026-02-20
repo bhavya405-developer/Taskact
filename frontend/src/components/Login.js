@@ -311,13 +311,9 @@ const Login = () => {
                       required
                       maxLength={6}
                       className="form-input pl-10 text-center text-2xl tracking-widest font-mono"
-                      placeholder="000000"
                       data-testid="otp-input"
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Enter the 6-digit OTP provided by your partner
-                  </p>
                 </div>
 
                 <button
