@@ -223,29 +223,36 @@ const AdminPanel = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="min-h-[400px] flex items-center justify-center bg-slate-900 rounded-xl">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-slate-900 -mx-4 sm:-mx-6 lg:-mx-8 -my-8 px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Admin Panel</h1>
-        <p className="text-gray-500 mt-1">Manage tenants and global templates</p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="bg-indigo-600 p-2 rounded-lg">
+            <Shield className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-white">Admin Panel</h1>
+            <p className="text-slate-400 text-sm">Manage tenants and global templates</p>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-slate-700 mb-6">
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('tenants')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'tenants'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-400 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-500'
             }`}
             data-testid="tab-tenants"
           >
@@ -254,10 +261,10 @@ const AdminPanel = () => {
           </button>
           <button
             onClick={() => setActiveTab('templates')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'templates'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-400 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-500'
             }`}
             data-testid="tab-templates"
           >
@@ -267,23 +274,34 @@ const AdminPanel = () => {
         </nav>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center justify-between">
+      {/* Search and Action Buttons */}
+      <div className="flex items-center justify-between mb-6">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
             placeholder={`Search ${activeTab}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input pl-10 w-full"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
+        
+        {activeTab === 'tenants' && (
+          <button
+            onClick={() => setShowCreateTenant(true)}
+            className="flex items-center ml-4 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+            data-testid="create-tenant-button"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Tenant
+          </button>
+        )}
         
         {activeTab === 'templates' && (
           <button
             onClick={() => setShowCreateTemplate(true)}
-            className="btn-primary flex items-center ml-4"
+            className="flex items-center ml-4 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
             data-testid="create-global-template"
           >
             <Plus className="h-4 w-4 mr-2" />
