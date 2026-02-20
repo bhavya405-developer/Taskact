@@ -119,21 +119,39 @@
 ## 5. What's Implemented ✅
 
 ### February 2026 Session - Latest Changes
-1. **Admin Login via Normal Login Page**
+
+#### UI/UX Improvements (Feb 20, 2026)
+1. **Admin Panel Dark Theme**
+   - Converted Admin Panel to dark theme (slate-900 background)
+   - All modals (Edit Tenant, Create Tenant, Create Template) have dark styling
+   - Table and form elements styled with dark color scheme
+
+2. **Add New Tenant Button Restored**
+   - "Add New Tenant" button added to Admin Panel Tenants tab
+   - Create Tenant modal with all required fields (Name, Code, Email, Plan, Max Users)
+   - Full functionality for adding new companies
+
+3. **Navigation Improvements**
+   - Company badge with visual divider for better separation
+   - Gradient profile avatar styling
+   - Better spacing in navigation tabs
+   - Improved responsiveness for medium screens
+
+4. **Previous Changes**
+   - Admin Login via Normal Login Page
    - Super admin now logs in using Company Code: TASKACT1
    - No separate /admin login required for normal operations
    - Forgot password for admin sends OTP to SCO1 partners
 
-2. **Tenant Editing in Admin Panel**
+5. **Tenant Editing in Admin Panel**
    - Edit tenant details (name, email, phone, plan, max users)
    - View all tenants with user counts and status
 
-3. **Global Project Templates**
+6. **Global Project Templates**
    - Admin can create templates available to all tenants
    - Templates tab in Admin Panel
 
-4. **UI Improvements**
-   - Removed all placeholder text from login form
+7. **Profile Dropdown**
    - Profile dropdown on desktop (Click name → Change Password, Admin Panel, Logout)
    - Cleaner company badge styling (no code shown, just company name)
    - Admin badge for super admin users
