@@ -120,6 +120,23 @@
 
 ### February 2026 Session - Latest Changes
 
+#### Critical Bug Fixes (Feb 20, 2026) - Session 3
+1. **Fixed Multi-Tenant Data Isolation** - CRITICAL FIX
+   - Dashboard, categories, clients, timesheet, and attendance now correctly filter by `tenant_id`
+   - New tenants start with 0 tasks, 0 clients, and only 1 team member (partner)
+   - No data leakage between tenants
+
+2. **Restored Impersonation Feature for Super Admin**
+   - "View Users / Impersonate" option in Admin Panel tenant actions
+   - Super admin can view all users in a tenant and impersonate any active user
+
+3. **Restored Masters Tab for Super Admin**
+   - Masters dropdown now visible for both partners AND super admin
+
+4. **Partner Creation During Tenant Creation**
+   - Create Tenant form now requires partner details (name, email, password)
+   - Partner user is automatically created when tenant is created
+
 #### UI/UX Improvements (Feb 20, 2026) - Session 2
 1. **Company Badge Removed**
    - Removed company badge from navigation for all users (both tenant and super admin)
