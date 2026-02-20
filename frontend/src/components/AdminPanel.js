@@ -499,6 +499,14 @@ const AdminPanel = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
                         <DropdownMenuItem 
+                          onClick={() => fetchTenantUsers(tenant)}
+                          className="text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer"
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          View Users / Impersonate
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem 
                           onClick={() => handleEditTenant(tenant)}
                           className="text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer"
                         >
