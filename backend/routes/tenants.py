@@ -261,7 +261,15 @@ async def create_super_admin(admin_data: SuperAdminCreate):
 
 @router.post("/tenants", response_model=TenantResponse)
 async def create_tenant(tenant_data: TenantCreate, admin=Depends(get_super_admin)):
-    """Create a new tenant (Super Admin only)"""
+    """Create a new tenant with partner user (Super Admin only)"""
+    
+    # Validate partner details are provided
+    if not tenant_data.partner_name or not tenant_data.partner_email or not tenant_data.partner_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Partner details (name, email, password) are required"
+        )
+    
     # Validate or generate company code
     if tenant_data.code:
         code = tenant_data.code.upper()
@@ -282,11 +290,18 @@ async def create_tenant(tenant_data: TenantCreate, admin=Depends(get_super_admin
             if not existing:
                 break
     
+    # Check if partner email already exists
+    existing_user = await db.users.find_one({"email": tenant_data.partner_email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Partner email already exists")
+    
+    tenant_id = str(uuid.uuid4())
+    
     tenant_dict = {
-        "id": str(uuid.uuid4()),
+        "id": tenant_id,
         "name": tenant_data.name,
         "code": code,
-        "contact_email": tenant_data.contact_email,
+        "contact_email": tenant_data.contact_email or tenant_data.partner_email,
         "contact_phone": tenant_data.contact_phone,
         "address": tenant_data.address,
         "plan": tenant_data.plan,
@@ -299,7 +314,23 @@ async def create_tenant(tenant_data: TenantCreate, admin=Depends(get_super_admin
     tenant_dict = prepare_for_mongo(tenant_dict)
     await db.tenants.insert_one(tenant_dict)
     
-    logger.info(f"Tenant created: {tenant_data.name} (Code: {code})")
+    # Create partner user for this tenant
+    partner_dict = {
+        "id": str(uuid.uuid4()),
+        "name": tenant_data.partner_name,
+        "email": tenant_data.partner_email,
+        "password_hash": get_password_hash(tenant_data.partner_password),
+        "role": "partner",
+        "tenant_id": tenant_id,
+        "active": True,
+        "created_at": datetime.now(timezone.utc),
+        "created_by": admin["id"]
+    }
+    
+    partner_dict = prepare_for_mongo(partner_dict)
+    await db.users.insert_one(partner_dict)
+    
+    logger.info(f"Tenant created: {tenant_data.name} (Code: {code}) with partner: {tenant_data.partner_email}")
     
     return TenantResponse(**parse_from_mongo(tenant_dict))
 
