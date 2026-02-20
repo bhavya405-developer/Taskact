@@ -22,14 +22,23 @@ import {
   ChevronDown,
   Database,
   Building,
-  FolderKanban
+  FolderKanban,
+  Settings,
+  Shield
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Navigation = () => {
   const location = useLocation();
-  const { user, tenant, logout, isPartner } = useAuth();
+  const { user, tenant, logout, isPartner, isSuperAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -42,6 +51,7 @@ const Navigation = () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
