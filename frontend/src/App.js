@@ -187,6 +187,10 @@ const AppContent = () => {
               element={<Projects users={users} />} 
             />
             <Route 
+              path="/admin-panel" 
+              element={<AdminPanel />} 
+            />
+            <Route 
               path="/create-task" 
               element={
                 <CreateTask 
