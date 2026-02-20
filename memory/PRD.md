@@ -120,7 +120,23 @@
 
 ### February 2026 Session - Latest Changes
 
-#### UI/UX Improvements (Feb 20, 2026)
+#### UI/UX Improvements (Feb 20, 2026) - Session 2
+1. **Company Badge Removed**
+   - Removed company badge from navigation for all users (both tenant and super admin)
+
+2. **Super Admin Dark Theme**
+   - Entire super admin experience now uses dark theme (slate-900/slate-800)
+   - Dark navigation bar, dashboard, and all pages
+   - Logo automatically inverts to white in dark mode
+
+3. **Tenant Management Actions**
+   - Added **Deactivate** option - prevents users from logging in, preserves data
+   - Added **Reactivate** option - restores access for deactivated tenants  
+   - Added **Delete Permanently** option - completely removes tenant and all associated data
+   - TASKACT1 (platform admin tenant) is protected from deletion
+   - All actions available via dropdown menu in Admin Panel
+
+#### UI/UX Improvements (Feb 20, 2026) - Session 1
 1. **Admin Panel Dark Theme**
    - Converted Admin Panel to dark theme (slate-900 background)
    - All modals (Edit Tenant, Create Tenant, Create Template) have dark styling
@@ -131,13 +147,7 @@
    - Create Tenant modal with all required fields (Name, Code, Email, Plan, Max Users)
    - Full functionality for adding new companies
 
-3. **Navigation Improvements**
-   - Company badge with visual divider for better separation
-   - Gradient profile avatar styling
-   - Better spacing in navigation tabs
-   - Improved responsiveness for medium screens
-
-4. **Previous Changes**
+3. **Previous Changes**
    - Admin Login via Normal Login Page
    - Super admin now logs in using Company Code: TASKACT1
    - No separate /admin login required for normal operations
