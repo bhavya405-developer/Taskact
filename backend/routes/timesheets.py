@@ -275,8 +275,11 @@ async def get_team_timesheet(
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    # Get all active users
-    users = await db.users.find({"active": True}).to_list(length=100)
+    # Get all active users for this tenant
+    user_query = {"active": True}
+    if current_user.tenant_id:
+        user_query["tenant_id"] = current_user.tenant_id
+    users = await db.users.find(user_query).to_list(length=100)
     
     team_summary = []
     grand_total_hours = 0
