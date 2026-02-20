@@ -719,12 +719,12 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                     {!project.can_edit && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-1 hover:bg-gray-100 rounded">
+                          <button className="p-1 hover:bg-gray-100 rounded" data-testid="project-view-menu">
                             <MoreVertical className="h-5 w-5 text-gray-400" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewProject(project.id)}>
+                          <DropdownMenuItem onClick={() => handleViewProject(project.id)} data-testid="view-details-btn">
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
