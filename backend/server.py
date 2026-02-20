@@ -1201,12 +1201,19 @@ async def download_clients_template(current_user: UserResponse = Depends(get_cur
 
 @api_router.get("/clients", response_model=List[Client])
 async def get_clients(current_user: UserResponse = Depends(get_current_user)):
-    clients = await db.clients.find({"active": True}).sort("name", 1).to_list(length=5000)
+    # Filter by tenant_id
+    query = {"active": True}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    clients = await db.clients.find(query).sort("name", 1).to_list(length=5000)
     return [Client(**parse_from_mongo(client)) for client in clients]
 
 @api_router.get("/clients/{client_id}", response_model=Client)
 async def get_client(client_id: str, current_user: UserResponse = Depends(get_current_user)):
-    client = await db.clients.find_one({"id": client_id, "active": True})
+    query = {"id": client_id, "active": True}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    client = await db.clients.find_one(query)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     return Client(**parse_from_mongo(client))
@@ -1217,7 +1224,10 @@ async def update_client(
     client_update: ClientUpdate, 
     current_user: UserResponse = Depends(get_current_partner)
 ):
-    existing_client = await db.clients.find_one({"id": client_id, "active": True})
+    query = {"id": client_id, "active": True}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    existing_client = await db.clients.find_one(query)
     if not existing_client:
         raise HTTPException(status_code=404, detail="Client not found")
     
@@ -1226,9 +1236,12 @@ async def update_client(
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
-    # Check if name is being changed and if it already exists
+    # Check if name is being changed and if it already exists for this tenant
     if "name" in update_data and update_data["name"] != existing_client["name"]:
-        existing_name = await db.clients.find_one({"name": update_data["name"], "active": True})
+        name_query = {"name": update_data["name"], "active": True}
+        if current_user.tenant_id:
+            name_query["tenant_id"] = current_user.tenant_id
+        existing_name = await db.clients.find_one(name_query)
         if existing_name:
             raise HTTPException(status_code=400, detail="Client name already exists")
     
