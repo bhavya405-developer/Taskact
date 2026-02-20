@@ -19,9 +19,13 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// StatusCard component - moved outside Dashboard to avoid re-creation on every render
-const StatusCard = ({ title, count, status, icon }) => (
-  <div className="stats-card animate-fade-in" data-testid={`status-card-${status}`}>
+// StatusCard component with dark mode support
+const StatusCard = ({ title, count, status, icon, isDark }) => (
+  <div className={`rounded-xl border p-4 transition-all duration-200 hover:shadow-lg ${
+    isDark 
+      ? 'bg-slate-800 border-slate-700 hover:border-slate-600' 
+      : 'bg-white border-gray-100 shadow-sm hover:border-blue-100'
+  }`} data-testid={`status-card-${status}`}>
     <div className="flex items-center">
       <div className="flex-shrink-0">
         <div className="w-8 h-8 flex items-center justify-center text-lg">
@@ -29,15 +33,15 @@ const StatusCard = ({ title, count, status, icon }) => (
         </div>
       </div>
       <div className="ml-4">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{count}</p>
+        <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{title}</p>
+        <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{count}</p>
       </div>
     </div>
   </div>
 );
 
 const Dashboard = ({ users, tasks, onTaskUpdate }) => {
-  const { isPartner, user } = useAuth();
+  const { isPartner, user, isSuperAdmin } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
