@@ -139,7 +139,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current super admin from token"""
+    """Get current super admin from token - supports both super_admins collection and users with super_admin role"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -149,17 +149,29 @@ async def get_super_admin(credentials: HTTPAuthorizationCredentials = Depends(se
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         admin_id: str = payload.get("sub")
         role: str = payload.get("role")
+        is_super_admin_flag: bool = payload.get("is_super_admin", False)
         
-        if admin_id is None or role != "super_admin":
+        if admin_id is None:
             raise credentials_exception
     except jwt.PyJWTError:
         raise credentials_exception
     
+    # First, check super_admins collection (old method)
     admin = await db.super_admins.find_one({"id": admin_id, "active": True})
-    if admin is None:
-        raise credentials_exception
+    if admin:
+        return parse_from_mongo(admin)
     
-    return parse_from_mongo(admin)
+    # Then, check users collection for super_admin role
+    user = await db.users.find_one({"id": admin_id, "active": True})
+    if user and (user.get("role") == "super_admin" or is_super_admin_flag):
+        return {
+            "id": user["id"],
+            "name": user.get("name", "Admin"),
+            "email": user.get("email", ""),
+            "role": "super_admin"
+        }
+    
+    raise credentials_exception
 
 
 # ==================== SUPER ADMIN ROUTES ====================
