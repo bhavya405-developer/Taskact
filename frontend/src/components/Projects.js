@@ -5,7 +5,7 @@ import {
   FolderKanban, Plus, Search, ChevronDown, ChevronRight,
   User, Calendar, Clock, CheckCircle, XCircle, PlayCircle,
   PauseCircle, MoreVertical, AlertTriangle, FileText, Copy,
-  Trash2, UserPlus, Filter
+  Trash2, UserPlus, Filter, Save, Users, Edit2, Eye
 } from 'lucide-react';
 import {
   Dialog,
@@ -27,9 +27,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const statusConfig = {
   draft: { label: 'Draft', color: 'bg-gray-100 text-gray-700', icon: FileText },
-  ready: { label: 'Ready', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-  allocated: { label: 'Allocated', color: 'bg-purple-100 text-purple-700', icon: UserPlus },
-  in_progress: { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700', icon: PlayCircle },
+  active: { label: 'Active', color: 'bg-blue-100 text-blue-700', icon: PlayCircle },
   completed: { label: 'Completed', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   on_hold: { label: 'On Hold', color: 'bg-orange-100 text-orange-700', icon: PauseCircle },
 };
@@ -40,35 +38,53 @@ const priorityConfig = {
   low: { color: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
 };
 
-const Projects = ({ users }) => {
-  const { isPartner } = useAuth();
+const Projects = ({ users = [], clients = [], categories = [] }) => {
+  const { isPartner, isSuperAdmin } = useAuth();
   const [projects, setProjects] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedProjects, setExpandedProjects] = useState(new Set());
+  const [activeTab, setActiveTab] = useState('projects');
   
   // Modal states
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showAllocate, setShowAllocate] = useState(false);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [showProjectDetail, setShowProjectDetail] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   
   // Form states
   const [projectForm, setProjectForm] = useState({
+    name: '',
+    description: '',
+    client_id: '',
+    category: '',
+    due_date: '',
+    template_id: '',
+    save_as_template: false,
+    template_name: '',
+    tasks: []
+  });
+  
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    description: '',
+    client_id: '',
+    category: '',
+    tasks: []
+  });
+  
+  const [newTask, setNewTask] = useState({
     title: '',
     description: '',
-    client_name: '',
-    category: '',
     priority: 'medium',
-    due_date: '',
-    estimated_hours: '',
+    category: '',
     assignee_id: '',
-    sub_tasks: []
+    due_date: ''
   });
-  const [newSubTask, setNewSubTask] = useState({ title: '', estimated_hours: '', priority: 'medium' });
+  
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
@@ -97,132 +113,245 @@ const Projects = ({ users }) => {
     }
   };
 
-  const toggleProjectExpand = (projectId) => {
-    const newExpanded = new Set(expandedProjects);
-    if (newExpanded.has(projectId)) {
-      newExpanded.delete(projectId);
-    } else {
-      newExpanded.add(projectId);
-    }
-    setExpandedProjects(newExpanded);
-  };
-
   const handleCreateProject = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     setFormError('');
 
     try {
+      // Validate
+      if (!projectForm.name) {
+        throw new Error('Project name is required');
+      }
+      if (!projectForm.due_date) {
+        throw new Error('Due date is required');
+      }
+      if (projectForm.tasks.length === 0 && !projectForm.template_id) {
+        throw new Error('At least one task is required');
+      }
+
       const payload = {
-        ...projectForm,
-        estimated_hours: projectForm.estimated_hours ? parseFloat(projectForm.estimated_hours) : null,
-        assignee_id: projectForm.assignee_id || null,
-        sub_tasks: projectForm.sub_tasks.map((st, i) => ({
-          ...st,
-          order: i,
-          estimated_hours: st.estimated_hours ? parseFloat(st.estimated_hours) : null
-        }))
+        name: projectForm.name,
+        description: projectForm.description,
+        client_id: projectForm.client_id || null,
+        category: projectForm.category || null,
+        due_date: projectForm.due_date,
+        template_id: projectForm.template_id || null,
+        tasks: projectForm.tasks,
+        save_as_template: projectForm.save_as_template,
+        template_name: projectForm.template_name || null
       };
 
       await axios.post(`${API_URL}/api/projects`, payload);
+      
       setShowCreateProject(false);
       resetProjectForm();
       fetchProjects();
+      fetchTemplates();
     } catch (error) {
-      setFormError(error.response?.data?.detail || 'Failed to create project');
+      setFormError(error.response?.data?.detail || error.message || 'Failed to create project');
     } finally {
       setFormLoading(false);
     }
   };
 
-  const handleUseTemplate = async (template) => {
-    setSelectedTemplate(template);
-    setProjectForm({
-      title: '',
-      description: template.description || '',
-      client_name: '',
-      category: template.category || '',
-      priority: 'medium',
-      due_date: '',
-      estimated_hours: template.estimated_hours || '',
-      assignee_id: '',
-      sub_tasks: template.sub_tasks.map(st => ({
-        title: st.title,
-        description: st.description || '',
-        estimated_hours: st.estimated_hours || '',
-        priority: st.priority || 'medium'
-      }))
-    });
-    setShowTemplates(false);
-    setShowCreateProject(true);
-  };
+  const handleCreateTemplate = async (e) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError('');
 
-  const handleAllocate = async (projectId, assigneeId) => {
     try {
-      await axios.post(`${API_URL}/api/projects/${projectId}/allocate?assignee_id=${assigneeId}`);
-      fetchProjects();
-      setShowAllocate(false);
-      setSelectedProject(null);
+      if (!templateForm.name) {
+        throw new Error('Template name is required');
+      }
+      if (templateForm.tasks.length === 0) {
+        throw new Error('At least one task is required');
+      }
+
+      const payload = {
+        name: templateForm.name,
+        description: templateForm.description,
+        client_id: templateForm.client_id || null,
+        category: templateForm.category || null,
+        tasks: templateForm.tasks.map((t, idx) => ({
+          title: t.title,
+          description: t.description,
+          priority: t.priority,
+          category: t.category,
+          order: idx
+        }))
+      };
+
+      await axios.post(`${API_URL}/api/project-templates`, payload);
+      
+      setShowCreateTemplate(false);
+      resetTemplateForm();
+      fetchTemplates();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Failed to allocate project');
+      setFormError(error.response?.data?.detail || error.message || 'Failed to create template');
+    } finally {
+      setFormLoading(false);
     }
   };
 
-  const handleUpdateSubTask = async (projectId, subtaskId, updates) => {
+  const handleDeleteProject = async (projectId) => {
+    if (!window.confirm('Delete this project and all its tasks?')) return;
+    
     try {
-      await axios.put(`${API_URL}/api/projects/${projectId}/subtasks/${subtaskId}`, updates);
+      await axios.delete(`${API_URL}/api/projects/${projectId}`);
       fetchProjects();
     } catch (error) {
-      console.error('Error updating subtask:', error);
+      alert(error.response?.data?.detail || 'Failed to delete project');
     }
   };
 
-  const addSubTask = () => {
-    if (!newSubTask.title.trim()) return;
+  const handleDeleteTemplate = async (templateId) => {
+    if (!window.confirm('Delete this template?')) return;
+    
+    try {
+      await axios.delete(`${API_URL}/api/project-templates/${templateId}`);
+      fetchTemplates();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to delete template');
+    }
+  };
+
+  const handleViewProject = async (projectId) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/projects/${projectId}`);
+      setSelectedProject(response.data);
+      setShowProjectDetail(true);
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to load project');
+    }
+  };
+
+  const addTaskToForm = () => {
+    if (!newTask.title) return;
+    
     setProjectForm(prev => ({
       ...prev,
-      sub_tasks: [...prev.sub_tasks, { ...newSubTask }]
+      tasks: [...prev.tasks, { ...newTask }]
     }));
-    setNewSubTask({ title: '', estimated_hours: '', priority: 'medium' });
+    
+    setNewTask({
+      title: '',
+      description: '',
+      priority: 'medium',
+      category: '',
+      assignee_id: '',
+      due_date: ''
+    });
   };
 
-  const removeSubTask = (index) => {
+  const addTaskToTemplateForm = () => {
+    if (!newTask.title) return;
+    
+    setTemplateForm(prev => ({
+      ...prev,
+      tasks: [...prev.tasks, {
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        category: newTask.category
+      }]
+    }));
+    
+    setNewTask({
+      title: '',
+      description: '',
+      priority: 'medium',
+      category: '',
+      assignee_id: '',
+      due_date: ''
+    });
+  };
+
+  const removeTaskFromForm = (index) => {
     setProjectForm(prev => ({
       ...prev,
-      sub_tasks: prev.sub_tasks.filter((_, i) => i !== index)
+      tasks: prev.tasks.filter((_, i) => i !== index)
+    }));
+  };
+
+  const removeTaskFromTemplateForm = (index) => {
+    setTemplateForm(prev => ({
+      ...prev,
+      tasks: prev.tasks.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleTemplateSelect = (template) => {
+    setProjectForm(prev => ({
+      ...prev,
+      template_id: template.id,
+      category: template.category || prev.category,
+      client_id: template.client_id || prev.client_id,
+      tasks: template.tasks?.map(t => ({
+        title: t.title,
+        description: t.description,
+        priority: t.priority || 'medium',
+        category: t.category || template.category,
+        assignee_id: '',
+        due_date: ''
+      })) || []
     }));
   };
 
   const resetProjectForm = () => {
     setProjectForm({
+      name: '',
+      description: '',
+      client_id: '',
+      category: '',
+      due_date: '',
+      template_id: '',
+      save_as_template: false,
+      template_name: '',
+      tasks: []
+    });
+    setNewTask({
       title: '',
       description: '',
-      client_name: '',
-      category: '',
       priority: 'medium',
-      due_date: '',
-      estimated_hours: '',
+      category: '',
       assignee_id: '',
-      sub_tasks: []
+      due_date: ''
     });
-    setSelectedTemplate(null);
+    setFormError('');
+  };
+
+  const resetTemplateForm = () => {
+    setTemplateForm({
+      name: '',
+      description: '',
+      client_id: '',
+      category: '',
+      tasks: []
+    });
+    setFormError('');
   };
 
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = 
-      project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (project.client_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (project.assignee_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
   });
+
+  const filteredTemplates = templates.filter(template =>
+    template.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getClientName = (clientId) => {
+    const client = clients.find(c => c.id === clientId);
+    return client?.name || '';
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -230,29 +359,29 @@ const Projects = ({ users }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 flex items-center">
-            <FolderKanban className="h-7 w-7 mr-2 text-indigo-600" />
-            Projects
-          </h1>
-          <p className="text-gray-500 mt-1">Manage projects with sub-tasks and templates</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center">
+          <FolderKanban className="h-8 w-8 text-blue-600 mr-3" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
+            <p className="text-sm text-gray-500">Manage projects and templates</p>
+          </div>
         </div>
         
         {isPartner() && (
           <div className="flex gap-2">
             <button
-              onClick={() => setShowTemplates(true)}
-              className="btn-secondary flex items-center"
-              data-testid="use-template-button"
+              onClick={() => { resetTemplateForm(); setShowCreateTemplate(true); }}
+              className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              data-testid="create-template-btn"
             >
-              <Copy className="h-4 w-4 mr-2" />
-              Use Template
+              <FileText className="h-4 w-4 mr-2" />
+              New Template
             </button>
             <button
               onClick={() => { resetProjectForm(); setShowCreateProject(true); }}
-              className="btn-primary flex items-center"
-              data-testid="create-project-button"
+              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              data-testid="create-project-btn"
             >
               <Plus className="h-4 w-4 mr-2" />
               New Project
@@ -261,337 +390,367 @@ const Projects = ({ users }) => {
         )}
       </div>
 
-      {/* Filters */}
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          <button
+            onClick={() => setActiveTab('projects')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'projects'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <FolderKanban className="h-4 w-4 inline mr-2" />
+            Projects ({projects.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('templates')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'templates'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <FileText className="h-4 w-4 inline mr-2" />
+            Templates ({templates.length})
+          </button>
+        </nav>
+      </div>
+
+      {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search projects..."
+            placeholder={`Search ${activeTab}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input pl-10 w-full"
-            data-testid="search-projects"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
+        {activeTab === 'projects' && (
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="form-input"
-            data-testid="status-filter"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Status</option>
-            {Object.entries(statusConfig).map(([value, config]) => (
-              <option key={value} value={value}>{config.label}</option>
-            ))}
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="on_hold">On Hold</option>
           </select>
-        </div>
+        )}
       </div>
 
-      {/* Projects List */}
-      <div className="space-y-4">
-        {filteredProjects.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <FolderKanban className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
-            <p className="text-gray-500">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Try adjusting your filters' 
-                : 'Create your first project to get started'}
-            </p>
-          </div>
-        ) : (
-          filteredProjects.map((project) => {
-            const isExpanded = expandedProjects.has(project.id);
-            const StatusIcon = statusConfig[project.status]?.icon || FileText;
-            
-            return (
-              <div key={project.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                {/* Project Header */}
-                <div 
-                  className="p-4 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
-                  onClick={() => toggleProjectExpand(project.id)}
+      {/* Projects Tab */}
+      {activeTab === 'projects' && (
+        <div className="grid gap-4">
+          {filteredProjects.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg border">
+              <FolderKanban className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900">No projects found</h3>
+              <p className="text-gray-500 mt-1">Create a new project to get started</p>
+            </div>
+          ) : (
+            filteredProjects.map(project => {
+              const status = statusConfig[project.status] || statusConfig.active;
+              const StatusIcon = status.icon;
+              
+              return (
+                <div
+                  key={project.id}
+                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center flex-1 min-w-0">
-                    <button className="mr-3 text-gray-400">
-                      {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                    </button>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-medium text-gray-900 truncate">{project.title}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig[project.status]?.color}`}>
-                          {statusConfig[project.status]?.label}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityConfig[project.priority]?.color}`}>
-                          {project.priority}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-medium text-gray-900">{project.name}</h3>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${status.color}`}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {status.label}
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                      {project.description && (
+                        <p className="text-sm text-gray-600 mb-3">{project.description}</p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                         {project.client_name && (
                           <span className="flex items-center">
-                            <FolderKanban className="h-3.5 w-3.5 mr-1" />
+                            <User className="h-4 w-4 mr-1" />
                             {project.client_name}
-                          </span>
-                        )}
-                        {project.assignee_name && (
-                          <span className="flex items-center">
-                            <User className="h-3.5 w-3.5 mr-1" />
-                            {project.assignee_name}
                           </span>
                         )}
                         {project.due_date && (
                           <span className="flex items-center">
-                            <Calendar className="h-3.5 w-3.5 mr-1" />
-                            {project.due_date}
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {new Date(project.due_date).toLocaleDateString()}
                           </span>
                         )}
+                        <span className="flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          {project.completed_tasks || 0}/{project.total_tasks || 0} tasks
+                        </span>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 ml-4">
-                    {/* Progress Bar */}
-                    <div className="w-32 hidden sm:block">
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                        <span>Progress</span>
-                        <span>{project.progress}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-indigo-600 rounded-full transition-all"
-                          style={{ width: `${project.progress}%` }}
-                        />
-                      </div>
+                      
+                      {/* Progress bar */}
+                      {project.total_tasks > 0 && (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <span>Progress</span>
+                            <span>{Math.round(project.progress || 0)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all"
+                              style={{ width: `${project.progress || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Sub-tasks count */}
-                    <span className="text-sm text-gray-500 whitespace-nowrap">
-                      {project.sub_tasks?.filter(st => st.status === 'completed').length || 0}/
-                      {project.sub_tasks?.length || 0} tasks
-                    </span>
-                    
-                    {/* Actions */}
-                    {isPartner() && (
+                    {project.can_edit && (
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuTrigger asChild>
                           <button className="p-1 hover:bg-gray-100 rounded">
                             <MoreVertical className="h-5 w-5 text-gray-400" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {(project.status === 'draft' || project.status === 'ready') && (
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProject(project);
-                                setShowAllocate(true);
-                              }}
-                            >
-                              <UserPlus className="h-4 w-4 mr-2" />
-                              Allocate
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem>
-                            <FileText className="h-4 w-4 mr-2" />
+                          <DropdownMenuItem onClick={() => handleViewProject(project.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
                             View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteProject(project.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
                   </div>
                 </div>
-                
-                {/* Expanded Sub-tasks */}
-                {isExpanded && project.sub_tasks && project.sub_tasks.length > 0 && (
-                  <div className="border-t border-gray-200 bg-gray-50 p-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Sub-tasks</h4>
-                    <div className="space-y-2">
-                      {project.sub_tasks.map((subtask) => (
-                        <div 
-                          key={subtask.id}
-                          className="flex items-center justify-between bg-white p-3 rounded border border-gray-200"
-                        >
-                          <div className="flex items-center flex-1">
-                            <button
-                              onClick={() => handleUpdateSubTask(
-                                project.id, 
-                                subtask.id, 
-                                { status: subtask.status === 'completed' ? 'pending' : 'completed' }
-                              )}
-                              className={`mr-3 ${
-                                subtask.status === 'completed' 
-                                  ? 'text-green-500' 
-                                  : 'text-gray-300 hover:text-gray-400'
-                              }`}
-                            >
-                              <CheckCircle className="h-5 w-5" />
-                            </button>
-                            <span className={subtask.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-700'}>
-                              {subtask.title}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-3 text-sm">
-                            <span className={`w-2 h-2 rounded-full ${priorityConfig[subtask.priority]?.dot}`} />
-                            {subtask.estimated_hours && (
-                              <span className="text-gray-500 flex items-center">
-                                <Clock className="h-3.5 w-3.5 mr-1" />
-                                {subtask.estimated_hours}h
-                              </span>
-                            )}
-                            {subtask.completed_by && (
-                              <span className="text-gray-400 text-xs">
-                                by {subtask.completed_by}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Templates Tab */}
+      {activeTab === 'templates' && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredTemplates.length === 0 ? (
+            <div className="col-span-full text-center py-12 bg-white rounded-lg border">
+              <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900">No templates found</h3>
+              <p className="text-gray-500 mt-1">Create a template to reuse project structures</p>
+            </div>
+          ) : (
+            filteredTemplates.map(template => (
+              <div
+                key={template.id}
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-medium text-gray-900">{template.name}</h3>
+                    {template.scope === 'global' && (
+                      <span className="text-xs text-purple-600">Global Template</span>
+                    )}
                   </div>
+                  
+                  {template.can_edit && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 hover:bg-gray-100 rounded">
+                          <MoreVertical className="h-5 w-5 text-gray-400" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+                
+                {template.description && (
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{template.description}</p>
                 )}
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">
+                    {template.tasks?.length || 0} tasks
+                  </span>
+                  
+                  <button
+                    onClick={() => {
+                      resetProjectForm();
+                      handleTemplateSelect(template);
+                      setShowCreateProject(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Use Template
+                  </button>
+                </div>
               </div>
-            );
-          })
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Create Project Modal */}
       <Dialog open={showCreateProject} onOpenChange={setShowCreateProject}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedTemplate ? `New Project from "${selectedTemplate.name}"` : 'Create New Project'}
-            </DialogTitle>
+            <DialogTitle>Create New Project</DialogTitle>
             <DialogDescription>
-              Create a project with sub-tasks. You can save it as draft or allocate directly.
+              Create a project with tasks. You can start from a template or define tasks directly.
             </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleCreateProject} className="space-y-4">
             {formError && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <div className="text-sm text-red-600">{formError}</div>
+                <p className="text-sm text-red-600">{formError}</p>
               </div>
             )}
             
+            {/* Project Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="form-label">Project Title *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name *</label>
                 <input
                   type="text"
-                  value={projectForm.title}
-                  onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+                  value={projectForm.name}
+                  onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
                   required
-                  className="form-input"
-                  placeholder="e.g., Tax Filing Q1 2026"
-                  data-testid="project-title-input"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter project name"
                 />
               </div>
               
               <div className="col-span-2">
-                <label className="form-label">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   value={projectForm.description}
                   onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                  className="form-input"
                   rows={2}
-                  placeholder="Project description..."
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Project description"
                 />
               </div>
               
               <div>
-                <label className="form-label">Client</label>
-                <input
-                  type="text"
-                  value={projectForm.client_name}
-                  onChange={(e) => setProjectForm({ ...projectForm, client_name: e.target.value })}
-                  className="form-input"
-                  placeholder="Client name"
-                />
-              </div>
-              
-              <div>
-                <label className="form-label">Category</label>
-                <input
-                  type="text"
-                  value={projectForm.category}
-                  onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
-                  className="form-input"
-                  placeholder="e.g., Tax, Audit"
-                />
-              </div>
-              
-              <div>
-                <label className="form-label">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
                 <select
-                  value={projectForm.priority}
-                  onChange={(e) => setProjectForm({ ...projectForm, priority: e.target.value })}
-                  className="form-input"
+                  value={projectForm.client_id}
+                  onChange={(e) => setProjectForm({ ...projectForm, client_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="">Select Client</option>
+                  {clients.map(client => (
+                    <option key={client.id} value={client.id}>{client.name}</option>
+                  ))}
                 </select>
               </div>
               
               <div>
-                <label className="form-label">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  value={projectForm.category}
+                  onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
                 <input
                   type="date"
                   value={projectForm.due_date}
                   onChange={(e) => setProjectForm({ ...projectForm, due_date: e.target.value })}
-                  className="form-input"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
               <div>
-                <label className="form-label">Estimated Hours</label>
-                <input
-                  type="number"
-                  value={projectForm.estimated_hours}
-                  onChange={(e) => setProjectForm({ ...projectForm, estimated_hours: e.target.value })}
-                  className="form-input"
-                  step="0.5"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <label className="form-label">Assign To (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Template (Optional)</label>
                 <select
-                  value={projectForm.assignee_id}
-                  onChange={(e) => setProjectForm({ ...projectForm, assignee_id: e.target.value })}
-                  className="form-input"
+                  value={projectForm.template_id}
+                  onChange={(e) => {
+                    const template = templates.find(t => t.id === e.target.value);
+                    if (template) {
+                      handleTemplateSelect(template);
+                    } else {
+                      setProjectForm({ ...projectForm, template_id: '', tasks: [] });
+                    }
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Save as Draft</option>
-                  {users?.filter(u => u.active).map(user => (
-                    <option key={user.id} value={user.id}>{user.name}</option>
+                  <option value="">Start from scratch</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.tasks?.length || 0} tasks)</option>
                   ))}
                 </select>
               </div>
             </div>
             
-            {/* Sub-tasks */}
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Sub-tasks</h4>
+            {/* Tasks Section */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Tasks</h4>
               
-              {/* Existing sub-tasks */}
-              {projectForm.sub_tasks.length > 0 && (
-                <div className="space-y-2 mb-4">
-                  {projectForm.sub_tasks.map((st, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
-                      <span className="flex-1 text-sm">{st.title}</span>
-                      <span className="text-xs text-gray-500">{st.estimated_hours}h</span>
-                      <span className={`w-2 h-2 rounded-full ${priorityConfig[st.priority]?.dot}`} />
+              {/* Existing tasks */}
+              {projectForm.tasks.length > 0 && (
+                <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                  {projectForm.tasks.map((task, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">{task.title}</span>
+                        {task.assignee_id && (
+                          <span className="text-xs text-gray-500 ml-2">
+                            → {users.find(u => u.id === task.assignee_id)?.name || 'Unknown'}
+                          </span>
+                        )}
+                      </div>
+                      <select
+                        value={task.assignee_id}
+                        onChange={(e) => {
+                          const newTasks = [...projectForm.tasks];
+                          newTasks[idx].assignee_id = e.target.value;
+                          setProjectForm({ ...projectForm, tasks: newTasks });
+                        }}
+                        className="text-xs px-2 py-1 border rounded"
+                      >
+                        <option value="">Assign to...</option>
+                        {users.map(user => (
+                          <option key={user.id} value={user.id}>{user.name}</option>
+                        ))}
+                      </select>
                       <button
                         type="button"
-                        onClick={() => removeSubTask(index)}
+                        onClick={() => removeTaskFromForm(idx)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <XCircle className="h-4 w-4" />
@@ -601,28 +760,182 @@ const Projects = ({ users }) => {
                 </div>
               )}
               
-              {/* Add new sub-task */}
+              {/* Add new task */}
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={newSubTask.title}
-                  onChange={(e) => setNewSubTask({ ...newSubTask, title: e.target.value })}
-                  className="form-input flex-1"
-                  placeholder="Sub-task title"
-                />
-                <input
-                  type="number"
-                  value={newSubTask.estimated_hours}
-                  onChange={(e) => setNewSubTask({ ...newSubTask, estimated_hours: e.target.value })}
-                  className="form-input w-20"
-                  placeholder="Hours"
-                  step="0.5"
-                  min="0"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  placeholder="Task title"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <select
-                  value={newSubTask.priority}
-                  onChange={(e) => setNewSubTask({ ...newSubTask, priority: e.target.value })}
-                  className="form-input w-24"
+                  value={newTask.assignee_id}
+                  onChange={(e) => setNewTask({ ...newTask, assignee_id: e.target.value })}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Assign to</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={addTaskToForm}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Save as Template Option */}
+            <div className="border-t pt-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={projectForm.save_as_template}
+                  onChange={(e) => setProjectForm({ ...projectForm, save_as_template: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Save as template for future use</span>
+              </label>
+              
+              {projectForm.save_as_template && (
+                <input
+                  type="text"
+                  value={projectForm.template_name}
+                  onChange={(e) => setProjectForm({ ...projectForm, template_name: e.target.value })}
+                  placeholder="Template name (optional)"
+                  className="mt-2 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+            </div>
+            
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setShowCreateProject(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              >
+                {formLoading ? 'Creating...' : 'Create Project'}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Template Modal */}
+      <Dialog open={showCreateTemplate} onOpenChange={setShowCreateTemplate}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Project Template</DialogTitle>
+            <DialogDescription>
+              Define task blueprints that can be reused across projects.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateTemplate} className="space-y-4">
+            {formError && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{formError}</p>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Template Name *</label>
+              <input
+                type="text"
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                required
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Category</label>
+                <select
+                  value={templateForm.category}
+                  onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Client</label>
+                <select
+                  value={templateForm.client_id}
+                  onChange={(e) => setTemplateForm({ ...templateForm, client_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Client</option>
+                  {clients.map(client => (
+                    <option key={client.id} value={client.id}>{client.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            {/* Tasks */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Task Blueprints</h4>
+              
+              {templateForm.tasks.length > 0 && (
+                <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                  {templateForm.tasks.map((task, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
+                      <span className="flex-1 text-sm">{task.title}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${priorityConfig[task.priority]?.color || 'bg-gray-100'}`}>
+                        {task.priority}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTaskFromTemplateForm(idx)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  placeholder="Task title"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                  className="px-3 py-2 border rounded-lg text-sm"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -630,8 +943,8 @@ const Projects = ({ users }) => {
                 </select>
                 <button
                   type="button"
-                  onClick={addSubTask}
-                  className="btn-secondary"
+                  onClick={addTaskToTemplateForm}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -641,110 +954,89 @@ const Projects = ({ users }) => {
             <DialogFooter>
               <button
                 type="button"
-                onClick={() => { setShowCreateProject(false); resetProjectForm(); }}
-                className="btn-secondary"
+                onClick={() => setShowCreateTemplate(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={formLoading}
-                className="btn-primary"
-                data-testid="submit-create-project"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
               >
-                {formLoading ? 'Creating...' : (projectForm.assignee_id ? 'Create & Allocate' : 'Save as Draft')}
+                {formLoading ? 'Creating...' : 'Create Template'}
               </button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Templates Modal */}
-      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
-        <DialogContent className="sm:max-w-xl">
+      {/* Project Detail Modal */}
+      <Dialog open={showProjectDetail} onOpenChange={setShowProjectDetail}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Project Templates</DialogTitle>
+            <DialogTitle>{selectedProject?.name}</DialogTitle>
             <DialogDescription>
-              Select a template to create a new project
+              {selectedProject?.description || 'Project details and tasks'}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {templates.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No templates available. Create one to reuse project structures.
+          {selectedProject && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Client:</span>
+                  <span className="ml-2 font-medium">{selectedProject.client_name || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Category:</span>
+                  <span className="ml-2 font-medium">{selectedProject.category || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Due Date:</span>
+                  <span className="ml-2 font-medium">
+                    {selectedProject.due_date ? new Date(selectedProject.due_date).toLocaleDateString() : '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Progress:</span>
+                  <span className="ml-2 font-medium">
+                    {selectedProject.completed_tasks}/{selectedProject.total_tasks} tasks ({Math.round(selectedProject.progress || 0)}%)
+                  </span>
+                </div>
               </div>
-            ) : (
-              templates.map((template) => (
-                <div
-                  key={template.id}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 cursor-pointer transition-colors"
-                  onClick={() => handleUseTemplate(template)}
-                  data-testid={`template-${template.id}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900">{template.name}</h4>
-                      {template.description && (
-                        <p className="text-sm text-gray-500 mt-1">{template.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        {template.category && (
-                          <span className="px-2 py-0.5 bg-gray-100 rounded">{template.category}</span>
-                        )}
-                        <span>{template.sub_tasks?.length || 0} sub-tasks</span>
-                        {template.estimated_hours && (
-                          <span className="flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {template.estimated_hours}h
+              
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3">Tasks</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {selectedProject.tasks?.map(task => (
+                    <div
+                      key={task.id}
+                      className={`p-3 rounded-lg border ${
+                        task.status === 'completed' ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {task.status === 'completed' ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-gray-400" />
+                          )}
+                          <span className={task.status === 'completed' ? 'line-through text-gray-500' : ''}>
+                            {task.title}
                           </span>
-                        )}
-                        <span className={`px-2 py-0.5 rounded text-xs ${
-                          template.scope === 'global' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {template.scope === 'global' ? 'Global' : 'Custom'}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {task.assignee_name || 'Unassigned'}
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                  </div>
+                  ))}
                 </div>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Allocate Modal */}
-      <Dialog open={showAllocate} onOpenChange={setShowAllocate}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Allocate Project</DialogTitle>
-            <DialogDescription>
-              Assign "{selectedProject?.title}" to a team member
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {users?.filter(u => u.active).map((user) => (
-              <div
-                key={user.id}
-                className="p-3 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 cursor-pointer transition-colors flex items-center justify-between"
-                onClick={() => handleAllocate(selectedProject?.id, user.id)}
-              >
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-medium mr-3">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">{user.name}</div>
-                    <div className="text-xs text-gray-500">{user.role}</div>
-                  </div>
-                </div>
-                <UserPlus className="h-4 w-4 text-gray-400" />
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
