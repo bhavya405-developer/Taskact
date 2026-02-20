@@ -641,6 +641,10 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditProject(project.id)}>
+                            <Edit2 className="h-4 w-4 mr-2" />
+                            Edit Project
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => handleDeleteProject(project.id)}
