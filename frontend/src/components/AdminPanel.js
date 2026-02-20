@@ -387,22 +387,22 @@ const AdminPanel = () => {
       {activeTab === 'templates' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTemplates.filter(t => t.scope === 'global').map((template) => (
-            <div key={template.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <div key={template.id} className="bg-slate-800 rounded-lg border border-slate-700 p-4 hover:bg-slate-750 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{template.name}</h3>
+                  <h3 className="font-medium text-white">{template.name}</h3>
                   {template.description && (
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{template.description}</p>
+                    <p className="text-sm text-slate-400 mt-1 line-clamp-2">{template.description}</p>
                   )}
                 </div>
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium ml-2">
+                <span className="px-2 py-0.5 bg-indigo-900/50 text-indigo-300 rounded text-xs font-medium ml-2">
                   Global
                 </span>
               </div>
               
-              <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+              <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
                 {template.category && (
-                  <span className="px-2 py-0.5 bg-gray-100 rounded">{template.category}</span>
+                  <span className="px-2 py-0.5 bg-slate-700 rounded">{template.category}</span>
                 )}
                 <span className="flex items-center">
                   <FileText className="h-3 w-3 mr-1" />
@@ -416,10 +416,10 @@ const AdminPanel = () => {
                 )}
               </div>
               
-              <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="mt-4 pt-3 border-t border-slate-700">
                 <button
                   onClick={() => handleDeleteTemplate(template.id)}
-                  className="text-red-600 hover:text-red-700 text-sm flex items-center"
+                  className="text-red-400 hover:text-red-300 text-sm flex items-center transition-colors"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Delete
@@ -429,10 +429,10 @@ const AdminPanel = () => {
           ))}
           
           {filteredTemplates.filter(t => t.scope === 'global').length === 0 && (
-            <div className="col-span-full text-center py-12 bg-white rounded-lg border border-gray-200">
-              <FolderKanban className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No global templates</h3>
-              <p className="text-gray-500">Create a global template to make it available for all tenants.</p>
+            <div className="col-span-full text-center py-12 bg-slate-800 rounded-lg border border-slate-700">
+              <FolderKanban className="h-12 w-12 mx-auto text-slate-500 mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">No global templates</h3>
+              <p className="text-slate-400">Create a global template to make it available for all tenants.</p>
             </div>
           )}
         </div>
