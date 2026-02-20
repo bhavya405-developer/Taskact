@@ -53,13 +53,16 @@ const Navigation = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
+  // Check if user is super admin (logged in with TASKACT1)
+  const isAdminTenant = tenant?.code === 'TASKACT1';
+  
+  // Regular nav items (not for super admin)
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: BarChart3 },
     { path: '/tasks', name: 'Tasks', icon: CheckSquare },
     { path: '/projects', name: 'Projects', icon: FolderKanban },
     { path: '/timesheet', name: 'Timesheet', icon: Timer },
-    { path: '/attendance', name: 'Attendance', icon: Clock },
-    { path: '/create-task', name: 'Create Task', icon: Plus }
+    { path: '/attendance', name: 'Attendance', icon: Clock }
   ];
 
   // Masters dropdown items (Partner only)
