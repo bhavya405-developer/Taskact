@@ -629,16 +629,20 @@ async def send_otp_email(email: str, otp: str, user_name: str = "User") -> bool:
         logger.error(f"Failed to send OTP email to {email}: {str(e)}")
         return False
 
-async def update_overdue_tasks():
+async def update_overdue_tasks(tenant_id: str = None):
     """Automatically update tasks to overdue status if past due date"""
     current_time = datetime.now(timezone.utc)
     
-    # Only check PENDING tasks for overdue - ON_HOLD tasks should stay on hold
-    # regardless of due date (user explicitly put them on hold)
-    tasks = await db.tasks.find({
+    # Build query - filter by tenant if provided
+    query = {
         "status": TaskStatus.PENDING,
         "due_date": {"$ne": None}
-    }).to_list(length=5000)
+    }
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    # Only check PENDING tasks for overdue - ON_HOLD tasks should stay on hold
+    tasks = await db.tasks.find(query).to_list(length=5000)
     
     # Collect bulk operations for overdue tasks
     bulk_operations = []
