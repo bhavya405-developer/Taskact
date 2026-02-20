@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 
 # Base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://team-ops-dashboard.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://taskact-preview.preview.emergentagent.com').rstrip('/')
 
 # Test credentials - Multi-tenant login
 COMPANY_CODE = "SCO1"
