@@ -156,6 +156,12 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
         throw new Error('At least one task is required');
       }
 
+      // Validate each task has at least a title and assignee
+      const invalidTasks = projectForm.tasks.filter(t => !t.title || !t.assignee_id);
+      if (invalidTasks.length > 0) {
+        throw new Error('Each task must have a title and assignee');
+      }
+
       const payload = {
         name: projectForm.name,
         description: projectForm.description,
@@ -167,6 +173,8 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
         save_as_template: projectForm.save_as_template,
         template_name: projectForm.template_name || null
       };
+
+      console.log('Creating project with payload:', payload);  // Debug log
 
       await axios.post(`${API_URL}/api/projects`, payload);
       
