@@ -914,9 +914,11 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                 <button
                   type="button"
                   onClick={addTaskToForm}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                  disabled={!newTask.title}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   <Plus className="h-4 w-4" />
+                  <span className="text-sm">Add</span>
                 </button>
               </div>
             </div>
