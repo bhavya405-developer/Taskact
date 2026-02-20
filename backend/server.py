@@ -125,6 +125,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: UserRole
+    tenant_id: Optional[str] = None  # For multi-tenancy
     phone: Optional[str] = None
     department: Optional[str] = None
     hire_date: Optional[datetime] = None
