@@ -1439,6 +1439,148 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Template Modal */}
+      <Dialog open={showEditTemplate} onOpenChange={(open) => { setShowEditTemplate(open); if (!open) { setEditingTemplateId(null); resetTemplateForm(); } }}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Template</DialogTitle>
+            <DialogDescription>
+              Update template details and task blueprints.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleUpdateTemplate} className="space-y-4">
+            {formError && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{formError}</p>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Template Name *</label>
+              <input
+                type="text"
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                required
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                rows={2}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Category</label>
+                <select
+                  value={templateForm.category}
+                  onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Category</option>
+                  {effectiveCategories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Default Client</label>
+                <select
+                  value={templateForm.client_id}
+                  onChange={(e) => setTemplateForm({ ...templateForm, client_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Client</option>
+                  {effectiveClients.map(client => (
+                    <option key={client.id} value={client.id}>{client.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            {/* Tasks */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Task Blueprints</h4>
+              
+              {templateForm.tasks.length > 0 && (
+                <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                  {templateForm.tasks.map((task, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
+                      <span className="flex-1 text-sm">{task.title}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded ${priorityConfig[task.priority]?.color || 'bg-gray-100'}`}>
+                        {task.priority}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTaskFromTemplateForm(idx)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Add task */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTaskToTemplateForm(); } }}
+                  placeholder="Task title"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={addTaskToTemplateForm}
+                  disabled={!newTask.title}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => { setShowEditTemplate(false); setEditingTemplateId(null); resetTemplateForm(); }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+              >
+                {formLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
