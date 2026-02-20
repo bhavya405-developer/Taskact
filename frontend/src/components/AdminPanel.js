@@ -795,6 +795,57 @@ const AdminPanel = () => {
               </div>
             </div>
             
+            {/* Partner Details Section */}
+            <div className="border-t border-slate-700 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-white mb-3 flex items-center">
+                <Users className="h-4 w-4 mr-2 text-indigo-400" />
+                Partner Account (Required)
+              </h4>
+              <p className="text-xs text-slate-400 mb-3">A partner login will be created automatically for this tenant.</p>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Partner Name *</label>
+                  <input
+                    type="text"
+                    value={newTenant.partner_name}
+                    onChange={(e) => setNewTenant({ ...newTenant, partner_name: e.target.value })}
+                    required
+                    className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g., John Smith"
+                    data-testid="new-tenant-partner-name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Partner Email *</label>
+                  <input
+                    type="email"
+                    value={newTenant.partner_email}
+                    onChange={(e) => setNewTenant({ ...newTenant, partner_email: e.target.value })}
+                    required
+                    className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="partner@company.com"
+                    data-testid="new-tenant-partner-email"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Partner Password *</label>
+                  <input
+                    type="password"
+                    value={newTenant.partner_password}
+                    onChange={(e) => setNewTenant({ ...newTenant, partner_password: e.target.value })}
+                    required
+                    minLength={6}
+                    className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Min 6 characters"
+                    data-testid="new-tenant-partner-password"
+                  />
+                </div>
+              </div>
+            </div>
+            
             <DialogFooter>
               <button
                 type="button"
@@ -813,6 +864,121 @@ const AdminPanel = () => {
               </button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tenant Users / Impersonation Modal */}
+      <Dialog open={showTenantUsers} onOpenChange={setShowTenantUsers}>
+        <DialogContent className="sm:max-w-2xl bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">Users - {selectedTenant?.name}</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Company Code: {selectedTenant?.code}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-96 overflow-y-auto">
+            <table className="w-full">
+              <thead className="bg-slate-700/50 sticky top-0">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-300">Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-300">Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-300">Role</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-300">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {tenantUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-4 py-3 text-sm text-white">{user.name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-300">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        user.role === 'partner' ? 'bg-purple-900/50 text-purple-300' :
+                        user.role === 'associate' ? 'bg-blue-900/50 text-blue-300' :
+                        'bg-slate-700 text-slate-300'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        user.active ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
+                      }`}>
+                        {user.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {user.active && (
+                        <button
+                          onClick={() => initiateImpersonate(user)}
+                          className="text-indigo-400 hover:text-indigo-300 text-sm flex items-center"
+                          data-testid={`impersonate-${user.id}`}
+                        >
+                          <UserCog className="h-4 w-4 mr-1" />
+                          Impersonate
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {tenantUsers.length === 0 && (
+              <div className="text-center py-8 text-slate-400">
+                No users in this tenant
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Impersonation Confirmation Modal */}
+      <Dialog open={showImpersonateConfirm} onOpenChange={setShowImpersonateConfirm}>
+        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center">
+              <AlertTriangle className="h-5 w-5 text-amber-400 mr-2" />
+              Confirm Impersonation
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              You are about to impersonate a user for support purposes.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-slate-700/50 rounded-lg p-4 my-4">
+            <p className="text-sm text-slate-300">
+              <strong>User:</strong> {userToImpersonate?.name}
+            </p>
+            <p className="text-sm text-slate-300">
+              <strong>Email:</strong> {userToImpersonate?.email}
+            </p>
+            <p className="text-sm text-slate-300">
+              <strong>Tenant:</strong> {selectedTenant?.name}
+            </p>
+          </div>
+          
+          <p className="text-sm text-amber-300">
+            This action will be logged for audit purposes.
+          </p>
+          
+          <DialogFooter>
+            <button
+              onClick={() => setShowImpersonateConfirm(false)}
+              className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleImpersonate}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+              data-testid="confirm-impersonate"
+            >
+              Impersonate User
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
