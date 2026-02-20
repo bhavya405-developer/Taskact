@@ -252,6 +252,91 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
     }
   };
 
+  const handleEditProject = async (projectId) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/projects/${projectId}`);
+      const project = response.data;
+      
+      // Populate the form with project data
+      setProjectForm({
+        name: project.name || '',
+        description: project.description || '',
+        client_id: project.client_id || '',
+        category: project.category || '',
+        due_date: project.due_date ? project.due_date.split('T')[0] : '',
+        template_id: '',
+        save_as_template: false,
+        template_name: '',
+        tasks: project.tasks?.map(t => ({
+          id: t.id,  // Keep task ID for updates
+          title: t.title,
+          description: t.description || '',
+          priority: t.priority || 'medium',
+          category: t.category || '',
+          assignee_id: t.assignee_id || '',
+          due_date: t.due_date ? t.due_date.split('T')[0] : '',
+          status: t.status || 'pending'
+        })) || []
+      });
+      
+      setEditingProjectId(projectId);
+      setShowEditProject(true);
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to load project for editing');
+    }
+  };
+
+  const handleUpdateProject = async (e) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError('');
+
+    try {
+      // Validate
+      if (!projectForm.name) {
+        throw new Error('Project name is required');
+      }
+      if (!projectForm.due_date) {
+        throw new Error('Due date is required');
+      }
+
+      // Update project details
+      const projectPayload = {
+        name: projectForm.name,
+        description: projectForm.description,
+        client_id: projectForm.client_id || null,
+        category: projectForm.category || null,
+        due_date: projectForm.due_date
+      };
+
+      await axios.put(`${API_URL}/api/projects/${editingProjectId}`, projectPayload);
+
+      // Handle tasks - add new tasks that don't have an ID
+      const newTasks = projectForm.tasks.filter(t => !t.id);
+      for (const task of newTasks) {
+        if (task.title && task.assignee_id) {
+          await axios.post(`${API_URL}/api/projects/${editingProjectId}/tasks`, {
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            category: task.category || projectForm.category,
+            assignee_id: task.assignee_id,
+            due_date: task.due_date || projectForm.due_date
+          });
+        }
+      }
+      
+      setShowEditProject(false);
+      setEditingProjectId(null);
+      resetProjectForm();
+      fetchProjects();
+    } catch (error) {
+      setFormError(error.response?.data?.detail || error.message || 'Failed to update project');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const addTaskToForm = () => {
     if (!newTask.title) return;
     
