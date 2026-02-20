@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Building2, Users, ClipboardList, Plus, Search, Edit2,
   ChevronRight, X, Check, Save, FolderKanban, FileText,
-  Clock, Trash2, Shield, MoreVertical, Power, AlertTriangle
+  Clock, Trash2, Shield, MoreVertical, Power, AlertTriangle,
+  UserCog, Eye
 } from 'lucide-react';
 import {
   Dialog,
@@ -25,7 +26,7 @@ import {
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const AdminPanel = () => {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, impersonateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('tenants');
   const [tenants, setTenants] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -38,7 +39,11 @@ const AdminPanel = () => {
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [showTenantUsers, setShowTenantUsers] = useState(false);
+  const [showImpersonateConfirm, setShowImpersonateConfirm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
+  const [tenantUsers, setTenantUsers] = useState([]);
+  const [userToImpersonate, setUserToImpersonate] = useState(null);
   
   // Form states
   const [tenantForm, setTenantForm] = useState({
@@ -49,14 +54,18 @@ const AdminPanel = () => {
     max_users: 50
   });
   
-  // New tenant form
+  // New tenant form with partner details
   const [newTenant, setNewTenant] = useState({
     name: '',
     code: '',
     contact_email: '',
     contact_phone: '',
     plan: 'standard',
-    max_users: 50
+    max_users: 50,
+    // Partner details
+    partner_name: '',
+    partner_email: '',
+    partner_password: ''
   });
   const [templateForm, setTemplateForm] = useState({
     name: '',
