@@ -848,17 +848,20 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
             <div className="border-t pt-4">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Tasks</h4>
               
-              {/* Existing tasks */}
+              {/* Added tasks */}
               {projectForm.tasks.length > 0 && (
                 <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
                   {projectForm.tasks.map((task, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200">
                       <div className="flex-1">
                         <span className="text-sm font-medium">{task.title}</span>
                         {task.assignee_id && (
                           <span className="text-xs text-gray-500 ml-2">
                             → {users.find(u => u.id === task.assignee_id)?.name || 'Unknown'}
                           </span>
+                        )}
+                        {!task.assignee_id && (
+                          <span className="text-xs text-red-500 ml-2">⚠ No assignee</span>
                         )}
                       </div>
                       <select
@@ -887,12 +890,14 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                 </div>
               )}
               
-              {/* Add new task */}
+              {/* Add new task - with helpful hint */}
+              <p className="text-xs text-gray-500 mb-2">Enter task details and click + to add:</p>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTaskToForm(); } }}
                   placeholder="Task title"
                   className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
