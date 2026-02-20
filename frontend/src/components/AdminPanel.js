@@ -312,51 +312,51 @@ const AdminPanel = () => {
 
       {/* Content */}
       {activeTab === 'tenants' && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-700">
+            <thead className="bg-slate-700/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Users</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Company</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Code</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Plan</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Users</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-700">
               {filteredTenants.map((tenant) => (
-                <tr key={tenant.id} className="hover:bg-gray-50">
+                <tr key={tenant.id} className="hover:bg-slate-700/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <Building2 className="h-5 w-5 text-gray-400 mr-3" />
+                      <Building2 className="h-5 w-5 text-slate-400 mr-3" />
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
-                        <div className="text-xs text-gray-500">{tenant.contact_email || '-'}</div>
+                        <div className="text-sm font-medium text-white">{tenant.name}</div>
+                        <div className="text-xs text-slate-400">{tenant.contact_email || '-'}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm font-mono">
+                    <span className="px-2 py-1 bg-indigo-900/50 text-indigo-300 rounded text-sm font-mono">
                       {tenant.code}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      tenant.plan === 'premium' ? 'bg-amber-100 text-amber-700' :
-                      tenant.plan === 'enterprise' ? 'bg-purple-100 text-purple-700' :
-                      tenant.plan === 'standard' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
+                      tenant.plan === 'premium' ? 'bg-amber-900/50 text-amber-300' :
+                      tenant.plan === 'enterprise' ? 'bg-purple-900/50 text-purple-300' :
+                      tenant.plan === 'standard' ? 'bg-blue-900/50 text-blue-300' :
+                      'bg-slate-700 text-slate-300'
                     }`}>
                       {tenant.plan?.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-6 py-4 text-sm text-slate-300">
                     {tenant.user_count || 0} / {tenant.max_users}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      tenant.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      tenant.active ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
                     }`}>
                       {tenant.active ? 'Active' : 'Inactive'}
                     </span>
@@ -364,7 +364,7 @@ const AdminPanel = () => {
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleEditTenant(tenant)}
-                      className="text-indigo-600 hover:text-indigo-900 flex items-center text-sm"
+                      className="text-indigo-400 hover:text-indigo-300 flex items-center text-sm transition-colors"
                       data-testid={`edit-tenant-${tenant.code}`}
                     >
                       <Edit2 className="h-4 w-4 mr-1" />
@@ -377,7 +377,7 @@ const AdminPanel = () => {
           </table>
           
           {filteredTenants.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-400">
               No tenants found
             </div>
           )}
