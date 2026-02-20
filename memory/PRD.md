@@ -138,15 +138,22 @@
 2. **Project Templates System**
    - Separate `project_templates` collection for storing templates
    - Two scopes: `global` (super-admin created) and `tenant` (partner created)
-   - Partners can only edit/delete their own tenant's templates
+   - Partners can edit/delete their own tenant's templates via "Edit Template" dropdown option
+   - Edit Template modal allows updating name, description, category, client, and tasks
 
 3. **Frontend Improvements**
    - Projects.js now fetches clients and categories internally
    - Client dropdown shows 36+ clients, Category dropdown shows 16+ categories
    - "Save as Template" option when creating projects
    - Permission-based UI (can_edit, can_delete flags)
+   - **Edit Project** option for partners to modify project details and add tasks
+   - **View Details** option for associates (non-partners) to see project details (view-only)
 
-4. **Data Model Updates**
+4. **Bug Fixes in This Session**
+   - Fixed template-to-project task creation: ALL template tasks now created (was only first one)
+   - Made TaskAllocation.assignee_id optional for unassigned template tasks
+
+5. **Data Model Updates**
    - Task model made backward-compatible (optional creator_id, project_id fields)
    - Project model includes client_id, category, due_date
 
