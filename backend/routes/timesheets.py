@@ -286,15 +286,19 @@ async def get_team_timesheet(
     grand_total_tasks = 0
     
     for user in users:
-        # Get completed tasks for this user
-        completed_tasks = await db.tasks.find({
+        # Get completed tasks for this user (filtered by tenant_id)
+        task_query = {
             "assignee_id": user["id"],
             "status": TaskStatus.COMPLETED,
             "completed_at": {
                 "$gte": start_date.isoformat(),
                 "$lt": end_date.isoformat()
             }
-        }).to_list(length=500)
+        }
+        if current_user.tenant_id:
+            task_query["tenant_id"] = current_user.tenant_id
+        
+        completed_tasks = await db.tasks.find(task_query).to_list(length=500)
         
         total_hours = sum(t.get("actual_hours", 0) or 0 for t in completed_tasks)
         task_count = len(completed_tasks)
