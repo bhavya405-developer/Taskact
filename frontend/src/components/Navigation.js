@@ -188,8 +188,8 @@ const Navigation = () => {
                 );
               })}
               
-              {/* Masters Dropdown (Partner only, not for super admin) */}
-              {isPartner() && !isSuperAdmin() && (
+              {/* Masters Dropdown - Available for Partners AND Super Admin */}
+              {(isPartner() || isSuperAdmin()) && (
                 <div 
                   className="relative"
                   onMouseEnter={handleMastersMouseEnter}
