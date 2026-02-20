@@ -96,11 +96,11 @@ class ProjectTemplateUpdate(BaseModel):
 
 class TaskAllocation(BaseModel):
     """Task allocation when creating/allocating a project"""
-    title: str
+    title: Optional[str] = None  # Optional - will use template title if from template
     description: Optional[str] = None
     priority: str = "medium"
     category: Optional[str] = None
-    assignee_id: str
+    assignee_id: Optional[str] = None  # Optional - can be assigned later
     due_date: Optional[str] = None
 
 
