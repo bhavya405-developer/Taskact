@@ -639,60 +639,60 @@ const AdminPanel = () => {
 
       {/* Create Global Template Modal */}
       <Dialog open={showCreateTemplate} onOpenChange={setShowCreateTemplate}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700 text-white">
           <DialogHeader>
-            <DialogTitle>Create Global Template</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Create Global Template</DialogTitle>
+            <DialogDescription className="text-slate-400">
               This template will be available for all tenants
             </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleCreateGlobalTemplate} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <div className="text-sm text-red-600">{formError}</div>
+              <div className="bg-red-900/50 border border-red-500 rounded-md p-3">
+                <div className="text-sm text-red-300">{formError}</div>
               </div>
             )}
             
             <div>
-              <label className="form-label">Template Name *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Template Name *</label>
               <input
                 type="text"
                 value={templateForm.name}
                 onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
                 required
-                className="form-input"
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             
             <div>
-              <label className="form-label">Description</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
               <textarea
                 value={templateForm.description}
                 onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-                className="form-input"
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 rows={2}
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Category</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
                 <input
                   type="text"
                   value={templateForm.category}
                   onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
-                  className="form-input"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               
               <div>
-                <label className="form-label">Estimated Hours</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Hours</label>
                 <input
                   type="number"
                   value={templateForm.estimated_hours}
                   onChange={(e) => setTemplateForm({ ...templateForm, estimated_hours: e.target.value })}
-                  className="form-input"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   step="0.5"
                   min="0"
                 />
@@ -700,19 +700,19 @@ const AdminPanel = () => {
             </div>
             
             {/* Sub-tasks */}
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Sub-tasks</h4>
+            <div className="border-t border-slate-700 pt-4">
+              <h4 className="text-sm font-medium text-slate-300 mb-3">Sub-tasks</h4>
               
               {templateForm.sub_tasks.length > 0 && (
                 <div className="space-y-2 mb-4">
                   {templateForm.sub_tasks.map((st, index) => (
-                    <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
-                      <span className="flex-1 text-sm">{st.title}</span>
-                      <span className="text-xs text-gray-500">{st.estimated_hours}h</span>
+                    <div key={index} className="flex items-center gap-2 bg-slate-700 p-2 rounded-lg">
+                      <span className="flex-1 text-sm text-white">{st.title}</span>
+                      <span className="text-xs text-slate-400">{st.estimated_hours}h</span>
                       <button
                         type="button"
                         onClick={() => removeSubTask(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-400 hover:text-red-300"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -726,14 +726,14 @@ const AdminPanel = () => {
                   type="text"
                   value={newSubTask.title}
                   onChange={(e) => setNewSubTask({ ...newSubTask, title: e.target.value })}
-                  className="form-input flex-1"
+                  className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Sub-task title"
                 />
                 <input
                   type="number"
                   value={newSubTask.estimated_hours}
                   onChange={(e) => setNewSubTask({ ...newSubTask, estimated_hours: e.target.value })}
-                  className="form-input w-20"
+                  className="w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Hours"
                   step="0.5"
                   min="0"
@@ -741,7 +741,7 @@ const AdminPanel = () => {
                 <select
                   value={newSubTask.priority}
                   onChange={(e) => setNewSubTask({ ...newSubTask, priority: e.target.value })}
-                  className="form-input w-24"
+                  className="w-24 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -750,9 +750,9 @@ const AdminPanel = () => {
                 <button
                   type="button"
                   onClick={addSubTask}
-                  className="btn-secondary"
+                  className="px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 text-white" />
                 </button>
               </div>
             </div>
@@ -761,14 +761,14 @@ const AdminPanel = () => {
               <button
                 type="button"
                 onClick={() => setShowCreateTemplate(false)}
-                className="btn-secondary"
+                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={formLoading}
-                className="btn-primary"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
               >
                 {formLoading ? 'Creating...' : 'Create Template'}
               </button>
