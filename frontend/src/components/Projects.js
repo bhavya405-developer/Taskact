@@ -770,6 +770,11 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditTemplate(template)}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit Template
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDeleteTemplate(template.id)}
                           className="text-red-600"
