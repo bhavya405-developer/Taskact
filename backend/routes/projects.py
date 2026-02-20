@@ -434,8 +434,15 @@ async def create_project(
                     "due_date": alloc.due_date or project_data.due_date
                 })
             else:
-                # No allocation provided for this task - skip or use defaults
-                pass
+                # No allocation provided - create task with defaults from template
+                task_definitions.append({
+                    "title": task_def.get("title"),
+                    "description": task_def.get("description"),
+                    "priority": task_def.get("priority", "medium"),
+                    "category": task_def.get("category") or project_data.category,
+                    "assignee_id": None,  # Unassigned - can be assigned later
+                    "due_date": project_data.due_date
+                })
     else:
         # Direct task creation
         for task in project_data.tasks:
