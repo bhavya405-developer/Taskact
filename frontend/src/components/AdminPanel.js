@@ -440,59 +440,59 @@ const AdminPanel = () => {
 
       {/* Edit Tenant Modal */}
       <Dialog open={showEditTenant} onOpenChange={setShowEditTenant}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-white">
           <DialogHeader>
-            <DialogTitle>Edit Tenant</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Edit Tenant</DialogTitle>
+            <DialogDescription className="text-slate-400">
               Update tenant information for {selectedTenant?.name}
             </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSaveTenant} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <div className="text-sm text-red-600">{formError}</div>
+              <div className="bg-red-900/50 border border-red-500 rounded-md p-3">
+                <div className="text-sm text-red-300">{formError}</div>
               </div>
             )}
             
             <div>
-              <label className="form-label">Company Name *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Company Name *</label>
               <input
                 type="text"
                 value={tenantForm.name}
                 onChange={(e) => setTenantForm({ ...tenantForm, name: e.target.value })}
                 required
-                className="form-input"
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             
             <div>
-              <label className="form-label">Contact Email</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Contact Email</label>
               <input
                 type="email"
                 value={tenantForm.contact_email}
                 onChange={(e) => setTenantForm({ ...tenantForm, contact_email: e.target.value })}
-                className="form-input"
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             
             <div>
-              <label className="form-label">Contact Phone</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Contact Phone</label>
               <input
                 type="text"
                 value={tenantForm.contact_phone}
                 onChange={(e) => setTenantForm({ ...tenantForm, contact_phone: e.target.value })}
-                className="form-input"
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Plan</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Plan</label>
                 <select
                   value={tenantForm.plan}
                   onChange={(e) => setTenantForm({ ...tenantForm, plan: e.target.value })}
-                  className="form-input"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="free">Free</option>
                   <option value="standard">Standard</option>
@@ -502,13 +502,13 @@ const AdminPanel = () => {
               </div>
               
               <div>
-                <label className="form-label">Max Users</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Max Users</label>
                 <input
                   type="number"
                   value={tenantForm.max_users}
                   onChange={(e) => setTenantForm({ ...tenantForm, max_users: parseInt(e.target.value) })}
                   min={1}
-                  className="form-input"
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -517,16 +517,120 @@ const AdminPanel = () => {
               <button
                 type="button"
                 onClick={() => setShowEditTenant(false)}
-                className="btn-secondary"
+                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={formLoading}
-                className="btn-primary"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
               >
                 {formLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Tenant Modal */}
+      <Dialog open={showCreateTenant} onOpenChange={setShowCreateTenant}>
+        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">Create New Tenant</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Add a new company/organization to TaskAct
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateTenant} className="space-y-4">
+            {formError && (
+              <div className="bg-red-900/50 border border-red-500 rounded-md p-3">
+                <div className="text-sm text-red-300">{formError}</div>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Company Name *</label>
+              <input
+                type="text"
+                value={newTenant.name}
+                onChange={(e) => setNewTenant({ ...newTenant, name: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g., Acme Corporation"
+                data-testid="new-tenant-name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Company Code (4-8 chars, optional)</label>
+              <input
+                type="text"
+                value={newTenant.code}
+                onChange={(e) => setNewTenant({ ...newTenant, code: e.target.value.toUpperCase() })}
+                maxLength={8}
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white uppercase placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Auto-generated if empty"
+                data-testid="new-tenant-code"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Contact Email</label>
+              <input
+                type="email"
+                value={newTenant.contact_email}
+                onChange={(e) => setNewTenant({ ...newTenant, contact_email: e.target.value })}
+                className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="admin@company.com"
+                data-testid="new-tenant-email"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Plan</label>
+                <select
+                  value={newTenant.plan}
+                  onChange={(e) => setNewTenant({ ...newTenant, plan: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  data-testid="new-tenant-plan"
+                >
+                  <option value="free">Free</option>
+                  <option value="standard">Standard</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Max Users</label>
+                <input
+                  type="number"
+                  value={newTenant.max_users}
+                  onChange={(e) => setNewTenant({ ...newTenant, max_users: e.target.value })}
+                  min={1}
+                  className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  data-testid="new-tenant-max-users"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setShowCreateTenant(false)}
+                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                data-testid="submit-create-tenant"
+              >
+                {formLoading ? 'Creating...' : 'Create Tenant'}
               </button>
             </DialogFooter>
           </form>
