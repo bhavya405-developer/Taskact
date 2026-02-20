@@ -625,12 +625,14 @@ async def create_template(
     """Create a project template"""
     tenant_id = await get_tenant_id(current_user)
     
-    # Only allow global scope for super admin (check if they're impersonating)
-    # For now, all partner-created templates are tenant-specific
+    # Check if user is super_admin - they can create global templates
+    user_doc = await db.users.find_one({"id": current_user.id})
+    is_super_admin = user_doc.get("role") == "super_admin" if user_doc else False
+    
+    # Determine scope
     scope = template_data.scope
-    if scope == TemplateScope.GLOBAL:
-        # Check if user is super admin (impersonating)
-        # For now, make it tenant-scoped
+    if scope == TemplateScope.GLOBAL and not is_super_admin:
+        # Non-super admins can't create global templates
         scope = TemplateScope.TENANT
     
     template_dict = {
@@ -650,7 +652,7 @@ async def create_template(
     template_dict = prepare_for_mongo(template_dict)
     await db.project_templates.insert_one(template_dict)
     
-    logger.info(f"Project template created: {template_data.name}")
+    logger.info(f"Project template created: {template_data.name} (scope: {scope})")
     
     return ProjectTemplate(**parse_from_mongo(template_dict))
 
