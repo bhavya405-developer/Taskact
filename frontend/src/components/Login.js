@@ -485,9 +485,6 @@ const Login = () => {
                   <span className="mr-1">✓</span> {companyName}
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">
-                Enter your organization's company code (4-8 characters)
-              </p>
             </div>
 
             <div>
