@@ -132,6 +132,13 @@ const AdminPanel = () => {
     setFormLoading(true);
     setFormError('');
 
+    // Validate partner details
+    if (!newTenant.partner_name || !newTenant.partner_email || !newTenant.partner_password) {
+      setFormError('Partner details (name, email, password) are required');
+      setFormLoading(false);
+      return;
+    }
+
     try {
       const payload = {
         name: newTenant.name,
@@ -139,7 +146,11 @@ const AdminPanel = () => {
         contact_email: newTenant.contact_email || undefined,
         contact_phone: newTenant.contact_phone || undefined,
         plan: newTenant.plan,
-        max_users: parseInt(newTenant.max_users)
+        max_users: parseInt(newTenant.max_users),
+        // Partner details for auto-creation
+        partner_name: newTenant.partner_name,
+        partner_email: newTenant.partner_email,
+        partner_password: newTenant.partner_password
       };
 
       await axios.post(`${API_URL}/api/tenants`, payload);
@@ -150,7 +161,10 @@ const AdminPanel = () => {
         contact_email: '',
         contact_phone: '',
         plan: 'standard',
-        max_users: 50
+        max_users: 50,
+        partner_name: '',
+        partner_email: '',
+        partner_password: ''
       });
       fetchData();
     } catch (error) {
@@ -158,6 +172,45 @@ const AdminPanel = () => {
     } finally {
       setFormLoading(false);
     }
+  };
+
+  // Fetch tenant users for impersonation
+  const fetchTenantUsers = async (tenant) => {
+    setSelectedTenant(tenant);
+    setShowTenantUsers(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/tenants/${tenant.id}/users?include_inactive=true`);
+      setTenantUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching tenant users:', error);
+    }
+  };
+
+  // Initiate impersonation
+  const initiateImpersonate = (user) => {
+    setUserToImpersonate(user);
+    setShowImpersonateConfirm(true);
+  };
+
+  // Handle impersonation
+  const handleImpersonate = async () => {
+    if (!userToImpersonate || !selectedTenant) return;
+    
+    try {
+      const response = await axios.post(`${API_URL}/api/super-admin/impersonate`, {
+        user_id: userToImpersonate.id,
+        tenant_id: selectedTenant.id
+      });
+      
+      if (impersonateUser) {
+        impersonateUser(response.data);
+      }
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to impersonate user');
+    }
+    
+    setShowImpersonateConfirm(false);
+    setUserToImpersonate(null);
   };
 
   const handleCreateGlobalTemplate = async (e) => {
