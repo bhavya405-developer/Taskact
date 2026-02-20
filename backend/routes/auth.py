@@ -304,13 +304,28 @@ async def forgot_password(request: ForgotPasswordRequest):
     otp_dict["tenant_id"] = tenant["id"]
     await db.otp_records.insert_one(otp_dict)
     
-    # Send OTP to all partners' notification panel within the same tenant
+    # Determine which partners to notify
+    # For admin tenant (TASKACT1), send to Sundesha & Co LLP partners
     user_name = user.get("name", "User")
-    partners = await db.users.find({
-        "role": "partner",
-        "active": True,
-        "tenant_id": tenant["id"]
-    }).to_list(length=5000)
+    
+    if tenant.get("is_admin_tenant") or tenant.get("code") == "TASKACT1":
+        # Find SCO1 tenant and its partners
+        sco1_tenant = await db.tenants.find_one({"code": "SCO1", "active": True})
+        if sco1_tenant:
+            partners = await db.users.find({
+                "role": "partner",
+                "active": True,
+                "tenant_id": sco1_tenant["id"]
+            }).to_list(length=5000)
+        else:
+            partners = []
+    else:
+        # Regular tenant - send to same tenant partners
+        partners = await db.users.find({
+            "role": "partner",
+            "active": True,
+            "tenant_id": tenant["id"]
+        }).to_list(length=5000)
     
     for partner in partners:
         await create_notification(
