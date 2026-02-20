@@ -109,6 +109,39 @@ const AdminPanel = () => {
     }
   };
 
+  const handleCreateTenant = async (e) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError('');
+
+    try {
+      const payload = {
+        name: newTenant.name,
+        code: newTenant.code || undefined,
+        contact_email: newTenant.contact_email || undefined,
+        contact_phone: newTenant.contact_phone || undefined,
+        plan: newTenant.plan,
+        max_users: parseInt(newTenant.max_users)
+      };
+
+      await axios.post(`${API_URL}/api/tenants`, payload);
+      setShowCreateTenant(false);
+      setNewTenant({
+        name: '',
+        code: '',
+        contact_email: '',
+        contact_phone: '',
+        plan: 'standard',
+        max_users: 50
+      });
+      fetchData();
+    } catch (error) {
+      setFormError(error.response?.data?.detail || 'Failed to create tenant');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const handleCreateGlobalTemplate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
