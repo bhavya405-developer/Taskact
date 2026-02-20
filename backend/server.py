@@ -1351,13 +1351,15 @@ async def get_filters(current_user: UserResponse = Depends(get_current_user)):
 # Dashboard endpoint
 @api_router.get("/dashboard")
 async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
-    # Build query based on user role
-    task_query = {}
+    # Build query based on user role - ALWAYS include tenant_id filter
+    tenant_filter = {"tenant_id": current_user.tenant_id} if current_user.tenant_id else {}
+    
+    task_query = {**tenant_filter}
     if current_user.role != UserRole.PARTNER:
         task_query["assignee_id"] = current_user.id
     
-    # Update overdue tasks before getting counts
-    await update_overdue_tasks()
+    # Update overdue tasks before getting counts (only for this tenant)
+    await update_overdue_tasks(current_user.tenant_id)
     
     # Get counts by status
     pending_count = await db.tasks.count_documents({**task_query, "status": TaskStatus.PENDING})
@@ -1382,14 +1384,14 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     # For backward compatibility, also include recent_tasks
     recent_tasks = overdue_tasks + due_7_days_tasks
     
-    # Get team performance (only for partners)
+    # Get team performance (only for partners) - filter by tenant_id
     team_stats = []
     if current_user.role == UserRole.PARTNER:
-        users = await db.users.find({"active": True}).to_list(length=5000)
+        users = await db.users.find({**tenant_filter, "active": True}).to_list(length=5000)
         
         for user in users:
-            user_tasks = await db.tasks.count_documents({"assignee_id": user["id"]})
-            completed_tasks = await db.tasks.count_documents({"assignee_id": user["id"], "status": TaskStatus.COMPLETED})
+            user_tasks = await db.tasks.count_documents({**tenant_filter, "assignee_id": user["id"]})
+            completed_tasks = await db.tasks.count_documents({**tenant_filter, "assignee_id": user["id"], "status": TaskStatus.COMPLETED})
             
             team_stats.append({
                 "user_id": user["id"],
@@ -1400,32 +1402,42 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
                 "completion_rate": (completed_tasks / user_tasks * 100) if user_tasks > 0 else 0
             })
     
-    # Get client analytics (only for partners)
+    # Get client analytics (only for partners) - filter by tenant_id
     client_stats = []
     if current_user.role == UserRole.PARTNER:
-        clients = await db.tasks.distinct("client_name")
-        for client in clients[:5]:  # Top 5 clients
-            if client:
-                client_tasks = await db.tasks.count_documents({"client_name": client})
-                completed_client_tasks = await db.tasks.count_documents({"client_name": client, "status": TaskStatus.COMPLETED})
-                client_stats.append({
-                    "client_name": client,
-                    "total_tasks": client_tasks,
-                    "completed_tasks": completed_client_tasks,
-                    "completion_rate": (completed_client_tasks / client_tasks * 100) if client_tasks > 0 else 0
-                })
+        # Get distinct clients for this tenant only
+        client_tasks_cursor = db.tasks.find(tenant_filter, {"client_name": 1})
+        client_names = set()
+        async for task in client_tasks_cursor:
+            if task.get("client_name"):
+                client_names.add(task["client_name"])
+        
+        for client in list(client_names)[:5]:  # Top 5 clients
+            client_tasks = await db.tasks.count_documents({**tenant_filter, "client_name": client})
+            completed_client_tasks = await db.tasks.count_documents({**tenant_filter, "client_name": client, "status": TaskStatus.COMPLETED})
+            client_stats.append({
+                "client_name": client,
+                "total_tasks": client_tasks,
+                "completed_tasks": completed_client_tasks,
+                "completion_rate": (completed_client_tasks / client_tasks * 100) if client_tasks > 0 else 0
+            })
     
-    # Get category analytics (only for partners)
+    # Get category analytics (only for partners) - filter by tenant_id
     category_stats = []
     if current_user.role == UserRole.PARTNER:
-        categories = await db.tasks.distinct("category")
+        # Get distinct categories for this tenant only
+        cat_tasks_cursor = db.tasks.find(tenant_filter, {"category": 1})
+        categories = set()
+        async for task in cat_tasks_cursor:
+            if task.get("category"):
+                categories.add(task["category"])
+        
         for category in categories:
-            if category:
-                category_tasks = await db.tasks.count_documents({"category": category})
-                category_stats.append({
-                    "category": category,
-                    "task_count": category_tasks
-                })
+            category_tasks = await db.tasks.count_documents({**tenant_filter, "category": category})
+            category_stats.append({
+                "category": category,
+                "task_count": category_tasks
+            })
     
     return {
         "task_counts": {
