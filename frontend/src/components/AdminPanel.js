@@ -385,7 +385,7 @@ const AdminPanel = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Plan</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Users</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
@@ -425,15 +425,60 @@ const AdminPanel = () => {
                       {tenant.active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleEditTenant(tenant)}
-                      className="text-indigo-400 hover:text-indigo-300 flex items-center text-sm transition-colors"
-                      data-testid={`edit-tenant-${tenant.code}`}
-                    >
-                      <Edit2 className="h-4 w-4 mr-1" />
-                      Edit
-                    </button>
+                  <td className="px-6 py-4 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="p-1.5 hover:bg-slate-600 rounded-lg transition-colors"
+                          data-testid={`tenant-actions-${tenant.code}`}
+                        >
+                          <MoreVertical className="h-5 w-5 text-slate-400" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                        <DropdownMenuItem 
+                          onClick={() => handleEditTenant(tenant)}
+                          className="text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer"
+                        >
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit Details
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuSeparator className="bg-slate-700" />
+                        
+                        {tenant.active ? (
+                          <DropdownMenuItem 
+                            onClick={() => openDeactivateConfirm(tenant)}
+                            className="text-amber-400 hover:text-amber-300 hover:bg-slate-700 cursor-pointer"
+                            disabled={tenant.code === 'TASKACT1'}
+                          >
+                            <Power className="h-4 w-4 mr-2" />
+                            Deactivate
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem 
+                            onClick={() => handleReactivateTenant(tenant)}
+                            className="text-green-400 hover:text-green-300 hover:bg-slate-700 cursor-pointer"
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Reactivate
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {tenant.code !== 'TASKACT1' && (
+                          <>
+                            <DropdownMenuSeparator className="bg-slate-700" />
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteConfirm(tenant)}
+                              className="text-red-400 hover:text-red-300 hover:bg-slate-700 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Permanently
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
