@@ -88,9 +88,33 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
+  // Fetch clients and categories
+  const [clientsList, setClientsList] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
+
+  const fetchClients = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/clients`);
+      setClientsList(response.data);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/categories`);
+      setCategoriesList(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
     fetchTemplates();
+    fetchClients();
+    fetchCategories();
   }, []);
 
   const fetchProjects = async () => {
