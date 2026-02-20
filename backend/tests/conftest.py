@@ -5,7 +5,7 @@ import pytest
 import os
 
 # Set environment variable for tests
-os.environ['REACT_APP_BACKEND_URL'] = 'https://taskact-preview.preview.emergentagent.com'
+os.environ['REACT_APP_BACKEND_URL'] = 'https://workflow-hub-240.preview.emergentagent.com'
 
 def pytest_configure(config):
     """Configure pytest"""
