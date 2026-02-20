@@ -17,6 +17,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [tenant, setTenant] = useState(null);
+  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
@@ -35,6 +36,11 @@ export const AuthProvider = ({ children }) => {
             setTenant(response.data.tenant);
             localStorage.setItem('tenant', JSON.stringify(response.data.tenant));
           }
+          // Check for super admin
+          if (response.data.is_super_admin) {
+            setIsSuperAdminUser(true);
+            localStorage.setItem('is_super_admin', 'true');
+          }
         } catch (error) {
           console.error('Token verification failed:', error);
           logout();
@@ -49,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Load tenant from localStorage on mount
+  // Load tenant and admin status from localStorage on mount
   useEffect(() => {
     const savedTenant = localStorage.getItem('tenant');
     if (savedTenant) {
@@ -58,6 +64,11 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         localStorage.removeItem('tenant');
       }
+    }
+    
+    const savedSuperAdmin = localStorage.getItem('is_super_admin');
+    if (savedSuperAdmin === 'true') {
+      setIsSuperAdminUser(true);
     }
   }, []);
 
@@ -69,7 +80,7 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
-      const { access_token, user: userData, tenant: tenantData } = response.data;
+      const { access_token, user: userData, tenant: tenantData, is_super_admin } = response.data;
       
       // Store token
       localStorage.setItem('token', access_token);
@@ -82,10 +93,16 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('tenant', JSON.stringify(tenantData));
       }
       
+      // Store super admin status
+      if (is_super_admin) {
+        setIsSuperAdminUser(true);
+        localStorage.setItem('is_super_admin', 'true');
+      }
+      
       // Set default Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
-      return { success: true };
+      return { success: true, is_super_admin };
     } catch (error) {
       console.error('Login failed:', error);
       return { 
@@ -98,18 +115,21 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('tenant');
+    localStorage.removeItem('is_super_admin');
+    localStorage.removeItem('impersonation');
     setToken(null);
     setUser(null);
     setTenant(null);
+    setIsSuperAdminUser(false);
     delete axios.defaults.headers.common['Authorization'];
   };
 
   const isPartner = () => {
-    return user?.role === 'partner';
+    return user?.role === 'partner' || isSuperAdminUser;
   };
 
   const isSuperAdmin = () => {
-    return user?.role === 'super_admin';
+    return isSuperAdminUser;
   };
 
   const value = {
@@ -119,6 +139,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     isPartner,
     isSuperAdmin,
+    isSuperAdminUser,
     loading
   };
 
