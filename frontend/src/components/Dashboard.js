@@ -370,19 +370,22 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
           title="On Hold"
           count={task_counts.on_hold}
           status="on_hold"
-          icon={<Pause size={20} className="text-gray-600" />}
+          icon={<Pause size={20} className={isDark ? 'text-slate-400' : 'text-gray-600'} />}
+          isDark={isDark}
         />
         <StatusCard
           title="Completed"
           count={task_counts.completed}
           status="completed"
-          icon={<CheckCircle size={20} className="text-green-600" />}
+          icon={<CheckCircle size={20} className="text-green-500" />}
+          isDark={isDark}
         />
         <StatusCard
           title="Overdue"
           count={task_counts.overdue}
           status="overdue"
-          icon={<AlertCircle size={20} className="text-red-600" />}
+          icon={<AlertCircle size={20} className="text-red-500" />}
+          isDark={isDark}
         />
       </div>
 
@@ -390,34 +393,36 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
       {isPartner() && team_stats.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
           {/* Team Performance */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900" data-testid="team-performance-title">
+          <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`px-6 py-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`} data-testid="team-performance-title">
                 Team Performance
               </h3>
             </div>
             <div className="p-6">
               <div className="space-y-4">
                 {team_stats.map((member) => (
-                  <div key={member.user_id} className="border border-gray-200 rounded-lg p-4 card-hover" data-testid={`team-member-${member.user_id}`}>
+                  <div key={member.user_id} className={`border rounded-lg p-4 transition-colors ${
+                    isDark ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'
+                  }`} data-testid={`team-member-${member.user_id}`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-gray-900">{member.name}</h4>
-                        <p className="text-sm text-gray-600 capitalize">{member.role}</p>
+                        <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{member.name}</h4>
+                        <p className={`text-sm capitalize ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{member.role}</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-900">
+                        <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
                           {member.completed_tasks}/{member.total_tasks} tasks
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                           {member.completion_rate.toFixed(1)}% completion
                         </div>
                       </div>
                     </div>
                     <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className={`w-full rounded-full h-2 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
                         <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          className={`h-2 rounded-full transition-all duration-300 ${isDark ? 'bg-indigo-500' : 'bg-blue-600'}`}
                           style={{ width: `${member.completion_rate}%` }}
                         ></div>
                       </div>
