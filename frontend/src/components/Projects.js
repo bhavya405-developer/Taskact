@@ -664,6 +664,23 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
+                    
+                    {/* View-only dropdown for non-partners */}
+                    {!project.can_edit && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1 hover:bg-gray-100 rounded">
+                            <MoreVertical className="h-5 w-5 text-gray-400" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewProject(project.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
               );
