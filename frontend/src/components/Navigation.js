@@ -217,34 +217,67 @@ const Navigation = () => {
               )}
             </div>
             
-            <div className="flex items-center space-x-4 ml-6 border-l border-gray-200 pl-6">
+            <div className="flex items-center space-x-3 ml-6 border-l border-gray-200 pl-6">
               <NotificationPanel />
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-medium text-sm">
-                    {user?.name?.charAt(0)?.toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-700">{user?.name}</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowChangePassword(true)}
-                className="text-sm text-gray-600 hover:text-gray-900 px-2 py-2 rounded-md flex items-center"
-                title="Change Password"
-                data-testid="change-password-button"
-              >
-                <Key size={16} />
-              </button>
-              <button
-                onClick={logout}
-                className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md flex items-center"
-                data-testid="logout-button"
-              >
-                <LogOut size={16} className="mr-1" />
-                <span className="hidden lg:inline">Logout</span>
-              </button>
+              
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors"
+                    data-testid="profile-dropdown-trigger"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-medium text-sm">
+                        {user?.name?.charAt(0)?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="hidden lg:block text-left">
+                      <div className="text-sm font-medium text-gray-700">{user?.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-400 hidden lg:block" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                    <div className="text-xs text-gray-500">{user?.email}</div>
+                    {tenant && tenant.code !== 'TASKACT1' && (
+                      <div className="text-xs text-indigo-600 mt-1">{tenant.name}</div>
+                    )}
+                  </div>
+                  
+                  <DropdownMenuItem 
+                    onClick={() => setShowChangePassword(true)}
+                    className="cursor-pointer"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Change Password
+                  </DropdownMenuItem>
+                  
+                  {isSuperAdmin() && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin-panel" className="flex items-center cursor-pointer">
+                          <Shield className="h-4 w-4 mr-2" />
+                          Admin Panel
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={logout}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
