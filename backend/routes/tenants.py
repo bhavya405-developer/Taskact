@@ -57,6 +57,10 @@ class TenantCreate(BaseModel):
     address: Optional[str] = None
     plan: str = "standard"  # free, standard, premium
     max_users: int = 50
+    # Partner details for auto-creation
+    partner_name: Optional[str] = None
+    partner_email: Optional[str] = None
+    partner_password: Optional[str] = None
 
 
 class TenantUpdate(BaseModel):
