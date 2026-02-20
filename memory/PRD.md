@@ -38,13 +38,22 @@
 - Task history with timestamps (IST)
 - Bulk import/export via Excel
 
-### 2.4 Project Management ✅
-- **Projects with Sub-tasks**: Create projects containing multiple sub-tasks
-- **Project Templates**: Save and reuse project structures
-  - **Global Templates**: Created by admin, available to all tenants
-  - **Tenant Templates**: Organization-specific templates
-- **Project Status**: Draft → Ready → Allocated → In Progress → Completed
-- **Progress Tracking**: Visual progress bar based on sub-task completion
+### 2.4 Project Management ✅ (Refactored Feb 2026)
+- **Architecture**: Project sub-tasks are stored as regular tasks in the main `tasks` collection, linked by `project_id`
+- **Collections**: Separate `projects` and `project_templates` collections
+- **Project Attributes**: name, description, client, category, due_date, status
+- **Template Scopes**:
+  - **Global Templates**: Created by super-admin, available to all tenants, not editable by partners
+  - **Tenant Templates**: Created by partners, editable/deletable only by partners of the same tenant
+- **Creation Flow**: 
+  - Create project with tasks directly allocated to team members
+  - Option to "Save as Template" while creating a project
+  - Create project from existing template
+- **Progress Tracking**: Visual progress bar based on completed vs total tasks
+- **Permissions**:
+  - Partners can edit/delete templates from their company
+  - Partners cannot edit/delete global (super-admin) templates
+  - Partners can edit any project allocated to users in their company
 
 ### 2.5 Team Management
 - Add/edit/deactivate team members
