@@ -915,12 +915,19 @@ async def download_categories_template(current_user: UserResponse = Depends(get_
 
 @api_router.get("/categories", response_model=List[Category])
 async def get_categories(current_user: UserResponse = Depends(get_current_user)):
-    categories = await db.categories.find({"active": True}).sort("name", 1).to_list(length=5000)
+    # Filter by tenant_id
+    query = {"active": True}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    categories = await db.categories.find(query).sort("name", 1).to_list(length=5000)
     return [Category(**parse_from_mongo(category)) for category in categories]
 
 @api_router.get("/categories/{category_id}", response_model=Category)
 async def get_category(category_id: str, current_user: UserResponse = Depends(get_current_user)):
-    category = await db.categories.find_one({"id": category_id, "active": True})
+    query = {"id": category_id, "active": True}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    category = await db.categories.find_one(query)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     return Category(**parse_from_mongo(category))
@@ -931,7 +938,10 @@ async def update_category(
     category_update: CategoryUpdate, 
     current_user: UserResponse = Depends(get_current_partner)
 ):
-    existing_category = await db.categories.find_one({"id": category_id, "active": True})
+    query = {"id": category_id, "active": True}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    existing_category = await db.categories.find_one(query)
     if not existing_category:
         raise HTTPException(status_code=404, detail="Category not found")
     
@@ -940,9 +950,12 @@ async def update_category(
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
-    # Check if name is being changed and if it already exists
+    # Check if name is being changed and if it already exists for this tenant
     if "name" in update_data and update_data["name"] != existing_category["name"]:
-        existing_name = await db.categories.find_one({"name": update_data["name"], "active": True})
+        name_query = {"name": update_data["name"], "active": True}
+        if current_user.tenant_id:
+            name_query["tenant_id"] = current_user.tenant_id
+        existing_name = await db.categories.find_one(name_query)
         if existing_name:
             raise HTTPException(status_code=400, detail="Category name already exists")
     
@@ -956,8 +969,11 @@ async def update_category(
 
 @api_router.delete("/categories/{category_id}")
 async def delete_category(category_id: str, current_user: UserResponse = Depends(get_current_partner)):
-    # Check if category is in use by any tasks
-    tasks_using_category = await db.tasks.count_documents({"category": category_id})
+    # Check if category is in use by any tasks for this tenant
+    task_query = {"category": category_id}
+    if current_user.tenant_id:
+        task_query["tenant_id"] = current_user.tenant_id
+    tasks_using_category = await db.tasks.count_documents(task_query)
     if tasks_using_category > 0:
         raise HTTPException(status_code=400, detail="Cannot delete category that is in use by tasks")
     
