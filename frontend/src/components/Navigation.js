@@ -135,8 +135,9 @@ const Navigation = () => {
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo and Badge Container */}
+          <div className="flex items-center space-x-4">
+            {/* Logo */}
             <div className="flex-shrink-0">
               <img 
                 src="/taskact-logo.svg" 
@@ -145,37 +146,45 @@ const Navigation = () => {
                 style={{ maxWidth: '160px' }}
               />
             </div>
-            {/* Tenant Badge - Improved styling */}
+            
+            {/* Divider - only show when badge is visible */}
+            {(tenant && tenant.code !== 'TASKACT1') || isSuperAdmin() ? (
+              <div className="hidden sm:block h-6 w-px bg-gray-200"></div>
+            ) : null}
+            
+            {/* Tenant Badge - Improved styling with better spacing */}
             {tenant && tenant.code !== 'TASKACT1' && (
-              <div className="ml-3 hidden sm:flex items-center px-2.5 py-1 bg-indigo-50/80 rounded-md border border-indigo-100">
-                <Building className="h-3 w-3 text-indigo-500 mr-1.5" />
-                <span className="text-xs font-medium text-indigo-600 max-w-[120px] truncate">{tenant.name}</span>
+              <div className="hidden sm:flex items-center px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-100 shadow-sm">
+                <Building className="h-3.5 w-3.5 text-indigo-500 mr-2" />
+                <span className="text-xs font-semibold text-indigo-700 max-w-[140px] truncate">{tenant.name}</span>
               </div>
             )}
+            
             {/* Super Admin Badge */}
             {isSuperAdmin() && (
-              <div className="ml-3 hidden sm:flex items-center px-2.5 py-1 bg-purple-50 rounded-md border border-purple-200">
-                <Shield className="h-3 w-3 text-purple-500 mr-1.5" />
-                <span className="text-xs font-medium text-purple-600">Admin</span>
+              <div className="hidden sm:flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200 shadow-sm">
+                <Shield className="h-3.5 w-3.5 text-purple-500 mr-2" />
+                <span className="text-xs font-semibold text-purple-700">Admin</span>
               </div>
             )}
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
-            <div className="flex items-baseline space-x-4">
+          <div className="hidden md:flex items-center">
+            <div className="flex items-baseline space-x-1 lg:space-x-2">
               {navItems.map((item) => {
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`nav-link flex items-center ${
+                    className={`nav-link flex items-center whitespace-nowrap ${
                       location.pathname === item.path ? 'active' : ''
                     }`}
                     data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
                   >
-                    <item.icon size={16} className="mr-2" />
-                    {item.name}
+                    <item.icon size={16} className="mr-1.5" />
+                    <span className="hidden lg:inline">{item.name}</span>
+                    <span className="lg:hidden">{item.name.split(' ')[0]}</span>
                   </Link>
                 );
               })}
