@@ -133,9 +133,12 @@ const AppContent = () => {
     );
   }
 
+  // Check if super admin for dark theme
+  const isDarkTheme = user?.role === 'super_admin' || localStorage.getItem('is_super_admin') === 'true';
+
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-slate-900' : 'bg-gray-50'}`}>
         <ImpersonationBanner />
         <DashboardRedirect />
         <Navigation />
