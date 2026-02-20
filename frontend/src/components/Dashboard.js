@@ -216,14 +216,18 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                   return (
                     <div 
                       key={task.id} 
-                      className="border border-red-200 rounded-lg p-4 card-hover cursor-pointer bg-red-50" 
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        isDark 
+                          ? 'border-red-900/50 bg-red-900/20 hover:bg-red-900/30' 
+                          : 'border-red-200 bg-red-50 hover:bg-red-100'
+                      }`}
                       onClick={() => handleTaskClick(task)}
                       data-testid={`overdue-task-${task.id}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{task.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{task.title}</h4>
+                          <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
                             {task.client_name ? `Client: ${task.client_name} • ` : ''}Assigned to: {task.assignee_name}
                           </p>
                           <div className="flex items-center space-x-2 mt-2">
@@ -234,13 +238,15 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                               {priority.label}
                             </span>
                             {task.category && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'
+                              }`}>
                                 {task.category}
                               </span>
                             )}
                           </div>
                           {task.due_date && (
-                            <p className="text-xs text-red-600 mt-1 font-medium">
+                            <p className={`text-xs mt-1 font-medium ${isDark ? 'text-red-400' : 'text-red-600'}`}>
                               Due: {new Date(task.due_date).toLocaleDateString()}
                             </p>
                           )}
@@ -255,19 +261,23 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         </div>
 
         {/* Due in Next 7 Days */}
-        <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
-          <div className="px-6 py-4 border-b border-yellow-200 bg-yellow-50">
+        <div className={`rounded-lg shadow-sm border ${isDark ? 'bg-slate-800 border-yellow-900/50' : 'bg-white border-yellow-200'}`}>
+          <div className={`px-6 py-4 border-b ${isDark ? 'border-yellow-900/50 bg-yellow-900/30' : 'border-yellow-200 bg-yellow-50'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Calendar size={20} className="text-yellow-600 mr-2" />
-                <h3 className="text-lg font-semibold text-yellow-900" data-testid="due-7-days-title">
+                <Calendar size={20} className={isDark ? 'text-yellow-400 mr-2' : 'text-yellow-600 mr-2'} />
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-yellow-300' : 'text-yellow-900'}`} data-testid="due-7-days-title">
                   Due in Next 7 Days ({due_7_days_list.length})
                 </h3>
               </div>
               {isPartner() && (
                 <button
                   onClick={() => setShowOnlyMyTasks(!showOnlyMyTasks)}
-                  className={`p-1.5 rounded-md transition-colors ${showOnlyMyTasks ? 'bg-yellow-200 text-yellow-800' : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'}`}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    isDark 
+                      ? showOnlyMyTasks ? 'bg-yellow-800 text-yellow-200' : 'bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800'
+                      : showOnlyMyTasks ? 'bg-yellow-200 text-yellow-800' : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                  }`}
                   title={showOnlyMyTasks ? "Showing my tasks only - Click to show all" : "Click to show only my tasks"}
                   data-testid="filter-my-tasks-btn-2"
                 >
