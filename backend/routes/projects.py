@@ -1,6 +1,12 @@
 """
 Project management routes for TaskAct
-Handles projects with sub-tasks, templates, and pre-defined project allocation
+Projects are collections of tasks. Tasks within a project are REAL tasks
+that appear in all task lists and can be managed like any other task.
+
+Key concepts:
+- Project Template: Blueprint with task definitions (NOT active tasks)
+- Project: Actual project with real tasks created from template or directly
+- Project Tasks: Regular tasks with project_id reference
 """
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -49,11 +55,9 @@ def init_projects_routes(
 # ==================== ENUMS ====================
 
 class ProjectStatus(str, Enum):
-    DRAFT = "draft"          # Project created but not allocated
-    READY = "ready"          # Ready for allocation
-    ALLOCATED = "allocated"  # Assigned to team member
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
+    DRAFT = "draft"          # Project created but tasks not allocated
+    ACTIVE = "active"        # Project with allocated tasks (in progress)
+    COMPLETED = "completed"  # All tasks completed
     ON_HOLD = "on_hold"
 
 
@@ -64,136 +68,125 @@ class TemplateScope(str, Enum):
 
 # ==================== MODELS ====================
 
-class SubTaskCreate(BaseModel):
+class TaskDefinition(BaseModel):
+    """Task definition for templates (blueprint, not actual task)"""
     title: str
     description: Optional[str] = None
-    estimated_hours: Optional[float] = None
     priority: str = "medium"
-    order: int = 0
-
-
-class SubTask(BaseModel):
-    id: str
-    title: str
-    description: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    actual_hours: Optional[float] = None
-    priority: str = "medium"
-    status: str = "pending"
-    order: int = 0
-    completed_at: Optional[str] = None
-    completed_by: Optional[str] = None
-
-
-class ProjectCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
-    client_name: Optional[str] = None
     category: Optional[str] = None
-    priority: str = "medium"
-    due_date: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    sub_tasks: List[SubTaskCreate] = []
-    assignee_id: Optional[str] = None  # Optional at creation (draft state)
-    status: ProjectStatus = ProjectStatus.DRAFT
-    from_template_id: Optional[str] = None
-
-
-class ProjectUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    client_name: Optional[str] = None
-    category: Optional[str] = None
-    priority: Optional[str] = None
-    due_date: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    assignee_id: Optional[str] = None
-    status: Optional[ProjectStatus] = None
-
-
-class SubTaskUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    actual_hours: Optional[float] = None
-    priority: Optional[str] = None
-    status: Optional[str] = None
-    order: Optional[int] = None
+    order: int = 0
 
 
 class ProjectTemplateCreate(BaseModel):
+    """Create a project template (blueprint for future projects)"""
     name: str
     description: Optional[str] = None
+    client_id: Optional[str] = None
     category: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    sub_tasks: List[SubTaskCreate] = []
-    scope: TemplateScope = TemplateScope.TENANT
+    tasks: List[TaskDefinition] = []  # Task blueprints
 
 
-class Project(BaseModel):
-    id: str
+class ProjectTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    client_id: Optional[str] = None
+    category: Optional[str] = None
+    tasks: Optional[List[TaskDefinition]] = None
+
+
+class TaskAllocation(BaseModel):
+    """Task allocation when creating/allocating a project"""
     title: str
     description: Optional[str] = None
-    client_name: Optional[str] = None
-    category: Optional[str] = None
     priority: str = "medium"
+    category: Optional[str] = None
+    assignee_id: str
     due_date: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    actual_hours: Optional[float] = None
-    sub_tasks: List[SubTask] = []
-    assignee_id: Optional[str] = None
-    assignee_name: Optional[str] = None
-    creator_id: str
-    creator_name: str
-    status: ProjectStatus = ProjectStatus.DRAFT
-    progress: float = 0.0  # Percentage of completed sub-tasks
-    tenant_id: Optional[str] = None
-    from_template_id: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    allocated_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
 
 
-class ProjectTemplate(BaseModel):
-    id: str
+class ProjectCreate(BaseModel):
+    """Create a project - either from template or directly"""
     name: str
     description: Optional[str] = None
+    client_id: Optional[str] = None
+    client_name: Optional[str] = None
     category: Optional[str] = None
-    estimated_hours: Optional[float] = None
-    sub_tasks: List[SubTaskCreate] = []
-    scope: TemplateScope = TemplateScope.TENANT
-    tenant_id: Optional[str] = None  # None for global templates
-    created_by: str
-    created_at: Optional[datetime] = None
-    active: bool = True
+    due_date: str  # Required for projects
+    
+    # Option 1: Create from template
+    template_id: Optional[str] = None
+    
+    # Option 2: Define tasks directly
+    tasks: List[TaskAllocation] = []
+    
+    # Save as template option
+    save_as_template: bool = False
+    template_name: Optional[str] = None
 
 
-# ==================== HELPER FUNCTIONS ====================
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    client_id: Optional[str] = None
+    client_name: Optional[str] = None
+    category: Optional[str] = None
+    due_date: Optional[str] = None
+    status: Optional[ProjectStatus] = None
+
+
+# ==================== AUTH HELPERS ====================
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get current user from JWT token"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
+        tenant_id: str = payload.get("tenant_id")
+        is_super_admin: bool = payload.get("is_super_admin", False)
+        
         if user_id is None:
             raise credentials_exception
     except jwt.PyJWTError:
         raise credentials_exception
     
+    # For super admin, return a special user object
+    if is_super_admin:
+        admin = await db.super_admins.find_one({"id": user_id})
+        if not admin:
+            admin = await db.users.find_one({"id": user_id, "role": "super_admin"})
+        if admin:
+            return {
+                "id": admin["id"],
+                "name": admin.get("name", "Super Admin"),
+                "email": admin.get("email"),
+                "role": "super_admin",
+                "tenant_id": None,
+                "is_super_admin": True
+            }
+    
     user = await db.users.find_one({"id": user_id, "active": True})
     if user is None:
         raise credentials_exception
     
-    return UserResponse(**parse_from_mongo(user))
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "role": user["role"],
+        "tenant_id": user.get("tenant_id") or tenant_id,
+        "is_super_admin": False
+    }
 
 
-async def get_current_partner(current_user=Depends(get_current_user)):
-    if current_user.role != UserRole.PARTNER:
+async def get_current_partner(current_user = Depends(get_current_user)):
+    """Ensure current user is a partner or super admin"""
+    if current_user["role"] not in ["partner", "super_admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only partners can perform this action"
@@ -201,554 +194,548 @@ async def get_current_partner(current_user=Depends(get_current_user)):
     return current_user
 
 
-async def get_tenant_id(current_user):
-    """Helper to get tenant_id from current user"""
-    user_doc = await db.users.find_one({"id": current_user.id})
-    return user_doc.get("tenant_id") if user_doc else None
+# ==================== TEMPLATE ROUTES ====================
+
+@router.get("/project-templates")
+async def get_project_templates(current_user = Depends(get_current_user)):
+    """Get all templates available to the user (global + tenant-specific)"""
+    query = {"$or": [{"scope": "global"}]}
+    
+    if current_user.get("tenant_id"):
+        query["$or"].append({"tenant_id": current_user["tenant_id"]})
+    
+    templates = await db.project_templates.find(query).sort("name", 1).to_list(length=500)
+    
+    result = []
+    for template in templates:
+        t = parse_from_mongo(template)
+        # Add permission info
+        t["can_edit"] = can_edit_template(template, current_user)
+        t["can_delete"] = can_delete_template(template, current_user)
+        result.append(t)
+    
+    return result
 
 
-def calculate_progress(sub_tasks: list) -> float:
-    """Calculate project progress based on sub-task completion"""
-    if not sub_tasks:
-        return 0.0
-    completed = sum(1 for st in sub_tasks if st.get("status") == "completed")
-    return round((completed / len(sub_tasks)) * 100, 1)
+def can_edit_template(template, current_user):
+    """Check if user can edit a template"""
+    # Super admin can edit all
+    if current_user.get("is_super_admin"):
+        return True
+    
+    # Global templates (created by super admin) cannot be edited by partners
+    if template.get("scope") == "global":
+        return False
+    
+    # Partners can edit tenant templates from their company
+    if current_user["role"] == "partner":
+        return template.get("tenant_id") == current_user.get("tenant_id")
+    
+    return False
+
+
+def can_delete_template(template, current_user):
+    """Check if user can delete a template"""
+    return can_edit_template(template, current_user)
+
+
+@router.post("/project-templates")
+async def create_project_template(
+    template_data: ProjectTemplateCreate,
+    current_user = Depends(get_current_partner)
+):
+    """Create a project template"""
+    is_super_admin = current_user.get("is_super_admin", False)
+    
+    template_dict = {
+        "id": str(uuid.uuid4()),
+        "name": template_data.name,
+        "description": template_data.description,
+        "client_id": template_data.client_id,
+        "category": template_data.category,
+        "tasks": [t.dict() for t in template_data.tasks],
+        "scope": "global" if is_super_admin else "tenant",
+        "tenant_id": None if is_super_admin else current_user.get("tenant_id"),
+        "created_by": current_user["id"],
+        "created_by_name": current_user["name"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_super_admin_created": is_super_admin
+    }
+    
+    template_dict = prepare_for_mongo(template_dict)
+    await db.project_templates.insert_one(template_dict)
+    
+    logger.info(f"Template created: {template_data.name} by {current_user['name']}")
+    
+    return parse_from_mongo(template_dict)
+
+
+@router.put("/project-templates/{template_id}")
+async def update_project_template(
+    template_id: str,
+    template_update: ProjectTemplateUpdate,
+    current_user = Depends(get_current_partner)
+):
+    """Update a project template"""
+    template = await db.project_templates.find_one({"id": template_id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if not can_edit_template(template, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to edit this template"
+        )
+    
+    update_data = {k: v for k, v in template_update.dict().items() if v is not None}
+    if "tasks" in update_data:
+        update_data["tasks"] = [t if isinstance(t, dict) else t.dict() for t in update_data["tasks"]]
+    
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.project_templates.update_one({"id": template_id}, {"$set": update_data})
+    
+    updated = await db.project_templates.find_one({"id": template_id})
+    return parse_from_mongo(updated)
+
+
+@router.delete("/project-templates/{template_id}")
+async def delete_project_template(
+    template_id: str,
+    current_user = Depends(get_current_partner)
+):
+    """Delete a project template"""
+    template = await db.project_templates.find_one({"id": template_id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    if not can_delete_template(template, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to delete this template"
+        )
+    
+    await db.project_templates.delete_one({"id": template_id})
+    
+    logger.info(f"Template deleted: {template['name']} by {current_user['name']}")
+    
+    return {"message": "Template deleted successfully"}
 
 
 # ==================== PROJECT ROUTES ====================
 
+@router.get("/projects")
+async def get_projects(current_user = Depends(get_current_user)):
+    """Get all projects for the tenant"""
+    query = {}
+    if current_user.get("tenant_id"):
+        query["tenant_id"] = current_user["tenant_id"]
+    
+    projects = await db.projects.find(query).sort("created_at", -1).to_list(length=500)
+    
+    result = []
+    for project in projects:
+        p = parse_from_mongo(project)
+        
+        # Get task counts for this project
+        task_query = {"project_id": project["id"]}
+        if current_user.get("tenant_id"):
+            task_query["tenant_id"] = current_user["tenant_id"]
+        
+        total_tasks = await db.tasks.count_documents(task_query)
+        completed_tasks = await db.tasks.count_documents({**task_query, "status": "completed"})
+        
+        p["total_tasks"] = total_tasks
+        p["completed_tasks"] = completed_tasks
+        p["progress"] = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        
+        # Add permission info
+        p["can_edit"] = can_edit_project(project, current_user)
+        
+        result.append(p)
+    
+    return result
+
+
+def can_edit_project(project, current_user):
+    """Check if user can edit a project"""
+    # Super admin can edit all
+    if current_user.get("is_super_admin"):
+        return True
+    
+    # Partners can edit any project in their tenant
+    if current_user["role"] == "partner":
+        return project.get("tenant_id") == current_user.get("tenant_id")
+    
+    # Others can only edit their own projects
+    return project.get("created_by") == current_user["id"]
+
+
 @router.post("/projects")
-async def create_project(project_data: ProjectCreate, current_user=Depends(get_current_user)):
-    """Create a new project (can be draft/ready for allocation or directly allocated)"""
-    tenant_id = await get_tenant_id(current_user)
+async def create_project(
+    project_data: ProjectCreate,
+    current_user = Depends(get_current_partner)
+):
+    """
+    Create a project with tasks.
+    Options:
+    1. Create from template (template_id provided)
+    2. Create directly with task allocations (tasks provided)
     
-    # Get assignee name if provided
-    assignee_name = None
-    if project_data.assignee_id:
-        assignee = await db.users.find_one({
-            "id": project_data.assignee_id,
-            "tenant_id": tenant_id
-        })
-        if not assignee:
-            raise HTTPException(status_code=404, detail="Assignee not found")
-        assignee_name = assignee["name"]
+    Optionally save as template for future use.
+    """
+    tenant_id = current_user.get("tenant_id")
     
-    now_utc = datetime.now(timezone.utc)
+    # Get client name if client_id provided
+    client_name = project_data.client_name
+    if project_data.client_id and not client_name:
+        client = await db.clients.find_one({"id": project_data.client_id})
+        if client:
+            client_name = client["name"]
     
-    # Create sub-tasks with IDs
-    sub_tasks = []
-    for i, st in enumerate(project_data.sub_tasks):
-        sub_tasks.append({
-            "id": str(uuid.uuid4()),
-            "title": st.title,
-            "description": st.description,
-            "estimated_hours": st.estimated_hours,
-            "actual_hours": None,
-            "priority": st.priority,
-            "status": "pending",
-            "order": st.order if st.order else i,
-            "completed_at": None,
-            "completed_by": None
-        })
-    
-    # Determine initial status
-    initial_status = project_data.status
-    if project_data.assignee_id and initial_status == ProjectStatus.DRAFT:
-        initial_status = ProjectStatus.ALLOCATED
-    
+    # Create the project record
+    project_id = str(uuid.uuid4())
     project_dict = {
-        "id": str(uuid.uuid4()),
-        "title": project_data.title,
+        "id": project_id,
+        "name": project_data.name,
         "description": project_data.description,
-        "client_name": project_data.client_name,
+        "client_id": project_data.client_id,
+        "client_name": client_name,
         "category": project_data.category,
-        "priority": project_data.priority,
         "due_date": project_data.due_date,
-        "estimated_hours": project_data.estimated_hours,
-        "actual_hours": None,
-        "sub_tasks": sub_tasks,
-        "assignee_id": project_data.assignee_id,
-        "assignee_name": assignee_name,
-        "creator_id": current_user.id,
-        "creator_name": current_user.name,
-        "status": initial_status,
-        "progress": 0.0,
+        "status": ProjectStatus.ACTIVE.value,
         "tenant_id": tenant_id,
-        "from_template_id": project_data.from_template_id,
-        "created_at": now_utc.isoformat(),
-        "updated_at": now_utc.isoformat(),
-        "allocated_at": now_utc.isoformat() if project_data.assignee_id else None,
-        "completed_at": None
+        "created_by": current_user["id"],
+        "created_by_name": current_user["name"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "from_template_id": project_data.template_id
     }
     
+    # Get task definitions
+    task_definitions = []
+    
+    if project_data.template_id:
+        # Create from template
+        template = await db.project_templates.find_one({"id": project_data.template_id})
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        # Convert template tasks to task allocations
+        for i, task_def in enumerate(template.get("tasks", [])):
+            if project_data.tasks and i < len(project_data.tasks):
+                # Use provided allocation info (assignee, due_date)
+                alloc = project_data.tasks[i]
+                task_definitions.append({
+                    "title": task_def.get("title"),
+                    "description": task_def.get("description"),
+                    "priority": task_def.get("priority", "medium"),
+                    "category": task_def.get("category") or project_data.category,
+                    "assignee_id": alloc.assignee_id,
+                    "due_date": alloc.due_date or project_data.due_date
+                })
+            else:
+                # No allocation provided for this task - skip or use defaults
+                pass
+    else:
+        # Direct task creation
+        for task in project_data.tasks:
+            task_definitions.append({
+                "title": task.title,
+                "description": task.description,
+                "priority": task.priority,
+                "category": task.category or project_data.category,
+                "assignee_id": task.assignee_id,
+                "due_date": task.due_date or project_data.due_date
+            })
+    
+    # Create actual tasks in the tasks collection
+    created_tasks = []
+    for task_def in task_definitions:
+        # Get assignee name
+        assignee_name = None
+        if task_def.get("assignee_id"):
+            assignee = await db.users.find_one({"id": task_def["assignee_id"]})
+            if assignee:
+                assignee_name = assignee["name"]
+        
+        task_dict = {
+            "id": str(uuid.uuid4()),
+            "title": task_def["title"],
+            "description": task_def.get("description"),
+            "priority": task_def.get("priority", "medium"),
+            "category": task_def.get("category"),
+            "client_name": client_name,
+            "client_id": project_data.client_id,
+            "status": "pending",
+            "due_date": task_def.get("due_date"),
+            "assignee_id": task_def.get("assignee_id"),
+            "assignee_name": assignee_name,
+            "project_id": project_id,
+            "project_name": project_data.name,
+            "tenant_id": tenant_id,
+            "created_by": current_user["id"],
+            "creator_name": current_user["name"],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        task_dict = prepare_for_mongo(task_dict)
+        await db.tasks.insert_one(task_dict)
+        created_tasks.append(task_dict)
+    
+    # Save project
     project_dict = prepare_for_mongo(project_dict)
     await db.projects.insert_one(project_dict)
     
-    # Create notification for assignee if allocated
-    if project_data.assignee_id and project_data.assignee_id != current_user.id:
-        notification = {
+    # Optionally save as template
+    if project_data.save_as_template:
+        template_name = project_data.template_name or f"Template: {project_data.name}"
+        template_dict = {
             "id": str(uuid.uuid4()),
-            "user_id": project_data.assignee_id,
-            "title": "New Project Assigned",
-            "message": f"You have been assigned a new project: {project_data.title}",
-            "read": False,
-            "created_at": now_utc.isoformat(),
-            "project_id": project_dict["id"],
-            "tenant_id": tenant_id
+            "name": template_name,
+            "description": project_data.description,
+            "client_id": project_data.client_id,
+            "category": project_data.category,
+            "tasks": [
+                {
+                    "title": t["title"],
+                    "description": t.get("description"),
+                    "priority": t.get("priority", "medium"),
+                    "category": t.get("category"),
+                    "order": i
+                }
+                for i, t in enumerate(task_definitions)
+            ],
+            "scope": "tenant",
+            "tenant_id": tenant_id,
+            "created_by": current_user["id"],
+            "created_by_name": current_user["name"],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "is_super_admin_created": False
         }
-        await db.notifications.insert_one(prepare_for_mongo(notification))
+        template_dict = prepare_for_mongo(template_dict)
+        await db.project_templates.insert_one(template_dict)
     
-    logger.info(f"Project created: {project_data.title} by {current_user.name}")
+    logger.info(f"Project created: {project_data.name} with {len(created_tasks)} tasks by {current_user['name']}")
     
-    return Project(**parse_from_mongo(project_dict))
-
-
-@router.get("/projects")
-async def get_projects(
-    current_user=Depends(get_current_user),
-    status: Optional[str] = None,
-    assignee_id: Optional[str] = None,
-    include_drafts: bool = True
-):
-    """Get all projects for the tenant"""
-    tenant_id = await get_tenant_id(current_user)
+    result = parse_from_mongo(project_dict)
+    result["tasks"] = [parse_from_mongo(t) for t in created_tasks]
+    result["total_tasks"] = len(created_tasks)
+    result["completed_tasks"] = 0
+    result["progress"] = 0
     
-    query = {"tenant_id": tenant_id} if tenant_id else {}
-    
-    # Non-partners can only see their assigned projects
-    if current_user.role != UserRole.PARTNER:
-        query["assignee_id"] = current_user.id
-        include_drafts = False
-    
-    if status:
-        query["status"] = status
-    
-    if assignee_id:
-        query["assignee_id"] = assignee_id
-    
-    if not include_drafts:
-        query["status"] = {"$nin": [ProjectStatus.DRAFT, ProjectStatus.READY]}
-    
-    projects = await db.projects.find(query).sort("created_at", -1).to_list(length=1000)
-    return [Project(**parse_from_mongo(p)) for p in projects]
+    return result
 
 
 @router.get("/projects/{project_id}")
-async def get_project(project_id: str, current_user=Depends(get_current_user)):
-    """Get a specific project"""
-    tenant_id = await get_tenant_id(current_user)
-    
+async def get_project(project_id: str, current_user = Depends(get_current_user)):
+    """Get a project with its tasks"""
     query = {"id": project_id}
-    if tenant_id:
-        query["tenant_id"] = tenant_id
+    if current_user.get("tenant_id"):
+        query["tenant_id"] = current_user["tenant_id"]
     
     project = await db.projects.find_one(query)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permission
-    if current_user.role != UserRole.PARTNER and project.get("assignee_id") != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only view your own projects")
+    # Get all tasks for this project
+    task_query = {"project_id": project_id}
+    if current_user.get("tenant_id"):
+        task_query["tenant_id"] = current_user["tenant_id"]
     
-    return Project(**parse_from_mongo(project))
+    tasks = await db.tasks.find(task_query).sort("created_at", 1).to_list(length=500)
+    
+    result = parse_from_mongo(project)
+    result["tasks"] = [parse_from_mongo(t) for t in tasks]
+    result["total_tasks"] = len(tasks)
+    result["completed_tasks"] = len([t for t in tasks if t.get("status") == "completed"])
+    result["progress"] = (result["completed_tasks"] / result["total_tasks"] * 100) if result["total_tasks"] > 0 else 0
+    result["can_edit"] = can_edit_project(project, current_user)
+    
+    return result
 
 
 @router.put("/projects/{project_id}")
 async def update_project(
     project_id: str,
     project_update: ProjectUpdate,
-    current_user=Depends(get_current_user)
+    current_user = Depends(get_current_user)
 ):
     """Update a project"""
-    tenant_id = await get_tenant_id(current_user)
-    
     query = {"id": project_id}
-    if tenant_id:
-        query["tenant_id"] = tenant_id
+    if current_user.get("tenant_id"):
+        query["tenant_id"] = current_user["tenant_id"]
     
     project = await db.projects.find_one(query)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Only partners can edit projects
-    if current_user.role != UserRole.PARTNER:
-        raise HTTPException(status_code=403, detail="Only partners can edit projects")
+    if not can_edit_project(project, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to edit this project"
+        )
     
     update_data = {k: v for k, v in project_update.dict().items() if v is not None}
     
-    # If assigning to someone, update assignee_name and allocated_at
-    if "assignee_id" in update_data and update_data["assignee_id"]:
-        assignee = await db.users.find_one({
-            "id": update_data["assignee_id"],
-            "tenant_id": tenant_id
-        })
-        if not assignee:
-            raise HTTPException(status_code=404, detail="Assignee not found")
-        update_data["assignee_name"] = assignee["name"]
+    # Get client name if client_id provided
+    if "client_id" in update_data and update_data["client_id"]:
+        client = await db.clients.find_one({"id": update_data["client_id"]})
+        if client:
+            update_data["client_name"] = client["name"]
+    
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.projects.update_one({"id": project_id}, {"$set": update_data})
         
-        # If not already allocated, set allocated_at
-        if not project.get("allocated_at"):
-            update_data["allocated_at"] = datetime.now(timezone.utc).isoformat()
-        
-        # Change status if draft/ready
-        if project.get("status") in [ProjectStatus.DRAFT, ProjectStatus.READY]:
-            update_data["status"] = ProjectStatus.ALLOCATED
+        # If client or category changed, update all project tasks
+        if "client_name" in update_data or "category" in update_data:
+            task_update = {}
+            if "client_name" in update_data:
+                task_update["client_name"] = update_data["client_name"]
+                task_update["client_id"] = update_data.get("client_id")
+            if "category" in update_data:
+                task_update["category"] = update_data["category"]
+            
+            if task_update:
+                await db.tasks.update_many({"project_id": project_id}, {"$set": task_update})
     
-    # Handle status changes
-    if "status" in update_data:
-        if update_data["status"] == ProjectStatus.COMPLETED:
-            update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
-    
-    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    await db.projects.update_one({"id": project_id}, {"$set": update_data})
-    
-    updated_project = await db.projects.find_one({"id": project_id})
-    return Project(**parse_from_mongo(updated_project))
+    updated = await db.projects.find_one({"id": project_id})
+    return parse_from_mongo(updated)
 
 
-@router.post("/projects/{project_id}/allocate")
-async def allocate_project(
-    project_id: str,
-    assignee_id: str,
-    current_user=Depends(get_current_partner)
-):
-    """Allocate a project to a team member"""
-    tenant_id = await get_tenant_id(current_user)
-    
+@router.delete("/projects/{project_id}")
+async def delete_project(project_id: str, current_user = Depends(get_current_partner)):
+    """Delete a project and all its tasks"""
     query = {"id": project_id}
-    if tenant_id:
-        query["tenant_id"] = tenant_id
+    if current_user.get("tenant_id"):
+        query["tenant_id"] = current_user["tenant_id"]
     
     project = await db.projects.find_one(query)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    if project.get("status") not in [ProjectStatus.DRAFT, ProjectStatus.READY]:
-        raise HTTPException(status_code=400, detail="Project is already allocated")
+    if not can_edit_project(project, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to delete this project"
+        )
     
-    assignee = await db.users.find_one({
-        "id": assignee_id,
-        "tenant_id": tenant_id,
-        "active": True
-    })
-    if not assignee:
-        raise HTTPException(status_code=404, detail="Assignee not found")
+    # Delete all tasks associated with this project
+    task_query = {"project_id": project_id}
+    if current_user.get("tenant_id"):
+        task_query["tenant_id"] = current_user["tenant_id"]
     
-    now_utc = datetime.now(timezone.utc)
+    deleted_tasks = await db.tasks.delete_many(task_query)
     
-    update_data = {
-        "assignee_id": assignee_id,
-        "assignee_name": assignee["name"],
-        "status": ProjectStatus.ALLOCATED,
-        "allocated_at": now_utc.isoformat(),
-        "updated_at": now_utc.isoformat()
-    }
+    # Delete the project
+    await db.projects.delete_one({"id": project_id})
     
-    await db.projects.update_one({"id": project_id}, {"$set": update_data})
+    logger.info(f"Project deleted: {project['name']} with {deleted_tasks.deleted_count} tasks by {current_user['name']}")
     
-    # Create notification
-    if assignee_id != current_user.id:
-        notification = {
-            "id": str(uuid.uuid4()),
-            "user_id": assignee_id,
-            "title": "New Project Assigned",
-            "message": f"You have been assigned a project: {project['title']}",
-            "read": False,
-            "created_at": now_utc.isoformat(),
-            "project_id": project_id,
-            "tenant_id": tenant_id
-        }
-        await db.notifications.insert_one(prepare_for_mongo(notification))
-    
-    updated_project = await db.projects.find_one({"id": project_id})
-    return Project(**parse_from_mongo(updated_project))
+    return {"message": f"Project and {deleted_tasks.deleted_count} tasks deleted successfully"}
 
 
-# ==================== SUB-TASK ROUTES ====================
-
-@router.post("/projects/{project_id}/subtasks")
-async def add_subtask(
+@router.post("/projects/{project_id}/tasks")
+async def add_task_to_project(
     project_id: str,
-    subtask_data: SubTaskCreate,
-    current_user=Depends(get_current_user)
+    task: TaskAllocation,
+    current_user = Depends(get_current_user)
 ):
-    """Add a sub-task to a project"""
-    tenant_id = await get_tenant_id(current_user)
-    
+    """Add a new task to an existing project"""
     query = {"id": project_id}
-    if tenant_id:
-        query["tenant_id"] = tenant_id
+    if current_user.get("tenant_id"):
+        query["tenant_id"] = current_user["tenant_id"]
     
     project = await db.projects.find_one(query)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permission
-    if current_user.role != UserRole.PARTNER and project.get("assignee_id") != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only modify your own projects")
+    if not can_edit_project(project, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to add tasks to this project"
+        )
     
-    new_subtask = {
+    # Get assignee name
+    assignee_name = None
+    if task.assignee_id:
+        assignee = await db.users.find_one({"id": task.assignee_id})
+        if assignee:
+            assignee_name = assignee["name"]
+    
+    task_dict = {
         "id": str(uuid.uuid4()),
-        "title": subtask_data.title,
-        "description": subtask_data.description,
-        "estimated_hours": subtask_data.estimated_hours,
-        "actual_hours": None,
-        "priority": subtask_data.priority,
+        "title": task.title,
+        "description": task.description,
+        "priority": task.priority,
+        "category": task.category or project.get("category"),
+        "client_name": project.get("client_name"),
+        "client_id": project.get("client_id"),
         "status": "pending",
-        "order": subtask_data.order if subtask_data.order else len(project.get("sub_tasks", [])),
-        "completed_at": None,
-        "completed_by": None
+        "due_date": task.due_date or project.get("due_date"),
+        "assignee_id": task.assignee_id,
+        "assignee_name": assignee_name,
+        "project_id": project_id,
+        "project_name": project.get("name"),
+        "tenant_id": current_user.get("tenant_id"),
+        "created_by": current_user["id"],
+        "creator_name": current_user["name"],
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    sub_tasks = project.get("sub_tasks", [])
-    sub_tasks.append(new_subtask)
+    task_dict = prepare_for_mongo(task_dict)
+    await db.tasks.insert_one(task_dict)
     
-    progress = calculate_progress(sub_tasks)
-    
-    await db.projects.update_one(
-        {"id": project_id},
-        {
-            "$set": {
-                "sub_tasks": sub_tasks,
-                "progress": progress,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }
-        }
-    )
-    
-    return SubTask(**new_subtask)
+    return parse_from_mongo(task_dict)
 
 
-@router.put("/projects/{project_id}/subtasks/{subtask_id}")
-async def update_subtask(
-    project_id: str,
-    subtask_id: str,
-    subtask_update: SubTaskUpdate,
-    current_user=Depends(get_current_user)
-):
-    """Update a sub-task"""
-    tenant_id = await get_tenant_id(current_user)
-    
+# ==================== UTILITY ROUTES ====================
+
+@router.get("/projects/{project_id}/tasks")
+async def get_project_tasks(project_id: str, current_user = Depends(get_current_user)):
+    """Get all tasks for a project"""
     query = {"id": project_id}
-    if tenant_id:
-        query["tenant_id"] = tenant_id
+    if current_user.get("tenant_id"):
+        query["tenant_id"] = current_user["tenant_id"]
     
     project = await db.projects.find_one(query)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Check permission
-    if current_user.role != UserRole.PARTNER and project.get("assignee_id") != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only modify your own projects")
+    task_query = {"project_id": project_id}
+    if current_user.get("tenant_id"):
+        task_query["tenant_id"] = current_user["tenant_id"]
     
-    sub_tasks = project.get("sub_tasks", [])
-    subtask_index = next((i for i, st in enumerate(sub_tasks) if st["id"] == subtask_id), None)
+    tasks = await db.tasks.find(task_query).sort("created_at", 1).to_list(length=500)
     
-    if subtask_index is None:
-        raise HTTPException(status_code=404, detail="Sub-task not found")
-    
-    update_data = {k: v for k, v in subtask_update.dict().items() if v is not None}
-    
-    # Handle status change to completed
-    if update_data.get("status") == "completed" and sub_tasks[subtask_index].get("status") != "completed":
-        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
-        update_data["completed_by"] = current_user.name
-    
-    sub_tasks[subtask_index].update(update_data)
-    
-    progress = calculate_progress(sub_tasks)
-    
-    # Check if all sub-tasks are completed
-    all_completed = all(st.get("status") == "completed" for st in sub_tasks)
-    project_update = {
-        "sub_tasks": sub_tasks,
-        "progress": progress,
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    if all_completed and sub_tasks:
-        project_update["status"] = ProjectStatus.COMPLETED
-        project_update["completed_at"] = datetime.now(timezone.utc).isoformat()
-        # Calculate total actual hours
-        total_actual = sum(st.get("actual_hours", 0) or 0 for st in sub_tasks)
-        project_update["actual_hours"] = total_actual
-    
-    await db.projects.update_one({"id": project_id}, {"$set": project_update})
-    
-    return SubTask(**sub_tasks[subtask_index])
+    return [parse_from_mongo(t) for t in tasks]
 
 
-@router.delete("/projects/{project_id}/subtasks/{subtask_id}")
-async def delete_subtask(
-    project_id: str,
-    subtask_id: str,
-    current_user=Depends(get_current_partner)
-):
-    """Delete a sub-task (Partners only)"""
-    tenant_id = await get_tenant_id(current_user)
-    
-    query = {"id": project_id}
-    if tenant_id:
-        query["tenant_id"] = tenant_id
-    
-    project = await db.projects.find_one(query)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
-    sub_tasks = project.get("sub_tasks", [])
-    sub_tasks = [st for st in sub_tasks if st["id"] != subtask_id]
-    
-    progress = calculate_progress(sub_tasks)
-    
-    await db.projects.update_one(
-        {"id": project_id},
-        {
-            "$set": {
-                "sub_tasks": sub_tasks,
-                "progress": progress,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }
-        }
-    )
-    
-    return {"message": "Sub-task deleted"}
-
-
-# ==================== TEMPLATE ROUTES ====================
-
-@router.post("/project-templates")
-async def create_template(
-    template_data: ProjectTemplateCreate,
-    current_user=Depends(get_current_partner)
-):
-    """Create a project template"""
-    tenant_id = await get_tenant_id(current_user)
-    
-    # Check if user is super_admin - they can create global templates
-    user_doc = await db.users.find_one({"id": current_user.id})
-    is_super_admin = user_doc.get("role") == "super_admin" if user_doc else False
-    
-    # Determine scope
-    scope = template_data.scope
-    if scope == TemplateScope.GLOBAL and not is_super_admin:
-        # Non-super admins can't create global templates
-        scope = TemplateScope.TENANT
-    
-    template_dict = {
-        "id": str(uuid.uuid4()),
-        "name": template_data.name,
-        "description": template_data.description,
-        "category": template_data.category,
-        "estimated_hours": template_data.estimated_hours,
-        "sub_tasks": [st.dict() for st in template_data.sub_tasks],
-        "scope": scope,
-        "tenant_id": tenant_id if scope == TemplateScope.TENANT else None,
-        "created_by": current_user.id,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "active": True
-    }
-    
-    template_dict = prepare_for_mongo(template_dict)
-    await db.project_templates.insert_one(template_dict)
-    
-    logger.info(f"Project template created: {template_data.name} (scope: {scope})")
-    
-    return ProjectTemplate(**parse_from_mongo(template_dict))
-
-
-@router.get("/project-templates")
-async def get_templates(
-    current_user=Depends(get_current_user),
-    include_global: bool = True
-):
-    """Get available project templates (tenant-specific + global)"""
-    tenant_id = await get_tenant_id(current_user)
-    
-    # Build query to get tenant-specific and global templates
-    if include_global:
-        query = {
-            "$or": [
-                {"tenant_id": tenant_id, "active": True},
-                {"scope": TemplateScope.GLOBAL, "active": True}
-            ]
-        }
-    else:
-        query = {"tenant_id": tenant_id, "active": True}
-    
-    templates = await db.project_templates.find(query).sort("name", 1).to_list(length=500)
-    return [ProjectTemplate(**parse_from_mongo(t)) for t in templates]
-
-
-@router.get("/project-templates/{template_id}")
-async def get_template(template_id: str, current_user=Depends(get_current_user)):
-    """Get a specific template"""
-    tenant_id = await get_tenant_id(current_user)
-    
-    template = await db.project_templates.find_one({"id": template_id, "active": True})
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    # Check access: must be global or belong to user's tenant
-    if template.get("scope") != TemplateScope.GLOBAL and template.get("tenant_id") != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return ProjectTemplate(**parse_from_mongo(template))
-
-
-@router.post("/project-templates/{template_id}/use")
-async def use_template(
+@router.post("/projects/from-template/{template_id}")
+async def create_project_from_template(
     template_id: str,
-    title: str,
-    client_name: Optional[str] = None,
-    assignee_id: Optional[str] = None,
-    due_date: Optional[str] = None,
-    current_user=Depends(get_current_user)
+    project_name: str,
+    due_date: str,
+    client_id: Optional[str] = None,
+    allocations: List[TaskAllocation] = [],
+    save_as_template: bool = False,
+    current_user = Depends(get_current_partner)
 ):
-    """Create a project from a template"""
-    tenant_id = await get_tenant_id(current_user)
-    
-    template = await db.project_templates.find_one({"id": template_id, "active": True})
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    # Check access
-    if template.get("scope") != TemplateScope.GLOBAL and template.get("tenant_id") != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    # Create project from template
-    project_data = ProjectCreate(
-        title=title,
-        description=template.get("description"),
-        client_name=client_name,
-        category=template.get("category"),
-        estimated_hours=template.get("estimated_hours"),
-        sub_tasks=[SubTaskCreate(**st) for st in template.get("sub_tasks", [])],
-        assignee_id=assignee_id,
-        due_date=due_date,
-        status=ProjectStatus.ALLOCATED if assignee_id else ProjectStatus.READY,
-        from_template_id=template_id
-    )
-    
-    return await create_project(project_data, current_user)
-
-
-@router.delete("/project-templates/{template_id}")
-async def delete_template(template_id: str, current_user=Depends(get_current_partner)):
-    """Deactivate a template (soft delete)"""
-    tenant_id = await get_tenant_id(current_user)
-    
+    """Create a project from a template with task allocations"""
     template = await db.project_templates.find_one({"id": template_id})
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Can only delete own tenant's templates
-    if template.get("tenant_id") != tenant_id:
-        raise HTTPException(status_code=403, detail="You can only delete your own templates")
-    
-    await db.project_templates.update_one(
-        {"id": template_id},
-        {"$set": {"active": False}}
+    # Build project data
+    project_data = ProjectCreate(
+        name=project_name,
+        description=template.get("description"),
+        client_id=client_id or template.get("client_id"),
+        category=template.get("category"),
+        due_date=due_date,
+        template_id=template_id,
+        tasks=allocations,
+        save_as_template=save_as_template
     )
     
-    return {"message": "Template deleted"}
+    return await create_project(project_data, current_user)
