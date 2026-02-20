@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Building2, Users, ClipboardList, Plus, Search, Edit2,
   ChevronRight, X, Check, Save, FolderKanban, FileText,
-  Clock, Trash2, Shield
+  Clock, Trash2, Shield, MoreVertical, Power, AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
@@ -14,6 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from './ui/dropdown-menu';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -29,6 +36,8 @@ const AdminPanel = () => {
   const [showEditTenant, setShowEditTenant] = useState(false);
   const [showCreateTenant, setShowCreateTenant] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   
   // Form states
