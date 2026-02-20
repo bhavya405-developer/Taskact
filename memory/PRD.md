@@ -129,6 +129,27 @@
 
 ### February 2026 Session - Latest Changes
 
+#### Project Management Refactor (Feb 20, 2026) - Session 4
+1. **Architectural Change - Project Tasks**
+   - Project sub-tasks now stored in main `tasks` collection with `project_id` reference
+   - Tasks belong to projects are real, visible tasks (not separate sub-task entity)
+   - Projects have: name, description, client, category, due_date (no estimated_hours)
+
+2. **Project Templates System**
+   - Separate `project_templates` collection for storing templates
+   - Two scopes: `global` (super-admin created) and `tenant` (partner created)
+   - Partners can only edit/delete their own tenant's templates
+
+3. **Frontend Improvements**
+   - Projects.js now fetches clients and categories internally
+   - Client dropdown shows 36+ clients, Category dropdown shows 16+ categories
+   - "Save as Template" option when creating projects
+   - Permission-based UI (can_edit, can_delete flags)
+
+4. **Data Model Updates**
+   - Task model made backward-compatible (optional creator_id, project_id fields)
+   - Project model includes client_id, category, due_date
+
 #### Critical Bug Fixes (Feb 20, 2026) - Session 3
 1. **Fixed Multi-Tenant Data Isolation** - CRITICAL FIX
    - Dashboard, categories, clients, timesheet, and attendance now correctly filter by `tenant_id`
