@@ -691,8 +691,8 @@ async def get_attendance_report(
             
             current_date += timedelta(days=1)
         
-        # Calculate effective days (full days + half days * 0.5)
-        effective_days = full_days + (half_days * 0.5)
+        # Calculate payable days = Full days + (0.5 × Half days) + weekly_off + holidays
+        payable_days = full_days + (half_days * 0.5) + total_sundays + total_holidays
         
         report.append({
             "user_id": user["id"],
@@ -701,8 +701,10 @@ async def get_attendance_report(
             "department": user.get("department", ""),
             "full_days": full_days,
             "half_days": half_days,
-            "effective_days": effective_days,
             "absent_days": absent_days,
+            "weekly_off": total_sundays,
+            "holidays": total_holidays,
+            "payable_days": payable_days,
             "total_hours": round(total_hours, 2),
             "average_hours_per_day": round(total_hours / (full_days + half_days), 2) if (full_days + half_days) > 0 else 0
         })
