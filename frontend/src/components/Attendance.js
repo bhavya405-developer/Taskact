@@ -1034,8 +1034,10 @@ const Attendance = () => {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Dept</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Full Days</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Half Days</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Effective</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Absent</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Week Off</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Holidays</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Payable Days</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Total Hrs</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Avg Hrs</th>
                 </tr>
@@ -1047,8 +1049,10 @@ const Attendance = () => {
                     <td className="px-3 py-2 text-xs text-gray-600">{row.department || '-'}</td>
                     <td className="px-3 py-2 text-sm text-center text-green-600 font-medium">{row.full_days}</td>
                     <td className="px-3 py-2 text-sm text-center text-yellow-600 font-medium">{row.half_days}</td>
-                    <td className="px-3 py-2 text-sm text-center text-blue-600 font-bold">{row.effective_days}</td>
                     <td className="px-3 py-2 text-sm text-center text-red-600 font-medium">{row.absent_days}</td>
+                    <td className="px-3 py-2 text-sm text-center text-purple-600 font-medium">{row.weekly_off}</td>
+                    <td className="px-3 py-2 text-sm text-center text-blue-600 font-medium">{row.holidays}</td>
+                    <td className="px-3 py-2 text-sm text-center text-indigo-600 font-bold">{row.payable_days}</td>
                     <td className="px-3 py-2 text-sm text-center text-gray-900">{row.total_hours}</td>
                     <td className="px-3 py-2 text-sm text-center text-gray-900">{row.average_hours_per_day}</td>
                   </tr>
