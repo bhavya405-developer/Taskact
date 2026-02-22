@@ -830,7 +830,8 @@ async def export_attendance_report(
             
             current_date += timedelta(days=1)
         
-        effective_days = full_days + (half_days * 0.5)
+        # Calculate payable days = Full days + (0.5 × Half days) + weekly_off + holidays
+        payable_days = full_days + (half_days * 0.5) + total_sundays + total_holidays
         
         report_data.append({
             "Name": user["name"],
@@ -838,8 +839,10 @@ async def export_attendance_report(
             "Role": user["role"],
             "Full Days": full_days,
             "Half Days": half_days,
-            "Effective Days": effective_days,
-            "Absent Days": absent_days,
+            "Absent": absent_days,
+            "Week Off": total_sundays,
+            "Holidays": total_holidays,
+            "Payable Days": payable_days,
             "Total Hours": round(total_hours, 2),
             "Avg Hours/Day": round(total_hours / (full_days + half_days), 2) if (full_days + half_days) > 0 else 0
         })
