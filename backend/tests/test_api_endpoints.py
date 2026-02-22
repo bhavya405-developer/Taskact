@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 
 # Base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://workflow-hub-240.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://proj-manage-stage.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 PARTNER_EMAIL = "bhavika@sundesha.in"
