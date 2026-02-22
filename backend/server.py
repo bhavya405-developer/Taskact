@@ -1496,6 +1496,12 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
 async def root():
     return {"message": "TaskAct API is running"}
 
+# Health check endpoint for Kubernetes
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Kubernetes liveness/readiness probes"""
+    return {"status": "healthy", "service": "taskact-backend"}
+
 # Include routers in the main app
 app.include_router(api_router)
 app.include_router(auth_router, prefix="/api")  # Auth routes from routes/auth.py
