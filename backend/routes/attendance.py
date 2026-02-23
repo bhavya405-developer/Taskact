@@ -444,8 +444,13 @@ async def clock_out(
     
     now_utc = datetime.now(timezone.utc)
     
-    # Get geofence settings
-    settings = await get_geofence_settings()
+    # Get tenant-specific geofence settings
+    settings_id = f"geofence_settings_{current_user.tenant_id}" if current_user.tenant_id else "geofence_settings"
+    settings = await db.geofence_settings.find_one({"id": settings_id})
+    if not settings:
+        settings = {"enabled": False, "locations": [], "radius_meters": 100.0}
+    else:
+        settings = parse_from_mongo(settings)
     
     # Calculate distance from office (for record, not enforced on clock out)
     is_within_geofence = None
