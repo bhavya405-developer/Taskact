@@ -516,13 +516,19 @@ async def bulk_import_tasks(
 
 @router.get("/tasks/export")
 async def export_tasks(current_user=Depends(get_current_partner)):
-    """Export all tasks to Excel file"""
+    """Export all tasks to Excel file (tenant-filtered)"""
+    
+    # Get tenant_id
+    tenant_id = await get_tenant_id(current_user)
     
     # Update overdue tasks before export
-    await update_overdue_tasks()
+    await update_overdue_tasks(tenant_id)
     
-    # Get all tasks
-    tasks = await db.tasks.find({}).sort("created_at", -1).to_list(length=5000)
+    # Get all tasks for this tenant
+    query = {}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    tasks = await db.tasks.find(query).sort("created_at", -1).to_list(length=5000)
     
     if not tasks:
         raise HTTPException(status_code=404, detail="No tasks found to export")
@@ -543,7 +549,8 @@ async def export_tasks(current_user=Depends(get_current_partner)):
             'Due Date': format_date_for_display(task.get('due_date')),
             'Created At': format_date_for_display(task.get('created_at')),
             'Updated At': format_date_for_display(task.get('updated_at')),
-            'Completed At': format_date_for_display(task.get('completed_at'))
+            'Completed At': format_date_for_display(task.get('completed_at')),
+            'Actual Hours': task.get('actual_hours') or ''
         })
     
     df = pd.DataFrame(export_data)
