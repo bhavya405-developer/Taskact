@@ -789,15 +789,17 @@ async def export_attendance_report(
     else:
         end_date = datetime(report_year, report_month + 1, 1, tzinfo=timezone.utc)
     
-    # Get attendance rules
-    rules = await db.attendance_rules.find_one({"id": "attendance_rules"})
+    # Get tenant-specific attendance rules
+    rules_id = f"attendance_rules_{current_user.tenant_id}" if current_user.tenant_id else "attendance_rules"
+    rules = await db.attendance_rules.find_one({"id": rules_id})
     min_hours_full_day = rules.get("min_hours_full_day", 8.0) if rules else 8.0
     working_days = rules.get("working_days", [0, 1, 2, 3, 4, 5]) if rules else [0, 1, 2, 3, 4, 5]
     
-    # Get holidays for the month
-    holidays = await db.holidays.find({
-        "date": {"$regex": f"^{report_year}-{report_month:02d}"}
-    }).to_list(length=5000)
+    # Get tenant-specific holidays for the month
+    holiday_query = {"date": {"$regex": f"^{report_year}-{report_month:02d}"}}
+    if current_user.tenant_id:
+        holiday_query["tenant_id"] = current_user.tenant_id
+    holidays = await db.holidays.find(holiday_query).to_list(length=5000)
     holiday_dates = {h["date"] for h in holidays}
     
     # Calculate working days summary
@@ -818,16 +820,22 @@ async def export_attendance_report(
         
         current_date += timedelta(days=1)
     
-    # Get all users
-    users = await db.users.find({"active": True}).to_list(length=5000)
+    # Get all users filtered by tenant
+    user_query = {"active": True}
+    if current_user.tenant_id:
+        user_query["tenant_id"] = current_user.tenant_id
+    users = await db.users.find(user_query).to_list(length=5000)
     
     report_data = []
     for user in users:
-        # Get attendance records for this user in the month
-        records = await db.attendance.find({
+        # Get attendance records for this user in the month (filtered by tenant)
+        record_query = {
             "user_id": user["id"],
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-        }).to_list(length=5000)
+        }
+        if current_user.tenant_id:
+            record_query["tenant_id"] = current_user.tenant_id
+        records = await db.attendance.find(record_query).to_list(length=5000)
         
         clock_ins = [r for r in records if r["type"] == AttendanceType.CLOCK_IN.value]
         clock_outs = [r for r in records if r["type"] == AttendanceType.CLOCK_OUT.value]
