@@ -835,16 +835,21 @@ async def get_unread_notification_count(current_user: UserResponse = Depends(get
 # Category Management endpoints (Partners only)
 @api_router.post("/categories", response_model=Category)
 async def create_category(category_data: CategoryCreate, current_user: UserResponse = Depends(get_current_partner)):
-    # Check if category name already exists
-    existing_category = await db.categories.find_one({"name": category_data.name, "active": True})
+    # Check if category name already exists for this tenant
+    exist_query = {"name": category_data.name, "active": True}
+    if current_user.tenant_id:
+        exist_query["tenant_id"] = current_user.tenant_id
+    existing_category = await db.categories.find_one(exist_query)
     if existing_category:
         raise HTTPException(status_code=400, detail="Category name already exists")
     
     category_dict = category_data.dict()
     category_dict["created_by"] = current_user.id
+    category_dict["tenant_id"] = current_user.tenant_id  # Add tenant_id
     category = Category(**category_dict)
     
     category_dict = prepare_for_mongo(category.dict())
+    category_dict["tenant_id"] = current_user.tenant_id  # Ensure tenant_id is in the stored document
     await db.categories.insert_one(category_dict)
     return category
 
@@ -1030,8 +1035,11 @@ async def bulk_import_categories(
                 
                 category_name = row['Name'].strip()
                 
-                # Check if category already exists
-                existing = await db.categories.find_one({"name": category_name, "active": True})
+                # Check if category already exists for this tenant
+                exist_query = {"name": category_name, "active": True}
+                if current_user.tenant_id:
+                    exist_query["tenant_id"] = current_user.tenant_id
+                existing = await db.categories.find_one(exist_query)
                 if existing:
                     errors.append(f"Row {index + 2}: Category '{category_name}' already exists")
                     error_count += 1
@@ -1047,6 +1055,7 @@ async def bulk_import_categories(
                 category_dict = category_data.copy()
                 category_dict["id"] = str(uuid.uuid4())
                 category_dict["created_by"] = current_user.id
+                category_dict["tenant_id"] = current_user.tenant_id  # Add tenant_id
                 category_dict["created_at"] = datetime.now(timezone.utc)
                 category_dict["active"] = True
                 
@@ -1073,16 +1082,21 @@ async def bulk_import_categories(
 # Client Management endpoints (Partners only)
 @api_router.post("/clients", response_model=Client)
 async def create_client(client_data: ClientCreate, current_user: UserResponse = Depends(get_current_partner)):
-    # Check if client name already exists
-    existing_client = await db.clients.find_one({"name": client_data.name, "active": True})
+    # Check if client name already exists for this tenant
+    exist_query = {"name": client_data.name, "active": True}
+    if current_user.tenant_id:
+        exist_query["tenant_id"] = current_user.tenant_id
+    existing_client = await db.clients.find_one(exist_query)
     if existing_client:
         raise HTTPException(status_code=400, detail="Client name already exists")
     
     client_dict = client_data.dict()
     client_dict["created_by"] = current_user.id
+    client_dict["tenant_id"] = current_user.tenant_id  # Add tenant_id
     client = Client(**client_dict)
     
     client_dict = prepare_for_mongo(client.dict())
+    client_dict["tenant_id"] = current_user.tenant_id  # Ensure tenant_id is in the stored document
     await db.clients.insert_one(client_dict)
     return client
 
@@ -1317,8 +1331,11 @@ async def bulk_import_clients(
                 
                 client_name = str(row[name_column]).strip()
                 
-                # Check if client already exists
-                existing = await db.clients.find_one({"name": client_name, "active": True})
+                # Check if client already exists for this tenant
+                exist_query = {"name": client_name, "active": True}
+                if current_user.tenant_id:
+                    exist_query["tenant_id"] = current_user.tenant_id
+                existing = await db.clients.find_one(exist_query)
                 if existing:
                     errors.append(f"Row {index + 2}: Client '{client_name}' already exists")
                     error_count += 1
@@ -1343,6 +1360,7 @@ async def bulk_import_clients(
                     "address": get_optional('Address'),
                     "notes": get_optional('Notes'),
                     "created_by": current_user.id,
+                    "tenant_id": current_user.tenant_id,  # Add tenant_id
                     "created_at": datetime.now(timezone.utc),
                     "active": True
                 }
