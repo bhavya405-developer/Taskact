@@ -492,8 +492,11 @@ async def export_team_timesheet(
             end_date = start_date.replace(month=ref_date.month + 1)
         period_label = ref_date.strftime("%B_%Y")
     
-    # Get all users
-    users = await db.users.find({"active": True}).to_list(length=100)
+    # Get all users (filter by tenant)
+    user_query = {"active": True}
+    if current_user.tenant_id:
+        user_query["tenant_id"] = current_user.tenant_id
+    users = await db.users.find(user_query).to_list(length=100)
     
     # Build team summary
     team_data = []
@@ -501,14 +504,19 @@ async def export_team_timesheet(
     grand_total_hours = 0
     
     for user in users:
-        completed_tasks = await db.tasks.find({
+        # Filter tasks by tenant
+        task_query = {
             "assignee_id": user["id"],
             "status": TaskStatus.COMPLETED,
             "completed_at": {
                 "$gte": start_date.isoformat(),
                 "$lt": end_date.isoformat()
             }
-        }).sort("completed_at", 1).to_list(length=500)
+        }
+        if current_user.tenant_id:
+            task_query["tenant_id"] = current_user.tenant_id
+        
+        completed_tasks = await db.tasks.find(task_query).sort("completed_at", 1).to_list(length=500)
         
         total_hours = sum(t.get("actual_hours", 0) or 0 for t in completed_tasks)
         grand_total_hours += total_hours
