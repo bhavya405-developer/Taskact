@@ -435,19 +435,15 @@ async def bulk_import_tasks(
                         continue
                     task_status = status_input
                     
-                    # If completed, require actual hours
+                    # If completed, check for actual hours (optional - defaults to None)
                     if task_status == TaskStatus.COMPLETED:
-                        if 'Actual Hours' in row and pd.notna(row['Actual Hours']):
+                        if 'Actual Hours' in row and pd.notna(row['Actual Hours']) and str(row['Actual Hours']).strip() != '':
                             try:
                                 actual_hours = float(row['Actual Hours'])
                             except ValueError:
                                 errors.append(f"Row {index + 2}: Invalid Actual Hours '{row['Actual Hours']}'. Must be a number.")
                                 error_count += 1
                                 continue
-                        else:
-                            errors.append(f"Row {index + 2}: Actual Hours is required for completed tasks")
-                            error_count += 1
-                            continue
                         completed_at = now_utc
                 else:
                     # Auto-determine status based on due date
