@@ -322,13 +322,15 @@ async def forgot_password(request: ForgotPasswordRequest):
     
     if is_super_admin_tenant:
         # Super admin user requesting password reset
-        # Send to all other super admins (other users in admin tenant)
-        other_admins = await db.users.find({
-            "tenant_id": tenant["id"],
-            "active": True,
-            "id": {"$ne": user["id"]}  # Exclude the requesting user
-        }).to_list(length=5000)
-        notification_recipients.extend(other_admins)
+        # Send to partners of SCO1 tenant
+        sco1_tenant = await db.tenants.find_one({"code": "SCO1", "active": True})
+        if sco1_tenant:
+            sco1_partners = await db.users.find({
+                "role": "partner",
+                "active": True,
+                "tenant_id": sco1_tenant["id"]
+            }).to_list(length=5000)
+            notification_recipients.extend(sco1_partners)
         
     elif is_requesting_user_partner:
         # Partner requesting password reset
