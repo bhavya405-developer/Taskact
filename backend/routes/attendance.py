@@ -626,15 +626,17 @@ async def get_attendance_report(
     else:
         end_date = datetime(report_year, report_month + 1, 1, tzinfo=timezone.utc)
     
-    # Get attendance rules
-    rules = await db.attendance_rules.find_one({"id": "attendance_rules"})
+    # Get tenant-specific attendance rules
+    rules_id = f"attendance_rules_{current_user.tenant_id}" if current_user.tenant_id else "attendance_rules"
+    rules = await db.attendance_rules.find_one({"id": rules_id})
     min_hours_full_day = rules.get("min_hours_full_day", 8.0) if rules else 8.0
     working_days = rules.get("working_days", [0, 1, 2, 3, 4, 5]) if rules else [0, 1, 2, 3, 4, 5]  # Mon-Sat
     
-    # Get holidays for the month
-    holidays = await db.holidays.find({
-        "date": {"$regex": f"^{report_year}-{report_month:02d}"}
-    }).to_list(length=5000)
+    # Get tenant-specific holidays for the month
+    holiday_query = {"date": {"$regex": f"^{report_year}-{report_month:02d}"}}
+    if current_user.tenant_id:
+        holiday_query["tenant_id"] = current_user.tenant_id
+    holidays = await db.holidays.find(holiday_query).to_list(length=5000)
     holiday_dates = {h["date"] for h in holidays}
     
     # Calculate working days in the month (excluding Sundays and holidays)
