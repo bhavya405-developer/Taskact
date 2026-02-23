@@ -149,9 +149,22 @@ async def get_current_partner(current_user=Depends(get_current_user)):
 
 @router.get("/attendance/settings")
 async def get_attendance_settings(current_user=Depends(get_current_user)):
-    """Get geofence settings"""
-    settings = await get_geofence_settings()
-    return settings
+    """Get geofence settings for the current tenant"""
+    # Use tenant-specific settings ID
+    settings_id = f"geofence_settings_{current_user.tenant_id}" if current_user.tenant_id else "geofence_settings"
+    settings = await db.geofence_settings.find_one({"id": settings_id})
+    if not settings:
+        # Return defaults for this tenant
+        return {
+            "id": settings_id,
+            "tenant_id": current_user.tenant_id,
+            "enabled": False,
+            "locations": [],
+            "radius_meters": 100.0,
+            "updated_by": None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+    return parse_from_mongo(settings)
 
 
 @router.put("/attendance/settings")
@@ -159,7 +172,7 @@ async def update_attendance_settings(
     settings_update: dict,
     current_user=Depends(get_current_partner)
 ):
-    """Update geofence settings (Partners only)"""
+    """Update geofence settings (Partners only) - tenant specific"""
     update_data = {k: v for k, v in settings_update.items() if v is not None}
     
     if not update_data:
@@ -167,6 +180,11 @@ async def update_attendance_settings(
     
     update_data["updated_by"] = current_user.name
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["tenant_id"] = current_user.tenant_id  # Ensure tenant_id is set
+    
+    # Use tenant-specific settings ID
+    settings_id = f"geofence_settings_{current_user.tenant_id}" if current_user.tenant_id else "geofence_settings"
+    update_data["id"] = settings_id
     
     # If locations are updated, reverse geocode addresses for any without addresses
     if "locations" in update_data:
@@ -180,25 +198,27 @@ async def update_attendance_settings(
                     loc["address"] = address
     
     await db.geofence_settings.update_one(
-        {"id": "geofence_settings"},
+        {"id": settings_id},
         {"$set": update_data},
         upsert=True
     )
     
-    settings = await get_geofence_settings()
-    return settings
+    return await get_attendance_settings(current_user)
 
 
 # ==================== ATTENDANCE RULES ROUTES ====================
 
 @router.get("/attendance/rules")
 async def get_attendance_rules(current_user=Depends(get_current_user)):
-    """Get attendance rules"""
-    rules = await db.attendance_rules.find_one({"id": "attendance_rules"})
+    """Get attendance rules for the current tenant"""
+    # Use tenant-specific rules ID
+    rules_id = f"attendance_rules_{current_user.tenant_id}" if current_user.tenant_id else "attendance_rules"
+    rules = await db.attendance_rules.find_one({"id": rules_id})
     if not rules:
-        # Return defaults
+        # Return defaults for this tenant
         return {
-            "id": "attendance_rules",
+            "id": rules_id,
+            "tenant_id": current_user.tenant_id,
             "min_hours_full_day": 8.0,
             "working_days": [0, 1, 2, 3, 4, 5],  # Mon-Sat
             "working_days_names": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -214,7 +234,7 @@ async def update_attendance_rules(
     rules_update: dict,
     current_user=Depends(get_current_partner)
 ):
-    """Update attendance rules (Partners only)"""
+    """Update attendance rules (Partners only) - tenant specific"""
     update_data = {k: v for k, v in rules_update.items() if v is not None}
     
     if not update_data:
@@ -222,9 +242,14 @@ async def update_attendance_rules(
     
     update_data["updated_by"] = current_user.name
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["tenant_id"] = current_user.tenant_id  # Ensure tenant_id is set
+    
+    # Use tenant-specific rules ID
+    rules_id = f"attendance_rules_{current_user.tenant_id}" if current_user.tenant_id else "attendance_rules"
+    update_data["id"] = rules_id
     
     await db.attendance_rules.update_one(
-        {"id": "attendance_rules"},
+        {"id": rules_id},
         {"$set": update_data},
         upsert=True
     )
@@ -239,8 +264,11 @@ async def get_holidays(
     year: Optional[int] = None,
     current_user=Depends(get_current_user)
 ):
-    """Get holidays for a year"""
+    """Get holidays for a year - tenant specific"""
     query = {}
+    # Filter by tenant_id
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
     if year:
         query["date"] = {"$regex": f"^{year}"}
     
@@ -253,14 +281,18 @@ async def add_holiday(
     holiday: dict,
     current_user=Depends(get_current_partner)
 ):
-    """Add a holiday (Partners only)"""
-    # Check if holiday already exists for this date
-    existing = await db.holidays.find_one({"date": holiday.get("date")})
+    """Add a holiday (Partners only) - tenant specific"""
+    # Check if holiday already exists for this date for this tenant
+    exist_query = {"date": holiday.get("date")}
+    if current_user.tenant_id:
+        exist_query["tenant_id"] = current_user.tenant_id
+    existing = await db.holidays.find_one(exist_query)
     if existing:
         raise HTTPException(status_code=400, detail="Holiday already exists for this date")
     
     holiday_dict = {
         "id": str(uuid.uuid4()),
+        "tenant_id": current_user.tenant_id,  # Add tenant_id
         "date": holiday.get("date"),
         "name": holiday.get("name"),
         "is_paid": holiday.get("is_paid", True),
@@ -277,8 +309,12 @@ async def delete_holiday(
     holiday_id: str,
     current_user=Depends(get_current_partner)
 ):
-    """Delete a holiday (Partners only)"""
-    result = await db.holidays.delete_one({"id": holiday_id})
+    """Delete a holiday (Partners only) - tenant specific"""
+    # Ensure the holiday belongs to this tenant
+    query = {"id": holiday_id}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    result = await db.holidays.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Holiday not found")
     return {"message": "Holiday deleted successfully"}
