@@ -269,20 +269,27 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
 
 @router.post("/auth/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
-    """Send OTP to partner's notification for password reset (tenant-aware)"""
+    """
+    Send OTP notification for password reset (tenant-aware)
+    
+    Logic:
+    - Non-partner user: OTP notification goes to all partners of the same tenant
+    - Partner user: OTP notification goes to OTHER partners of the same tenant AND super admin
+    - Super admin user: OTP notification goes to all super admins (admin tenant users)
+    """
     # First, verify the company code (tenant)
     tenant = await db.tenants.find_one({"code": request.company_code.upper(), "active": True})
     if not tenant:
-        return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
+        return {"message": "Password reset request submitted. Please contact your administrator for the OTP."}
     
     # Check if user exists within the tenant
     user = await db.users.find_one({"email": request.email, "tenant_id": tenant["id"]})
     if not user:
-        return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
+        return {"message": "Password reset request submitted. Please contact your administrator for the OTP."}
     
     # Check if user is active
     if not user.get("active", True):
-        return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
+        return {"message": "Password reset request submitted. Please contact your administrator for the OTP."}
     
     # Generate OTP
     otp = generate_otp(6)
@@ -294,7 +301,7 @@ async def forgot_password(request: ForgotPasswordRequest):
         {"$set": {"used": True}}
     )
     
-    # Store OTP in database with tenant_id
+    # Store OTP in database with tenant_id and user info
     otp_record = OTPRecord(
         email=request.email,
         otp=otp,
@@ -302,39 +309,75 @@ async def forgot_password(request: ForgotPasswordRequest):
     )
     otp_dict = prepare_for_mongo(otp_record.dict())
     otp_dict["tenant_id"] = tenant["id"]
+    otp_dict["user_id"] = user["id"]
+    otp_dict["user_role"] = user.get("role", "")
     await db.otp_records.insert_one(otp_dict)
     
-    # Determine which partners to notify
-    # For admin tenant (TASKACT1), send to Sundesha & Co LLP partners
     user_name = user.get("name", "User")
+    user_role = user.get("role", "")
+    is_requesting_user_partner = user_role == "partner"
+    is_super_admin_tenant = tenant.get("is_admin_tenant") or tenant.get("code") == "TASKACT1"
     
-    if tenant.get("is_admin_tenant") or tenant.get("code") == "TASKACT1":
-        # Find SCO1 tenant and its partners
-        sco1_tenant = await db.tenants.find_one({"code": "SCO1", "active": True})
-        if sco1_tenant:
-            partners = await db.users.find({
-                "role": "partner",
-                "active": True,
-                "tenant_id": sco1_tenant["id"]
+    notification_recipients = []
+    
+    if is_super_admin_tenant:
+        # Super admin user requesting password reset
+        # Send to all other super admins (other users in admin tenant)
+        other_admins = await db.users.find({
+            "tenant_id": tenant["id"],
+            "active": True,
+            "id": {"$ne": user["id"]}  # Exclude the requesting user
+        }).to_list(length=5000)
+        notification_recipients.extend(other_admins)
+        
+    elif is_requesting_user_partner:
+        # Partner requesting password reset
+        # Send to OTHER partners of the same tenant AND to super admin
+        
+        # Get other partners in the same tenant
+        other_partners = await db.users.find({
+            "role": "partner",
+            "active": True,
+            "tenant_id": tenant["id"],
+            "id": {"$ne": user["id"]}  # Exclude the requesting partner
+        }).to_list(length=5000)
+        notification_recipients.extend(other_partners)
+        
+        # Get super admin users (from admin tenant)
+        admin_tenant = await db.tenants.find_one({"is_admin_tenant": True, "active": True})
+        if not admin_tenant:
+            admin_tenant = await db.tenants.find_one({"code": "TASKACT1", "active": True})
+        
+        if admin_tenant:
+            super_admins = await db.users.find({
+                "tenant_id": admin_tenant["id"],
+                "active": True
             }).to_list(length=5000)
-        else:
-            partners = []
+            notification_recipients.extend(super_admins)
     else:
-        # Regular tenant - send to same tenant partners
+        # Non-partner user (Associate, Junior, Intern) requesting password reset
+        # Send to ALL partners of the same tenant
         partners = await db.users.find({
             "role": "partner",
             "active": True,
             "tenant_id": tenant["id"]
         }).to_list(length=5000)
+        notification_recipients.extend(partners)
     
-    for partner in partners:
+    # Send notifications to all recipients
+    for recipient in notification_recipients:
+        role_label = f" ({user_role})" if user_role else ""
         await create_notification(
-            user_id=partner["id"],
+            user_id=recipient["id"],
             title="Password Reset OTP Request",
-            message=f"{user_name} ({request.email}) has requested a password reset. OTP: {otp} (Valid for 10 minutes)"
+            message=f"{user_name}{role_label} ({request.email}) has requested a password reset. OTP: {otp} (Valid for 10 minutes)"
         )
     
-    return {"message": "Password reset request submitted. Please contact your partner for the OTP."}
+    # Log for debugging
+    if logger:
+        logger.info(f"Password reset OTP sent for {request.email} (role: {user_role}) to {len(notification_recipients)} recipients")
+    
+    return {"message": "Password reset request submitted. Please contact your administrator for the OTP."}
 
 
 @router.post("/auth/verify-otp")
