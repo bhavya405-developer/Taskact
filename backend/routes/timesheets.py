@@ -368,19 +368,26 @@ async def export_timesheet(
             end_date = start_date.replace(month=ref_date.month + 1)
         period_label = ref_date.strftime("%B_%Y")
     
-    # Get user info
-    user = await db.users.find_one({"id": target_user_id})
+    # Get user info (filter by tenant for security)
+    user_query = {"id": target_user_id}
+    if current_user.tenant_id:
+        user_query["tenant_id"] = current_user.tenant_id
+    user = await db.users.find_one(user_query)
     user_name = user["name"] if user else "Unknown"
     
-    # Get completed tasks
-    completed_tasks = await db.tasks.find({
+    # Get completed tasks (filter by tenant)
+    task_query = {
         "assignee_id": target_user_id,
         "status": TaskStatus.COMPLETED,
         "completed_at": {
             "$gte": start_date.isoformat(),
             "$lt": end_date.isoformat()
         }
-    }).sort("completed_at", 1).to_list(length=500)
+    }
+    if current_user.tenant_id:
+        task_query["tenant_id"] = current_user.tenant_id
+    
+    completed_tasks = await db.tasks.find(task_query).sort("completed_at", 1).to_list(length=500)
     
     # Build data for Excel
     timesheet_data = []
