@@ -177,27 +177,34 @@ async def download_tasks_template(current_user=Depends(get_current_partner)):
     
     # Create sample data with headers
     template_data = {
-        'Title': ['Review Contract for ABC Corp', 'Prepare Tax Filing', 'Client Meeting Follow-up'],
+        'Title': ['Review Contract for ABC Corp', 'Prepare Tax Filing', 'Client Meeting Follow-up', 'Quarterly Audit Report'],
         'Description': [
             'Review and analyze the contract terms',
             'Prepare quarterly tax filing documents',
-            'Follow up on action items from client meeting'
+            'Follow up on action items from client meeting',
+            'Complete the quarterly audit report'
         ],
         'Client Name': [clients[0]['name'] if clients else 'Sample Client', 
                        clients[1]['name'] if len(clients) > 1 else 'Sample Client',
+                       clients[0]['name'] if clients else 'Sample Client',
                        clients[0]['name'] if clients else 'Sample Client'],
         'Category': [categories[0]['name'] if categories else 'General',
                     categories[1]['name'] if len(categories) > 1 else 'General',
+                    categories[0]['name'] if categories else 'General',
                     categories[0]['name'] if categories else 'General'],
         'Assignee Name': [users[1]['name'] if len(users) > 1 else users[0]['name'],
                           users[2]['name'] if len(users) > 2 else users[0]['name'],
-                          users[1]['name'] if len(users) > 1 else users[0]['name']],
-        'Priority': ['high', 'medium', 'low'],
+                          users[1]['name'] if len(users) > 1 else users[0]['name'],
+                          users[0]['name'] if users else 'Sample User'],
+        'Priority': ['high', 'medium', 'low', 'medium'],
+        'Status': ['', 'pending', 'on_hold', 'completed'],
         'Due Date': [
             (datetime.now(timezone.utc) + timedelta(days=7)).strftime('%d-%b-%Y'),
             (datetime.now(timezone.utc) + timedelta(days=14)).strftime('%d-%b-%Y'),
-            (datetime.now(timezone.utc) + timedelta(days=3)).strftime('%d-%b-%Y')
-        ]
+            (datetime.now(timezone.utc) + timedelta(days=3)).strftime('%d-%b-%Y'),
+            (datetime.now(timezone.utc) - timedelta(days=5)).strftime('%d-%b-%Y')
+        ],
+        'Actual Hours': ['', '', '', '4.5']
     }
     
     df = pd.DataFrame(template_data)
@@ -231,7 +238,9 @@ async def download_tasks_template(current_user=Depends(get_current_partner)):
         worksheet.set_column('D:D', 20)  # Category
         worksheet.set_column('E:E', 25)  # Assignee Name
         worksheet.set_column('F:F', 12)  # Priority
-        worksheet.set_column('G:G', 15)  # Due Date
+        worksheet.set_column('G:G', 12)  # Status
+        worksheet.set_column('H:H', 15)  # Due Date
+        worksheet.set_column('I:I', 12)  # Actual Hours
         
         # Add reference sheets
         # Users reference
@@ -261,7 +270,13 @@ async def download_tasks_template(current_user=Depends(get_current_partner)):
                 '5. Category: Required - Must match existing category name exactly',
                 '6. Assignee Name: Required - Name of team member to assign task',
                 '7. Priority: Required - Must be: low, medium, high, or urgent',
-                '8. Due Date: Optional - Format: DD-MMM-YYYY (e.g., 15-Jan-2025)',
+                '8. Status: Optional - Must be: pending, on_hold, overdue, or completed',
+                '   - If blank, system will auto-determine based on due date',
+                '   - pending: Task is active and waiting to be worked on',
+                '   - on_hold: Task is paused',
+                '   - completed: Task is finished (requires Actual Hours)',
+                '9. Due Date: Optional - Format: DD-MMM-YYYY (e.g., 15-Jan-2025)',
+                '10. Actual Hours: Required for completed tasks - Time spent on the task',
                 '',
                 'Reference sheets are provided for:',
                 '- Team Members: List of all active users with their names',
@@ -269,7 +284,8 @@ async def download_tasks_template(current_user=Depends(get_current_partner)):
                 '- Categories: List of all active categories',
                 '',
                 'Notes:',
-                '- All tasks will be created with "pending" status',
+                '- If Status is blank and due date is past, status will be set to "overdue"',
+                '- If Status is blank and due date is in future (or no due date), status is "pending"',
                 '- Creator will be set to the partner uploading the file',
                 '- Save the file and upload it back to import tasks'
             ]
