@@ -906,11 +906,14 @@ async def export_attendance_report(
     # Create daily detail data (employee-wise in/out times)
     daily_detail_data = []
     for user in users:
-        # Get attendance records for this user in the month
-        records = await db.attendance.find({
+        # Get attendance records for this user in the month (filtered by tenant)
+        record_query = {
             "user_id": user["id"],
             "timestamp": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-        }).to_list(length=5000)
+        }
+        if current_user.tenant_id:
+            record_query["tenant_id"] = current_user.tenant_id
+        records = await db.attendance.find(record_query).to_list(length=5000)
         
         # Build dictionaries safely handling datetime objects
         clock_ins = {}
