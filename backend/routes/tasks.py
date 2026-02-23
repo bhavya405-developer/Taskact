@@ -312,6 +312,9 @@ async def bulk_import_tasks(
     if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
         raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
     
+    # Get tenant_id for the current user
+    tenant_id = await get_tenant_id(current_user)
+    
     try:
         # Read file content
         content = await file.read()
@@ -331,15 +334,24 @@ async def bulk_import_tasks(
                 detail=f"Missing required columns: {', '.join(missing_columns)}"
             )
         
-        # Get all users for name lookup
-        users = await db.users.find({"active": True}).to_list(length=5000)
+        # Get all users for name lookup (within tenant)
+        user_query = {"active": True}
+        if tenant_id:
+            user_query["tenant_id"] = tenant_id
+        users = await db.users.find(user_query).to_list(length=5000)
         name_to_user = {u['name'].lower(): u for u in users}
         
-        # Get all clients and categories for validation
-        clients = await db.clients.find({"active": True}).to_list(length=5000)
+        # Get all clients and categories for validation (within tenant)
+        client_query = {"active": True}
+        if tenant_id:
+            client_query["tenant_id"] = tenant_id
+        clients = await db.clients.find(client_query).to_list(length=5000)
         client_names = {c['name'].lower(): c['name'] for c in clients}
         
-        categories = await db.categories.find({"active": True}).to_list(length=5000)
+        category_query = {"active": True}
+        if tenant_id:
+            category_query["tenant_id"] = tenant_id
+        categories = await db.categories.find(category_query).to_list(length=5000)
         category_names = {c['name'].lower(): c['name'] for c in categories}
         
         success_count = 0
@@ -347,8 +359,11 @@ async def bulk_import_tasks(
         errors = []
         created_items = []
         
-        # Valid priorities
+        # Valid priorities and statuses
         valid_priorities = ['low', 'medium', 'high', 'urgent']
+        valid_statuses = ['pending', 'on_hold', 'overdue', 'completed']
+        
+        now_utc = datetime.now(timezone.utc)
         
         # Process each row
         for index, row in df.iterrows():
@@ -407,7 +422,41 @@ async def bulk_import_tasks(
                         error_count += 1
                         continue
                 
-                # Create task
+                # Parse status - if provided, validate; if not, auto-determine
+                task_status = TaskStatus.PENDING  # Default
+                completed_at = None
+                actual_hours = None
+                
+                if 'Status' in row and pd.notna(row['Status']) and str(row['Status']).strip() != '':
+                    status_input = str(row['Status']).strip().lower()
+                    if status_input not in valid_statuses:
+                        errors.append(f"Row {index + 2}: Invalid status '{row['Status']}'. Must be: pending, on_hold, overdue, or completed")
+                        error_count += 1
+                        continue
+                    task_status = status_input
+                    
+                    # If completed, require actual hours
+                    if task_status == TaskStatus.COMPLETED:
+                        if 'Actual Hours' in row and pd.notna(row['Actual Hours']):
+                            try:
+                                actual_hours = float(row['Actual Hours'])
+                            except ValueError:
+                                errors.append(f"Row {index + 2}: Invalid Actual Hours '{row['Actual Hours']}'. Must be a number.")
+                                error_count += 1
+                                continue
+                        else:
+                            errors.append(f"Row {index + 2}: Actual Hours is required for completed tasks")
+                            error_count += 1
+                            continue
+                        completed_at = now_utc
+                else:
+                    # Auto-determine status based on due date
+                    if due_date and due_date < now_utc:
+                        task_status = TaskStatus.OVERDUE
+                    else:
+                        task_status = TaskStatus.PENDING
+                
+                # Create task with tenant_id
                 task_dict = {
                     "id": str(uuid.uuid4()),
                     "title": title,
@@ -418,19 +467,28 @@ async def bulk_import_tasks(
                     "assignee_name": assignee['name'],
                     "creator_id": current_user.id,
                     "creator_name": current_user.name,
-                    "status": TaskStatus.PENDING,
+                    "status": task_status,
                     "priority": priority,
                     "due_date": due_date.isoformat() if due_date else None,
-                    "created_at": datetime.now(timezone.utc),
-                    "updated_at": datetime.now(timezone.utc),
-                    "completed_at": None
+                    "created_at": now_utc,
+                    "updated_at": now_utc,
+                    "completed_at": completed_at.isoformat() if completed_at else None,
+                    "actual_hours": actual_hours,
+                    "tenant_id": tenant_id,  # Add tenant_id
+                    "status_history": [{
+                        "status": task_status,
+                        "changed_at": now_utc.isoformat(),
+                        "changed_at_ist": format_ist_datetime(now_utc),
+                        "changed_by": current_user.name,
+                        "action": "imported"
+                    }]
                 }
                 
                 task_dict = prepare_for_mongo(task_dict)
                 await db.tasks.insert_one(task_dict)
                 
-                # Create notification for assignee
-                if assignee['id'] != current_user.id:
+                # Create notification for assignee (only for non-completed tasks)
+                if assignee['id'] != current_user.id and task_status != TaskStatus.COMPLETED:
                     await create_notification(
                         user_id=assignee['id'],
                         title="New Task Assigned",
