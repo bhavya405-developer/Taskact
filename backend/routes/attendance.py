@@ -585,14 +585,17 @@ async def delete_attendance_record(
     attendance_id: str,
     current_user=Depends(get_current_partner)
 ):
-    """Delete an attendance record (Partners only)"""
-    # Find the attendance record
-    record = await db.attendance.find_one({"id": attendance_id})
+    """Delete an attendance record (Partners only) - tenant specific"""
+    # Find the attendance record with tenant filter
+    query = {"id": attendance_id}
+    if current_user.tenant_id:
+        query["tenant_id"] = current_user.tenant_id
+    record = await db.attendance.find_one(query)
     if not record:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     
     # Delete the record
-    result = await db.attendance.delete_one({"id": attendance_id})
+    result = await db.attendance.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     
