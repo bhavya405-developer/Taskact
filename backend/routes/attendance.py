@@ -189,8 +189,8 @@ async def update_attendance_settings(
     # If locations are updated, reverse geocode addresses for any without addresses
     if "locations" in update_data:
         locations = update_data["locations"]
-        if len(locations) > 5:
-            raise HTTPException(status_code=400, detail="Maximum 5 locations allowed")
+        if len(locations) > 10:
+            raise HTTPException(status_code=400, detail="Maximum 10 locations allowed")
         for loc in locations:
             if loc.get("latitude") and loc.get("longitude") and not loc.get("address"):
                 address = await reverse_geocode(loc["latitude"], loc["longitude"])
