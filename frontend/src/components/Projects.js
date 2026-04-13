@@ -69,6 +69,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
     template_id: '',
     save_as_template: false,
     template_name: '',
+    project_assignee_id: '',  // New: assign entire project to one team member
     tasks: []
   });
   
@@ -77,6 +78,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
     description: '',
     client_id: '',
     category: '',
+    default_assignee_id: '',  // New: default assignee for template
     tasks: []
   });
   
@@ -209,6 +211,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
         description: templateForm.description,
         client_id: templateForm.client_id || null,
         category: templateForm.category || null,
+        default_assignee_id: templateForm.default_assignee_id || null,
         tasks: templateForm.tasks.map((t, idx) => ({
           title: t.title,
           description: t.description,
@@ -258,6 +261,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
       description: template.description || '',
       client_id: template.client_id || '',
       category: template.category || '',
+      default_assignee_id: template.default_assignee_id || '',
       tasks: template.tasks?.map(t => ({
         title: t.title,
         description: t.description || '',
@@ -284,6 +288,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
         description: templateForm.description,
         client_id: templateForm.client_id || null,
         category: templateForm.category || null,
+        default_assignee_id: templateForm.default_assignee_id || null,
         tasks: templateForm.tasks
       };
 
@@ -400,7 +405,11 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
     
     setProjectForm(prev => ({
       ...prev,
-      tasks: [...prev.tasks, { ...newTask }]
+      tasks: [...prev.tasks, { 
+        ...newTask,
+        // Use project assignee as default if set, otherwise use the newTask assignee
+        assignee_id: newTask.assignee_id || prev.project_assignee_id || ''
+      }]
     }));
     
     setNewTask({
@@ -451,19 +460,43 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
   };
 
   const handleTemplateSelect = (template) => {
+    const assigneeId = projectForm.project_assignee_id;
     setProjectForm(prev => ({
       ...prev,
       template_id: template.id,
       category: template.category || prev.category,
       client_id: template.client_id || prev.client_id,
+      // If template has a default assignee, use it; otherwise keep the project assignee
+      project_assignee_id: template.default_assignee_id || prev.project_assignee_id,
       tasks: template.tasks?.map(t => ({
         title: t.title,
         description: t.description,
         priority: t.priority || 'medium',
         category: t.category || template.category,
-        assignee_id: '',
+        // Auto-assign to project assignee or template default assignee
+        assignee_id: template.default_assignee_id || assigneeId || '',
         due_date: ''
       })) || []
+    }));
+  };
+
+  // Handle project assignee change - auto-assign all tasks
+  const handleProjectAssigneeChange = (assigneeId) => {
+    setProjectForm(prev => ({
+      ...prev,
+      project_assignee_id: assigneeId,
+      tasks: prev.tasks.map(task => ({
+        ...task,
+        assignee_id: assigneeId || task.assignee_id  // Only update if assigneeId is set
+      }))
+    }));
+  };
+
+  // Handle template default assignee change
+  const handleTemplateAssigneeChange = (assigneeId) => {
+    setTemplateForm(prev => ({
+      ...prev,
+      default_assignee_id: assigneeId
     }));
   };
 
@@ -477,6 +510,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
       template_id: '',
       save_as_template: false,
       template_name: '',
+      project_assignee_id: '',
       tasks: []
     });
     setNewTask({
@@ -496,6 +530,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
       description: '',
       client_id: '',
       category: '',
+      default_assignee_id: '',
       tasks: []
     });
     setFormError('');
@@ -914,6 +949,26 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   ))}
                 </select>
               </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Users className="h-4 w-4 inline mr-1" />
+                  Assign Entire Project To (Optional)
+                </label>
+                <select
+                  value={projectForm.project_assignee_id}
+                  onChange={(e) => handleProjectAssigneeChange(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select team member to assign all tasks</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selecting a team member here will auto-assign all tasks to them. You can still change individual task assignments below.
+                </p>
+              </div>
             </div>
             
             {/* Tasks Section */}
@@ -1118,6 +1173,23 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Users className="h-4 w-4 inline mr-1" />
+                  Assign All New Tasks To
+                </label>
+                <select
+                  value={projectForm.project_assignee_id}
+                  onChange={(e) => handleProjectAssigneeChange(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select team member</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             {/* Existing Tasks Section */}
@@ -1297,6 +1369,26 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                     <option key={client.id} value={client.id}>{client.name}</option>
                   ))}
                 </select>
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Users className="h-4 w-4 inline mr-1" />
+                  Default Assignee (Optional)
+                </label>
+                <select
+                  value={templateForm.default_assignee_id}
+                  onChange={(e) => handleTemplateAssigneeChange(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No default assignee</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  When using this template, all tasks will be auto-assigned to this team member.
+                </p>
               </div>
             </div>
             
@@ -1505,6 +1597,26 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                     <option key={client.id} value={client.id}>{client.name}</option>
                   ))}
                 </select>
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Users className="h-4 w-4 inline mr-1" />
+                  Default Assignee (Optional)
+                </label>
+                <select
+                  value={templateForm.default_assignee_id}
+                  onChange={(e) => handleTemplateAssigneeChange(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No default assignee</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  When using this template, all tasks will be auto-assigned to this team member.
+                </p>
               </div>
             </div>
             

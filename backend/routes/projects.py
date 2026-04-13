@@ -83,6 +83,7 @@ class ProjectTemplateCreate(BaseModel):
     description: Optional[str] = None
     client_id: Optional[str] = None
     category: Optional[str] = None
+    default_assignee_id: Optional[str] = None  # Default assignee for all tasks
     tasks: List[TaskDefinition] = []  # Task blueprints
 
 
@@ -91,6 +92,7 @@ class ProjectTemplateUpdate(BaseModel):
     description: Optional[str] = None
     client_id: Optional[str] = None
     category: Optional[str] = None
+    default_assignee_id: Optional[str] = None  # Default assignee for all tasks
     tasks: Optional[List[TaskDefinition]] = None
 
 
@@ -253,6 +255,7 @@ async def create_project_template(
         "description": template_data.description,
         "client_id": template_data.client_id,
         "category": template_data.category,
+        "default_assignee_id": template_data.default_assignee_id,
         "tasks": [t.dict() for t in template_data.tasks],
         "scope": "global" if is_super_admin else "tenant",
         "tenant_id": None if is_super_admin else current_user.get("tenant_id"),
@@ -288,6 +291,14 @@ async def update_project_template(
         )
     
     update_data = {k: v for k, v in template_update.dict().items() if v is not None}
+    
+    # Handle default_assignee_id specially - allow setting to null to clear it
+    if template_update.default_assignee_id is not None:
+        update_data["default_assignee_id"] = template_update.default_assignee_id
+    elif "default_assignee_id" in template_update.dict(exclude_unset=False):
+        # If explicitly passed as null, set it to null
+        update_data["default_assignee_id"] = None
+    
     if "tasks" in update_data:
         update_data["tasks"] = [t if isinstance(t, dict) else t.dict() for t in update_data["tasks"]]
     
