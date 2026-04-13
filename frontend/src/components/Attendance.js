@@ -55,7 +55,7 @@ const Attendance = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Settings form - up to 5 locations
+  // Settings form - up to 10 locations
   const [settingsForm, setSettingsForm] = useState({
     enabled: false,
     locations: [],
@@ -391,8 +391,8 @@ const Attendance = () => {
   };
 
   const addLocation = async () => {
-    if (settingsForm.locations.length >= 5) {
-      setError('Maximum 5 locations allowed');
+    if (settingsForm.locations.length >= 10) {
+      setError('Maximum 10 locations allowed');
       return;
     }
 
@@ -689,7 +689,7 @@ const Attendance = () => {
               </div>
               <button
                 onClick={addLocation}
-                disabled={settingsForm.locations.length >= 5 || actionLoading}
+                disabled={settingsForm.locations.length >= 10 || actionLoading}
                 className="btn-secondary flex items-center mt-6"
                 data-testid="add-location"
               >
@@ -707,8 +707,8 @@ const Attendance = () => {
               </button>
               <button
                 onClick={() => {
-                  if (settingsForm.locations.length >= 5) {
-                    setError('Maximum 5 locations allowed');
+                  if (settingsForm.locations.length >= 10) {
+                    setError('Maximum 10 locations allowed');
                     return;
                   }
                   setSettingsForm(prev => ({
@@ -722,7 +722,7 @@ const Attendance = () => {
                   }));
                   setSuccess('Location added. Please enter coordinates manually.');
                 }}
-                disabled={settingsForm.locations.length >= 5}
+                disabled={settingsForm.locations.length >= 10}
                 className="btn-secondary flex items-center mt-6 text-sm"
               >
                 <Plus className="w-4 h-4 mr-2" />
