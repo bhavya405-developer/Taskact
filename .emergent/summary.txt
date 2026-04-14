@@ -7,148 +7,138 @@
 4.  **Task Attributes**: Tasks must have a client name, category, due date, priority, and a status with a recorded history.
 5.  **Dashboard**: A landing page showing summary stats.
 6.  **Authentication & Authorization**: Role-based access with a Forgot Password feature.
-7.  **Multi-Tenancy**: Support for multiple companies with complete data isolation, managed by a super-admin.
-8.  **Project Management**: A refactored system where sub-tasks are regular tasks linked by a . Includes project templates, allocation, and role-based permissions (Partners can edit projects/templates, Associates can view project details).
+7.  **Multi-Tenancy**: Support for multiple companies with complete data isolation, managed by a super-admin. Ensure  is strictly captured across all data points (clients, categories, attendance rules, tasks).
+8.  **Project Management**: A refactored system where sub-tasks are regular tasks linked by a . Includes project templates, allocation, and role-based permissions. Ability to assign an entire project to a single assignee, auto-populating tasks while leaving them individually editable.
 9.  **Tenant Management**: Super-admin can create, deactivate, and permanently delete tenants.
 10. **Mobile Push Notifications**: PWA with a service worker for push notifications.
-11. **GPS Attendance & Timesheets**: Core features for clocking in/out and logging time.
-12. **Attendance Reporting (NEW)**: The monthly attendance report must include Week Off and Holiday columns, rename Effective to Payable days, reorder the Absent column, and use a new calculation for payable days.
-13. **Deployment Readiness (NEW)**: The application must be deployable to a Kubernetes environment, which requires a  check endpoint.
+11. **GPS Attendance & Timesheets**: Core features for clocking in/out, logging time, and attendance reports. Support up to 10 geofencing locations.
+12. **Deployment Readiness**: The application must be deployable to a Kubernetes environment, using  for ingress health checks.
 
-**User's preferred language**: English
+**User's preferred language**: English (INSTRUCT next agent to respond in English only).
 
-**what currently exists?**
-TaskAct is a multi-tenant full-stack application using FastAPI, React, and MongoDB. The project management system has been successfully refactored to treat project sub-tasks as regular tasks, with role-based permissions for editing and viewing. The attendance report has been updated as per the user's new specifications. A  endpoint was added to the backend to resolve deployment issues. Browser caching was identified as a cause for the user not seeing frontend updates, which was resolved by instructing the user to perform a hard refresh.
+**what currently exists?** 
+TaskAct is a multi-tenant full-stack application using FastAPI, React, and MongoDB. The system successfully tracks  across almost all entities, ensuring data isolation. Projects and Project Templates now support project-level assignees. The  endpoint is configured correctly for Kubernetes deployments. OTP generation logic includes role-based notification routing for password resets.
 
 **Last working item**:
--   **Last item agent was working**: Adding a  endpoint to  to resolve 404 errors during deployment health checks.
--   **Status**: USER VERIFICATION PENDING
--   **Agent Testing Done**: Y
--   **Which testing method agent to use?**: NA
--   **User Testing Done**: N
+    - Last item agent was working: Answering the user's request to stop an active deployment/redeployment on the platform. The agent correctly instructed the user to cancel the deployment via the Emergent dashboard UI or by contacting support, as the agent cannot halt deployments programmatically.
+    - Status: BLOCKED / USER VERIFICATION PENDING
+    - Agent Testing Done: N/A
+    - Which testing method agent to use?: NA
+    - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no pending bugs or issues.
+  - Issue 1: Production Database missing Tenant Data (Invalid company code on deployment)
+     - Attempted fixes: Investigated deployment logs and MongoDB Atlas configuration. Identified that the local database has tenants (e.g., SCO1, TASKACT1) but the production database is completely empty.
+     - Next debug checklist: Create a database seeding script or an initialization API endpoint that can safely inject the default Super Admin and primary tenants (TASKACT1, SCO1) into the production MongoDB Atlas instance.
+     - Why fix this issue and what will be achieved with the fix? Without tenants in production, no users can log in, completely blocking production deployment usage.
+     - Status: NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? backend (verify DB seeding)
+     - Blocked on other issue: None
 
 **In progress Task List**:
-There are no tasks currently in progress.
+  None
 
 **Upcoming and Future Tasks**
-**Upcoming Tasks:**
--   **P0: Verify Deployment**: The user needs to confirm if the addition of the  endpoint has resolved the deployment failures.
--   **P1: Finalize Forgot Password Feature**: Integrate a live email service (e.g., Resend) to replace the current placeholder logic.
--   **P2: Implement Backend for Push Notifications**: The PWA service worker is set up on the frontend, but the backend needs to be developed to generate and send push notifications.
--   **P3: Continue Backend Refactoring**: Extract the remaining routes (notifications, dashboard) from  into their own modules in .
+    Upcoming Tasks:
+    - P0: Seed production database with initial tenants (SCO1, TASKACT1) for deployment resolution.
+    - P1: Finalize Forgot Password Feature: Integrate a live email service (e.g., Resend) to replace the current placeholder logic.
+    - P2: Implement Backend for Push Notifications: The PWA service worker is set up on the frontend, but the backend needs to be developed to generate and send push notifications.
+    - P3: Continue Backend Refactoring: Extract the remaining routes (notifications, dashboard, clients, categories) from  into their own modules in .
 
-**Future Tasks:**
--   Enhance the multi-tenant architecture with more advanced features like tenant-specific settings, billing/subscription plans, and detailed analytics.
+    Future Tasks:
+    - Enhance the multi-tenant architecture with more advanced features like tenant-specific settings, billing/subscription plans, and detailed analytics.
 
 **Completed work in this session**
--   **Project Management Refactor**: Completed the major architectural overhaul of the project management system.
--   **Project/Template Permissions**:
-    -   Implemented Edit Project functionality for partners.
-    -   Implemented Edit Project Template functionality for partners.
-    -   Enabled non-partner users (Associates) to see a View Details option for projects.
--   **Bug Fixes**:
-    -   Fixed a critical bug where creating a project from a template resulted in zero tasks being created.
-    -   Fixed a bug where creating a project with multiple tasks only saved the first task.
--   **Attendance Report Overhaul**:
-    -   Updated the monthly attendance report in both the UI and the Excel export.
-    -   Added Week Off and Holidays columns.
-    -   Renamed the Effective column to Payable days.
-    -   Moved the Absent column to appear after Half days.
-    -   Updated the calculation for Payable days as requested.
--   **Deployment Fix**:
-    -   Added a  endpoint to  to satisfy Kubernetes health checks and resolve deployment failures.
--   **Troubleshooting**:
-    -   Diagnosed and resolved a browser cache issue that prevented the user from seeing the latest frontend changes.
+- Cleaned up database test data (Tasks, Projects, Project Templates). (DONE)
+- Fixed missing  capture across endpoints for Clients, Categories, Geofence settings, Attendance rules, and Holidays (including bulk imports). (DONE)
+- Updated OTP records to include , , and  and refined Forgot Password notification routing. (DONE)
+- Fixed  capture in Bulk Task Import and updated task template to include  and optional  for completed tasks. (DONE)
+- Resolved Kubernetes deployment loop by changing root  to . (DONE)
+- Increased Geofencing location limit from 5 to 10 in backend and frontend. (DONE)
+- Added Project Assignee dropdown in Create/Edit Projects and Templates to auto-assign all internal tasks while keeping them editable. (DONE)
 
 **Earlier issues found/mentioned but not fixed**
--   None.
+   - None.
 
 **Known issue recurrence from previous fork**
--   None.
+  - None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend**: FastAPI, Motor, Pydantic, JWT with custom claims (, ).
--   **Frontend**: React, React Router, Axios, Tailwind CSS, Shadcn UI, , Context API.
--   **Database**: MongoDB.
--   **Architecture**: Modular, multi-tenant full-stack application.
+- Backend: FastAPI, Motor (MongoDB async), Pydantic, JWT (tenant_id, role).
+- Frontend: React, React Router, Axios, Tailwind CSS, Shadcn UI, Context API.
+- Database: MongoDB.
+- Architecture: Modular, multi-tenant full-stack application.
 
 **key DB schema**
--   **projects**: .
--   **tasks**: Now includes an optional .
--   **tenants, users, clients, categories, attendance, timesheets**: All include a  field.
+- : 
+- : 
+- : 
+- : 
+- , , , , , : All strictly enforce a  field.
 
 **changes in tech stack**
--   None.
+- None.
 
 **All files of reference**
--   : Completely rewritten for the new project management architecture.
--   : Completely rewritten to match the new backend and implement new UI/UX for projects and templates.
--   : Modified to update the monthly report generation and Excel export logic.
--   : Modified to display the updated monthly report table structure.
--   : Modified to add the  endpoint for deployment readiness.
+- : Added , fixed tenant ID isolation for clients and categories.
+- : Updated OTP record schema and notification routing logic.
+- : Added  insertion during bulk imports, updated task Excel templates.
+- : Updated geofencing limits (max 10) and ensured tenant filtering for rules/holidays.
+- : Included  logic.
+- : Added Assign Entire Project feature in UI modals.
+- : Updated UI validation to permit 10 geofence locations.
 
 **Areas that need refactoring**:
--   : Still contains routes for dashboard, clients, and categories. These should be extracted into separate files in .
+- : Still contains heavy routes for dashboard, clients, and categories. Needs extraction to .
 
 **key api endpoints**
--   : CRUD endpoints for projects.
--   : CRUD endpoints for project templates.
--   : Modified to return new columns and calculations.
--   : **(NEW)** A simple 200 OK endpoint for Kubernetes health checks.
+- : Critical endpoint required for Kubernetes deployment ingress checks.
+-  & : Handle comprehensive project creation and allocation.
+- : CSV upload for bulk task creation.
 
 **Critical Info for New Agent**
--   **Deployment Status**: The previous agent added a  endpoint to fix deployment failures reported by the user. The next immediate step should be to confirm with the user if this has resolved the issue or if further investigation is needed. The 404 errors for  in the logs are expected in a fresh production environment with an empty database and are not a code error.
--   **Browser Cache**: The user has previously been unable to see new frontend features due to browser caching. If the user reports that a new feature is not visible, the first step should be to advise them to perform a hard refresh ( or ) or clear their browser cache.
+- **Deployment & Seeding**: The code is fully deployable to Kubernetes, but the production MongoDB Atlas instance lacks tenant records, causing valid logins (like SCO1) to fail. A database seeding strategy is urgently needed.
+- **Routing**: Kubernetes ingress ONLY routes paths beginning with  to the backend. Anything else goes to the frontend. Remember this when adding new root-level system checks.
+- **Canceling Deployments**: The user asked to stop an ongoing deployment. The platform does not allow agents to cancel deployments directly. Do not attempt bash scripts for this; instruct the user to utilize the platform UI.
 
 **documents and test reports created in this job**
--   
--    (Updated)
+-  (Assumed incremented test report)
+-  (Updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
--   **User**: Provided deployment logs showing 404 errors. **Status**: Addressed. A  endpoint was added. Awaiting user confirmation on deployment success.
--   **User**: Requested major changes to the attendance report (new columns, reordering, new calculation). **Status**: COMPLETED.
--   **User**: Confirmed that the Edit Template and View Details features were visible after using an incognito window. **Status**: RESOLVED.
--   **User**: Asked why features were not visible in the normal browser window. **Status**: RESOLVED. Agent explained it was a browser cache issue and provided instructions to fix it.
--   **User**: Reported again that Edit Template and View Details for associates were not working. **Status**: RESOLVED. Agent verified with screenshots and identified the issue was on the user's end (caching).
--   **User**: Requested that partners be allowed to edit Project Templates and non-partners be allowed to see Project details. **Status**: COMPLETED.
--   **User**: Reported that when creating a project from a template, only one task was being added. **Status**: RESOLVED.
--   **User**: Reported that when creating a project, only the first task was being saved, and requested an Edit Project feature. **Status**: COMPLETED.
+1. User: Asked to stop redeployment. (Status: RESOLVED - Agent instructed user to use the UI).
+2. User: Asked to stop deployment. (Status: RESOLVED - Agent used support tool and guided user).
+3. User: Requested feature to assign an entire project to one team member in Projects/Templates, auto-assigning tasks but leaving task-level editing open. (Status: COMPLETED).
+4. User: Stated only 5 Geofencing locations were allowed on the frontend Attendance page. (Status: COMPLETED).
+5. User: Requested Geofencing limits be increased from 5 to 10 for Partners. (Status: COMPLETED).
+6. User: Shared deployment logs via deployment agent again, showing repeating restart cycles. (Status: RESOLVED - Analyzed issue as missing tenants in production DB).
+7. User: Asked what was causing the deployment loop output. (Status: RESOLVED).
+8. User: Asked what issue was fixed. (Status: RESOLVED - Agent explained  routing fix).
+9. User: Sent deployment agent logs indicating failed health checks on deployment. (Status: COMPLETED - fixed by prefixing  to ).
+10. User: Requested  not be mandatory for completed tasks in bulk imports. (Status: COMPLETED).
 
 **Project Health Check:**
--   **Broken**: None.
--   **Mocked**:
-    -   Forgot Password email functionality (uses a placeholder).
-    -   PWA push notifications (backend logic is not implemented).
+- Broken: Production login is failing due to unseeded  collection in Atlas.
+- Mocked: Forgot Password email functionality uses a placeholder (notifications are functional), PWA push notifications backend logic.
 
 **3rd Party Integrations**
--   **OpenStreetMap (Nominatim)**: Active, used for reverse geocoding. No key required.
--   **Resend**: Inactive. Integrated for emails but uses a placeholder API key.
+- OpenStreetMap (Nominatim): Active, reverse geocoding. No key required.
+- Resend: Inactive (placeholder API key used in ).
 
 **Testing status**
--   **Testing agent used after significant changes**: YES, successfully used for the project management refactor.
--   **Troubleshoot agent used after agent stuck in loop**: NO.
--   **Test files created**: []
--   **Known regressions**: None.
+- Testing agent used after significant changes: NO (Used extensive bash curl, unit scripts, and screenshot verification).
+- Troubleshoot agent used after agent stuck in loop: NO.
+- Test files created: []
+- Known regressions: None.
 
 **Credentials to test flow:**
--   **Super Admin**:
-    -   Company Code: 
-    -   Email: 
-    -   Password: 
--   **Partner (Tenant User)**:
-    -   Company Code: 
-    -   Email: 
-    -   Password: 
--   **Associate (Tenant User)**:
-    -   Company Code: 
-    -   Email: 
-    -   Password: 
+- Super Admin: Company Code: , Email: , Password: 
+- Partner (Tenant User): Company Code: , Email: , Password: 
+- Associate (Tenant User): Company Code: , Email: , Password: 
 
 **What agent forgot to execute**
--   Nothing. All user requests and reported issues from the session were addressed.</analysis>
+- The agent identified that the Atlas production DB requires seeding for initial tenants to work but did not yet create the seed script or initialization endpoint to solve it. This is now marked as P0.</analysis>
