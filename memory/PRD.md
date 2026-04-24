@@ -58,14 +58,22 @@
 
 ### 2.4.1 Recurring Tasks ✅ (Apr 2026)
 - **Recurrence at Task Creation**: When creating any task, users can toggle "Make this a recurring task"
-- **Frequency Options**: Daily, Weekly, Fortnightly (every 2 weeks), Monthly, Half Yearly (every 6 months), Annually, Specific Date of Every Month, Specific Day of Week(s)
+- **Frequency Options**: Daily, Every Working Day (Mon-Sat), Weekly, Fortnightly (every 2 weeks), Monthly, Half Yearly (every 6 months), Annually, Specific Date of Every Month, Specific Day of Week(s)
 - **Configuration**: 
+  - Daily: option to exclude specific days of the week (e.g., exclude Sunday)
+  - Every Working Day: Mon-Sat automatically, no Sunday
   - Weekly: pick day of week
   - Custom Day of Month: pick day (1-31, clamps to month's last day)
   - Custom Day of Week: pick day + interval (every N weeks)
 - **End Date**: Optional (defaults to 1 year ahead)
 - **Implementation**: Parent task created with `is_recurring=true`, child instances auto-generated with `parent_recurring_id` linking back to parent
 - **Max instances**: 90 per recurring task definition
+
+### 2.4.2 Dashboard FAB ✅ (Apr 2026)
+- Floating Action Button (FAB) at bottom-right of dashboard page
+- Blue circular button with + icon, navigates to Create Task page
+- Responsive: positioned properly on both desktop and mobile
+- Does not overlap with dashboard content (fixed position, z-index 40)
 
 ### 2.5 Team Management
 - Add/edit/deactivate team members
