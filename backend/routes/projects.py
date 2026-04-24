@@ -709,6 +709,58 @@ async def add_task_to_project(
     return parse_from_mongo(task_dict)
 
 
+@router.put("/projects/{project_id}/tasks/{task_id}")
+async def update_project_task(
+    project_id: str,
+    task_id: str,
+    task_update: dict,
+    current_user = Depends(get_current_user)
+):
+    """Update a specific task within a project (e.g., reassign)"""
+    # Verify project access
+    project_query = {"id": project_id}
+    if current_user.get("tenant_id"):
+        project_query["tenant_id"] = current_user["tenant_id"]
+    
+    project = await db.projects.find_one(project_query)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if not can_edit_project(project, current_user):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this project's tasks")
+    
+    # Find the task
+    task_query = {"id": task_id, "project_id": project_id}
+    if current_user.get("tenant_id"):
+        task_query["tenant_id"] = current_user["tenant_id"]
+    
+    task = await db.tasks.find_one(task_query)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found in this project")
+    
+    update_data = {}
+    
+    # Handle assignee change
+    if "assignee_id" in task_update and task_update["assignee_id"]:
+        new_assignee = await db.users.find_one({"id": task_update["assignee_id"]})
+        if not new_assignee:
+            raise HTTPException(status_code=404, detail="Assignee not found")
+        update_data["assignee_id"] = task_update["assignee_id"]
+        update_data["assignee_name"] = new_assignee["name"]
+    
+    # Handle other updatable fields
+    for field in ["title", "description", "priority", "category", "due_date"]:
+        if field in task_update and task_update[field] is not None:
+            update_data[field] = task_update[field]
+    
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.tasks.update_one({"id": task_id}, {"$set": update_data})
+    
+    updated_task = await db.tasks.find_one({"id": task_id})
+    return parse_from_mongo(updated_task)
+
+
 # ==================== UTILITY ROUTES ====================
 
 @router.get("/projects/{project_id}/tasks")

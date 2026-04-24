@@ -349,6 +349,12 @@ class Task(BaseModel):
     # Project reference
     project_id: Optional[str] = None
     project_name: Optional[str] = None
+    # Recurring task fields
+    is_recurring: Optional[bool] = False
+    recurrence_type: Optional[str] = None  # daily, weekly, fortnightly, monthly, half_yearly, annually, custom_day_of_month, custom_day_of_week
+    recurrence_config: Optional[dict] = None  # e.g. {day_of_month: 15}, {day_of_week: "monday"}
+    recurrence_end_date: Optional[datetime] = None
+    parent_recurring_id: Optional[str] = None  # links generated instances to parent
 
 class TaskCreate(BaseModel):
     title: str

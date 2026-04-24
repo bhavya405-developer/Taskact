@@ -18,7 +18,13 @@ const CreateTask = ({ users, onTaskCreated }) => {
     assignee_id: '',
     priority: 'medium',
     due_date: '',
-    estimated_hours: ''
+    estimated_hours: '',
+    is_recurring: false,
+    recurrence_type: '',
+    recurrence_end_date: '',
+    custom_day_of_month: '1',
+    custom_day_of_week: 'monday',
+    custom_every_n_weeks: '1'
   });
 
   // Fetch categories and clients
@@ -76,8 +82,33 @@ const CreateTask = ({ users, onTaskCreated }) => {
       const taskData = {
         ...formData,
         due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
-        estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null
+        estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
+        is_recurring: formData.is_recurring,
+        recurrence_type: formData.is_recurring ? formData.recurrence_type : null,
+        recurrence_end_date: formData.is_recurring && formData.recurrence_end_date 
+          ? new Date(formData.recurrence_end_date).toISOString() : null,
       };
+
+      // Build recurrence_config based on type
+      if (formData.is_recurring) {
+        if (formData.recurrence_type === 'custom_day_of_month') {
+          taskData.recurrence_config = { day_of_month: parseInt(formData.custom_day_of_month) };
+        } else if (formData.recurrence_type === 'custom_day_of_week') {
+          taskData.recurrence_config = { 
+            day_of_week: formData.custom_day_of_week, 
+            every_n_weeks: parseInt(formData.custom_every_n_weeks) 
+          };
+        } else if (formData.recurrence_type === 'weekly') {
+          taskData.recurrence_config = { day_of_week: formData.custom_day_of_week };
+        } else {
+          taskData.recurrence_config = {};
+        }
+      }
+
+      // Clean up extra form fields that backend doesn't need
+      delete taskData.custom_day_of_month;
+      delete taskData.custom_day_of_week;
+      delete taskData.custom_every_n_weeks;
 
       await axios.post(`${API}/tasks`, taskData);
       
@@ -275,6 +306,161 @@ const CreateTask = ({ users, onTaskCreated }) => {
                 data-testid="estimated-hours-input"
               />
             </div>
+          </div>
+
+          {/* Recurring Task Section */}
+          <div className="border-t border-gray-200 pt-6">
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="is_recurring"
+                checked={formData.is_recurring}
+                onChange={(e) => setFormData(prev => ({ ...prev, is_recurring: e.target.checked, recurrence_type: e.target.checked ? 'daily' : '' }))}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                data-testid="recurring-toggle"
+              />
+              <span className="form-label mb-0">Make this a recurring task</span>
+            </label>
+
+            {formData.is_recurring && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+                <div>
+                  <label htmlFor="recurrence_type" className="form-label">
+                    Frequency *
+                  </label>
+                  <select
+                    id="recurrence_type"
+                    name="recurrence_type"
+                    value={formData.recurrence_type}
+                    onChange={handleChange}
+                    className="form-input"
+                    data-testid="recurrence-type-select"
+                    required
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="fortnightly">Fortnightly (Every 2 Weeks)</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="half_yearly">Half Yearly (Every 6 Months)</option>
+                    <option value="annually">Annually</option>
+                    <option value="custom_day_of_month">Specific Date of Every Month</option>
+                    <option value="custom_day_of_week">Specific Day of Week(s)</option>
+                  </select>
+                </div>
+
+                {/* Weekly - pick a day */}
+                {formData.recurrence_type === 'weekly' && (
+                  <div>
+                    <label htmlFor="custom_day_of_week" className="form-label">
+                      Day of Week
+                    </label>
+                    <select
+                      id="custom_day_of_week"
+                      name="custom_day_of_week"
+                      value={formData.custom_day_of_week}
+                      onChange={handleChange}
+                      className="form-input"
+                      data-testid="weekly-day-select"
+                    >
+                      <option value="monday">Monday</option>
+                      <option value="tuesday">Tuesday</option>
+                      <option value="wednesday">Wednesday</option>
+                      <option value="thursday">Thursday</option>
+                      <option value="friday">Friday</option>
+                      <option value="saturday">Saturday</option>
+                      <option value="sunday">Sunday</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Custom day of month */}
+                {formData.recurrence_type === 'custom_day_of_month' && (
+                  <div>
+                    <label htmlFor="custom_day_of_month" className="form-label">
+                      Day of Month (1-31)
+                    </label>
+                    <input
+                      type="number"
+                      id="custom_day_of_month"
+                      name="custom_day_of_month"
+                      value={formData.custom_day_of_month}
+                      onChange={handleChange}
+                      className="form-input"
+                      min="1"
+                      max="31"
+                      data-testid="day-of-month-input"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      If the month has fewer days, the last day of the month will be used.
+                    </p>
+                  </div>
+                )}
+
+                {/* Custom day of week with interval */}
+                {formData.recurrence_type === 'custom_day_of_week' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="custom_day_of_week" className="form-label">
+                        Day of Week
+                      </label>
+                      <select
+                        id="custom_day_of_week"
+                        name="custom_day_of_week"
+                        value={formData.custom_day_of_week}
+                        onChange={handleChange}
+                        className="form-input"
+                        data-testid="custom-day-of-week-select"
+                      >
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                        <option value="sunday">Sunday</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="custom_every_n_weeks" className="form-label">
+                        Every N Weeks
+                      </label>
+                      <input
+                        type="number"
+                        id="custom_every_n_weeks"
+                        name="custom_every_n_weeks"
+                        value={formData.custom_every_n_weeks}
+                        onChange={handleChange}
+                        className="form-input"
+                        min="1"
+                        max="52"
+                        data-testid="every-n-weeks-input"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Recurrence End Date */}
+                <div>
+                  <label htmlFor="recurrence_end_date" className="form-label">
+                    End Date <span className="text-gray-400 text-xs">(optional, defaults to 1 year)</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="recurrence_end_date"
+                    name="recurrence_end_date"
+                    value={formData.recurrence_end_date}
+                    onChange={handleChange}
+                    className="form-input"
+                    data-testid="recurrence-end-date-input"
+                    min={formData.due_date || new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+
+                <p className="text-xs text-gray-600">
+                  Recurring tasks will be auto-generated with the same details. Each instance can be managed independently.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Form Actions */}

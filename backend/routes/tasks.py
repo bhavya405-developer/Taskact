@@ -1,12 +1,14 @@
 """
 Task management routes for TaskAct
-Handles task CRUD, bulk import/export, and task templates
+Handles task CRUD, bulk import/export, task templates, and recurring tasks
 """
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timezone, timedelta
+from dateutil.relativedelta import relativedelta
+import calendar
 import uuid
 import jwt
 import io
@@ -120,6 +122,111 @@ def init_tasks_routes(
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def generate_recurring_dates(base_date, recurrence_type, recurrence_config, end_date, max_occurrences=90):
+    """Generate future dates based on recurrence pattern.
+    Returns list of datetime objects for future task occurrences."""
+    dates = []
+    if not base_date:
+        base_date = datetime.now(timezone.utc)
+    
+    if isinstance(base_date, str):
+        base_date = datetime.fromisoformat(base_date.replace('Z', '+00:00'))
+    if base_date.tzinfo is None:
+        base_date = base_date.replace(tzinfo=timezone.utc)
+    
+    if end_date:
+        if isinstance(end_date, str):
+            end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        if end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+    else:
+        # Default: generate for next 1 year
+        end_date = base_date + relativedelta(years=1)
+    
+    config = recurrence_config or {}
+    current = base_date
+    
+    if recurrence_type == 'daily':
+        while current <= end_date and len(dates) < max_occurrences:
+            current += timedelta(days=1)
+            if current <= end_date:
+                dates.append(current)
+    
+    elif recurrence_type == 'weekly':
+        day_of_week = config.get('day_of_week')
+        if day_of_week:
+            day_map = {'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3, 'friday': 4, 'saturday': 5, 'sunday': 6}
+            target_day = day_map.get(day_of_week.lower(), current.weekday())
+            # Find next occurrence of the target day
+            days_ahead = target_day - current.weekday()
+            if days_ahead <= 0:
+                days_ahead += 7
+            current = current + timedelta(days=days_ahead)
+            while current <= end_date and len(dates) < max_occurrences:
+                dates.append(current)
+                current += timedelta(weeks=1)
+        else:
+            while current <= end_date and len(dates) < max_occurrences:
+                current += timedelta(weeks=1)
+                if current <= end_date:
+                    dates.append(current)
+    
+    elif recurrence_type == 'fortnightly':
+        while current <= end_date and len(dates) < max_occurrences:
+            current += timedelta(weeks=2)
+            if current <= end_date:
+                dates.append(current)
+    
+    elif recurrence_type == 'monthly':
+        while current <= end_date and len(dates) < max_occurrences:
+            current = current + relativedelta(months=1)
+            if current <= end_date:
+                dates.append(current)
+    
+    elif recurrence_type == 'half_yearly':
+        while current <= end_date and len(dates) < max_occurrences:
+            current = current + relativedelta(months=6)
+            if current <= end_date:
+                dates.append(current)
+    
+    elif recurrence_type == 'annually':
+        while current <= end_date and len(dates) < max_occurrences:
+            current = current + relativedelta(years=1)
+            if current <= end_date:
+                dates.append(current)
+    
+    elif recurrence_type == 'custom_day_of_month':
+        day_of_month = config.get('day_of_month', 1)
+        # Start from next month
+        current = current + relativedelta(months=1)
+        while current <= end_date and len(dates) < max_occurrences:
+            # Clamp to last day of month if needed
+            max_day = calendar.monthrange(current.year, current.month)[1]
+            actual_day = min(day_of_month, max_day)
+            occurrence = current.replace(day=actual_day)
+            if occurrence <= end_date:
+                dates.append(occurrence)
+            current = current + relativedelta(months=1)
+    
+    elif recurrence_type == 'custom_day_of_week':
+        day_of_week = config.get('day_of_week', 'monday')
+        every_n_weeks = config.get('every_n_weeks', 1)
+        day_map = {'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3, 'friday': 4, 'saturday': 5, 'sunday': 6}
+        target_day = day_map.get(day_of_week.lower(), 0)
+        
+        # Find first occurrence
+        days_ahead = target_day - current.weekday()
+        if days_ahead <= 0:
+            days_ahead += 7
+        current = current + timedelta(days=days_ahead)
+        
+        while current <= end_date and len(dates) < max_occurrences:
+            dates.append(current)
+            current += timedelta(weeks=every_n_weeks)
+    
+    return dates
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -621,7 +728,7 @@ async def export_tasks(current_user=Depends(get_current_partner)):
 
 @router.post("/tasks")
 async def create_task(task_data: dict, current_user=Depends(get_current_user)):
-    """Create a new task (tenant-aware)"""
+    """Create a new task (tenant-aware), with optional recurring task generation"""
     # Get tenant_id
     tenant_id = await get_tenant_id(current_user)
     
@@ -639,7 +746,17 @@ async def create_task(task_data: dict, current_user=Depends(get_current_user)):
     # Get current IST time
     now_utc = datetime.now(timezone.utc)
     
+    # Extract recurring fields
+    is_recurring = task_data.get("is_recurring", False)
+    recurrence_type = task_data.get("recurrence_type")
+    recurrence_config = task_data.get("recurrence_config")
+    recurrence_end_date = task_data.get("recurrence_end_date")
+    
     task_dict = task_data.copy()
+    # Remove recurring fields from task_dict that shouldn't be duplicated
+    for key in ["is_recurring", "recurrence_type", "recurrence_config", "recurrence_end_date"]:
+        task_dict.pop(key, None)
+    
     task_dict["creator_id"] = current_user.id  # Set current user as creator
     task_dict["assignee_name"] = assignee["name"]
     task_dict["creator_name"] = creator["name"]
@@ -648,6 +765,13 @@ async def create_task(task_data: dict, current_user=Depends(get_current_user)):
     task_dict["id"] = str(uuid.uuid4())
     task_dict["status"] = task_dict.get("status", TaskStatus.PENDING)
     task_dict["tenant_id"] = tenant_id  # Add tenant_id
+    
+    # Store recurrence info on the parent task
+    if is_recurring and recurrence_type:
+        task_dict["is_recurring"] = True
+        task_dict["recurrence_type"] = recurrence_type
+        task_dict["recurrence_config"] = recurrence_config or {}
+        task_dict["recurrence_end_date"] = recurrence_end_date
     
     # Initialize status history with creation entry
     task_dict["status_history"] = [{
@@ -658,6 +782,7 @@ async def create_task(task_data: dict, current_user=Depends(get_current_user)):
         "action": "created"
     }]
     
+    parent_task_id = task_dict["id"]
     task_dict = prepare_for_mongo(task_dict)
     await db.tasks.insert_one(task_dict)
     
@@ -670,7 +795,56 @@ async def create_task(task_data: dict, current_user=Depends(get_current_user)):
             task_id=task_dict['id']
         )
     
-    return Task(**parse_from_mongo(task_dict))
+    # Generate recurring task instances
+    recurring_count = 0
+    if is_recurring and recurrence_type:
+        base_date = task_dict.get("due_date") or now_utc
+        future_dates = generate_recurring_dates(
+            base_date=base_date,
+            recurrence_type=recurrence_type,
+            recurrence_config=recurrence_config or {},
+            end_date=recurrence_end_date
+        )
+        
+        for future_date in future_dates:
+            child_task = {
+                "id": str(uuid.uuid4()),
+                "title": task_dict["title"],
+                "description": task_dict.get("description"),
+                "client_name": task_dict.get("client_name"),
+                "category": task_dict.get("category"),
+                "assignee_id": task_dict.get("assignee_id"),
+                "assignee_name": assignee["name"],
+                "creator_id": current_user.id,
+                "creator_name": creator["name"],
+                "status": TaskStatus.PENDING,
+                "priority": task_dict.get("priority", "medium"),
+                "due_date": future_date.isoformat(),
+                "created_at": now_utc,
+                "updated_at": now_utc,
+                "tenant_id": tenant_id,
+                "estimated_hours": task_dict.get("estimated_hours"),
+                "parent_recurring_id": parent_task_id,
+                "project_id": task_dict.get("project_id"),
+                "project_name": task_dict.get("project_name"),
+                "status_history": [{
+                    "status": TaskStatus.PENDING,
+                    "changed_at": now_utc.isoformat(),
+                    "changed_at_ist": format_ist_datetime(now_utc),
+                    "changed_by": current_user.name,
+                    "action": "recurring_generated"
+                }]
+            }
+            child_task = prepare_for_mongo(child_task)
+            await db.tasks.insert_one(child_task)
+            recurring_count += 1
+        
+        logger.info(f"Created {recurring_count} recurring instances for task '{task_dict['title']}'")
+    
+    result = parse_from_mongo(task_dict)
+    if recurring_count > 0:
+        result["recurring_instances_created"] = recurring_count
+    return result
 
 
 @router.get("/tasks")

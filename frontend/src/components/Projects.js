@@ -374,6 +374,17 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
 
       await axios.put(`${API_URL}/api/projects/${editingProjectId}`, projectPayload);
 
+      // Handle existing tasks - update assignee if changed
+      const existingTasks = projectForm.tasks.filter(t => t.id);
+      for (const task of existingTasks) {
+        // Check if assignee was changed from original
+        if (task._assignee_changed) {
+          await axios.put(`${API_URL}/api/projects/${editingProjectId}/tasks/${task.id}`, {
+            assignee_id: task.assignee_id
+          });
+        }
+      }
+
       // Handle tasks - add new tasks that don't have an ID
       const newTasks = projectForm.tasks.filter(t => !t.id);
       for (const task of newTasks) {
@@ -1197,27 +1208,47 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
               <h4 className="text-sm font-medium text-gray-700 mb-3">Existing Tasks</h4>
               
               {projectForm.tasks.filter(t => t.id).length > 0 ? (
-                <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
-                  {projectForm.tasks.filter(t => t.id).map((task, idx) => (
-                    <div key={task.id} className={`flex items-center gap-2 p-2 rounded ${
-                      task.status === 'completed' ? 'bg-green-50' : 'bg-gray-50'
-                    }`}>
-                      <div className="flex-1">
-                        <span className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
-                          {task.title}
-                        </span>
-                        <span className="text-xs text-gray-500 ml-2">
-                          → {users.find(u => u.id === task.assignee_id)?.name || 'Unassigned'}
+                <div className="space-y-2 mb-4 max-h-56 overflow-y-auto">
+                  {projectForm.tasks.filter(t => t.id).map((task) => {
+                    const actualIdx = projectForm.tasks.findIndex(t => t.id === task.id);
+                    return (
+                      <div key={task.id} className={`flex items-center gap-2 p-2 rounded ${
+                        task.status === 'completed' ? 'bg-green-50' : 'bg-gray-50'
+                      }`}>
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
+                            {task.title}
+                          </span>
+                        </div>
+                        <select
+                          value={task.assignee_id || ''}
+                          onChange={(e) => {
+                            const newTasks = [...projectForm.tasks];
+                            newTasks[actualIdx] = {
+                              ...newTasks[actualIdx],
+                              assignee_id: e.target.value,
+                              _assignee_changed: true
+                            };
+                            setProjectForm({ ...projectForm, tasks: newTasks });
+                          }}
+                          className="text-xs px-2 py-1 border rounded min-w-[140px]"
+                          data-testid={`existing-task-assignee-${task.id}`}
+                        >
+                          <option value="">Unassigned</option>
+                          {users.map(user => (
+                            <option key={user.id} value={user.id}>{user.name}</option>
+                          ))}
+                        </select>
+                        <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${
+                          task.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                          task.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                          task.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-gray-100'
+                        }`}>
+                          {task.status}
                         </span>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        task.status === 'completed' ? 'bg-green-100 text-green-700' : 
-                        task.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100'
-                      }`}>
-                        {task.status}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 mb-4">No existing tasks</p>
