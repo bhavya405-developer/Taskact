@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
 import EditTaskModal from './EditTaskModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,7 +14,8 @@ import {
   Users,
   Building2,
   User,
-  UsersRound
+  UsersRound,
+  Plus
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -42,6 +44,7 @@ const StatusCard = ({ title, count, status, icon, isDark }) => (
 
 const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   const { isPartner, user, isSuperAdmin } = useAuth();
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -454,6 +457,20 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         onClose={handleCloseEditModal}
         onSave={handleEditSave}
       />
+
+      {/* Floating Action Button - Create Task */}
+      <button
+        onClick={() => navigate('/create-task')}
+        className={`fixed bottom-20 right-6 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 ${
+          isDark
+            ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/40'
+            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/30'
+        }`}
+        data-testid="fab-create-task"
+        title="Create New Task"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
     </div>
   );
 };

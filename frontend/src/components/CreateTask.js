@@ -24,7 +24,8 @@ const CreateTask = ({ users, onTaskCreated }) => {
     recurrence_end_date: '',
     custom_day_of_month: '1',
     custom_day_of_week: 'monday',
-    custom_every_n_weeks: '1'
+    custom_every_n_weeks: '1',
+    daily_exclude_days: []
   });
 
   // Fetch categories and clients
@@ -100,6 +101,8 @@ const CreateTask = ({ users, onTaskCreated }) => {
           };
         } else if (formData.recurrence_type === 'weekly') {
           taskData.recurrence_config = { day_of_week: formData.custom_day_of_week };
+        } else if (formData.recurrence_type === 'daily' && formData.daily_exclude_days.length > 0) {
+          taskData.recurrence_config = { exclude_days: formData.daily_exclude_days };
         } else {
           taskData.recurrence_config = {};
         }
@@ -109,6 +112,7 @@ const CreateTask = ({ users, onTaskCreated }) => {
       delete taskData.custom_day_of_month;
       delete taskData.custom_day_of_week;
       delete taskData.custom_every_n_weeks;
+      delete taskData.daily_exclude_days;
 
       await axios.post(`${API}/tasks`, taskData);
       
@@ -338,6 +342,7 @@ const CreateTask = ({ users, onTaskCreated }) => {
                     required
                   >
                     <option value="daily">Daily</option>
+                    <option value="every_working_day">Every Working Day (Mon-Sat)</option>
                     <option value="weekly">Weekly</option>
                     <option value="fortnightly">Fortnightly (Every 2 Weeks)</option>
                     <option value="monthly">Monthly</option>
@@ -347,6 +352,35 @@ const CreateTask = ({ users, onTaskCreated }) => {
                     <option value="custom_day_of_week">Specific Day of Week(s)</option>
                   </select>
                 </div>
+
+                {/* Daily - exclude specific days */}
+                {formData.recurrence_type === 'daily' && (
+                  <div>
+                    <label className="form-label">Exclude Days (optional)</label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                        <label key={day} className="flex items-center space-x-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.daily_exclude_days.includes(day)}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                daily_exclude_days: e.target.checked
+                                  ? [...prev.daily_exclude_days, day]
+                                  : prev.daily_exclude_days.filter(d => d !== day)
+                              }));
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                            data-testid={`exclude-${day}`}
+                          />
+                          <span className="text-sm text-gray-700 capitalize">{day.slice(0, 3)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Tasks will not be created on excluded days.</p>
+                  </div>
+                )}
 
                 {/* Weekly - pick a day */}
                 {formData.recurrence_type === 'weekly' && (

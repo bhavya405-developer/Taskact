@@ -149,9 +149,19 @@ def generate_recurring_dates(base_date, recurrence_type, recurrence_config, end_
     current = base_date
     
     if recurrence_type == 'daily':
+        exclude_days = config.get('exclude_days', [])  # e.g. ['sunday'] or ['saturday', 'sunday']
+        day_map = {'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3, 'friday': 4, 'saturday': 5, 'sunday': 6}
+        excluded_weekdays = {day_map[d.lower()] for d in exclude_days if d.lower() in day_map}
         while current <= end_date and len(dates) < max_occurrences:
             current += timedelta(days=1)
-            if current <= end_date:
+            if current <= end_date and current.weekday() not in excluded_weekdays:
+                dates.append(current)
+    
+    elif recurrence_type == 'every_working_day':
+        # Monday(0) to Saturday(5), excludes Sunday(6)
+        while current <= end_date and len(dates) < max_occurrences:
+            current += timedelta(days=1)
+            if current <= end_date and current.weekday() != 6:  # 6 = Sunday
                 dates.append(current)
     
     elif recurrence_type == 'weekly':
