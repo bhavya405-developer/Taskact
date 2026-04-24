@@ -50,10 +50,22 @@
   - Option to "Save as Template" while creating a project
   - Create project from existing template
 - **Progress Tracking**: Visual progress bar based on completed vs total tasks
+- **Task Reassignment in Edit Project** ✅ (Apr 2026): Partners can change the assignee of any existing task within a project directly from the Edit Project modal via dropdown. Backend: `PUT /api/projects/{project_id}/tasks/{task_id}`
 - **Permissions**:
   - Partners can edit/delete templates from their company
   - Partners cannot edit/delete global (super-admin) templates
   - Partners can edit any project allocated to users in their company
+
+### 2.4.1 Recurring Tasks ✅ (Apr 2026)
+- **Recurrence at Task Creation**: When creating any task, users can toggle "Make this a recurring task"
+- **Frequency Options**: Daily, Weekly, Fortnightly (every 2 weeks), Monthly, Half Yearly (every 6 months), Annually, Specific Date of Every Month, Specific Day of Week(s)
+- **Configuration**: 
+  - Weekly: pick day of week
+  - Custom Day of Month: pick day (1-31, clamps to month's last day)
+  - Custom Day of Week: pick day + interval (every N weeks)
+- **End Date**: Optional (defaults to 1 year ahead)
+- **Implementation**: Parent task created with `is_recurring=true`, child instances auto-generated with `parent_recurring_id` linking back to parent
+- **Max instances**: 90 per recurring task definition
 
 ### 2.5 Team Management
 - Add/edit/deactivate team members
@@ -62,7 +74,7 @@
 
 ### 2.6 GPS Attendance
 - Clock in/out with GPS location capture
-- Multiple office locations support (up to 5)
+- Multiple office locations support (up to 10)
 - Attendance rules and geofencing
 - Holiday calendar management
 
