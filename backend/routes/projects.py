@@ -628,11 +628,46 @@ async def update_project(
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.projects.update_one({"id": project_id}, {"$set": update_data})
         
-        # If due_date changed, update all project tasks' due_date
+        # If due_date changed, update all project tasks' due_date and redetermine status
         if "due_date" in update_data:
+            new_due_date = update_data["due_date"]
+            now_utc = datetime.now(timezone.utc)
+            
+            # Parse the new due date for comparison
+            if isinstance(new_due_date, str):
+                try:
+                    parsed_due = datetime.fromisoformat(new_due_date.replace('Z', '+00:00'))
+                except Exception:
+                    parsed_due = None
+            elif isinstance(new_due_date, datetime):
+                parsed_due = new_due_date
+            else:
+                parsed_due = None
+            
+            if parsed_due and parsed_due.tzinfo is None:
+                parsed_due = parsed_due.replace(tzinfo=timezone.utc)
+            
+            # Get all non-completed, non-on_hold tasks for this project
+            task_query = {"project_id": project_id, "status": {"$nin": ["completed", "on_hold"]}}
+            tasks_to_update = await db.tasks.find(task_query).to_list(length=500)
+            
+            for task in tasks_to_update:
+                new_status = task.get("status", "pending")
+                if parsed_due:
+                    if parsed_due < now_utc:
+                        new_status = "overdue"
+                    else:
+                        new_status = "pending"
+                
+                await db.tasks.update_one(
+                    {"id": task["id"]},
+                    {"$set": {"due_date": new_due_date, "status": new_status}}
+                )
+            
+            # Update completed/on_hold tasks' due_date only (don't change their status)
             await db.tasks.update_many(
-                {"project_id": project_id},
-                {"$set": {"due_date": update_data["due_date"]}}
+                {"project_id": project_id, "status": {"$in": ["completed", "on_hold"]}},
+                {"$set": {"due_date": new_due_date}}
             )
         
         # If client or category changed, update all project tasks

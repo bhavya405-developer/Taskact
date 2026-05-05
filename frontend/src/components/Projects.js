@@ -45,7 +45,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('pending');
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [activeTab, setActiveTab] = useState('projects');
   
