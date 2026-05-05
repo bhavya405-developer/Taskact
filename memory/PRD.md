@@ -51,6 +51,8 @@
   - Create project from existing template
 - **Progress Tracking**: Visual progress bar based on completed vs total tasks
 - **Task Reassignment in Edit Project** ✅ (Apr 2026): Partners can change the assignee of any existing task within a project directly from the Edit Project modal via dropdown. Backend: `PUT /api/projects/{project_id}/tasks/{task_id}`
+- **Due Date Cascade** ✅ (Apr 2026): When a project's due date is changed, all tasks under it automatically get the new due date
+- **Auto-computed Status** ✅ (Apr 2026): Project status is auto-computed based on task completion: "Completed" when all tasks done, "Pending" when not all done. "On Hold" status is manually set and preserved.
 - **Permissions**:
   - Partners can edit/delete templates from their company
   - Partners cannot edit/delete global (super-admin) templates
