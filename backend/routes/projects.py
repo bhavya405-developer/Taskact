@@ -56,7 +56,8 @@ def init_projects_routes(
 
 class ProjectStatus(str, Enum):
     DRAFT = "draft"          # Project created but tasks not allocated
-    ACTIVE = "active"        # Project with allocated tasks (in progress)
+    PENDING = "pending"      # Project has tasks, not all completed
+    ACTIVE = "active"        # Project with allocated tasks (in progress) - legacy
     COMPLETED = "completed"  # All tasks completed
     ON_HOLD = "on_hold"
 
@@ -360,6 +361,16 @@ async def get_projects(current_user = Depends(get_current_user)):
         p["completed_tasks"] = completed_tasks
         p["progress"] = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
         
+        # Auto-compute status based on task completion (unless on_hold)
+        stored_status = project.get("status", "active")
+        if stored_status != "on_hold":
+            if total_tasks == 0:
+                p["status"] = "pending"
+            elif completed_tasks == total_tasks:
+                p["status"] = "completed"
+            else:
+                p["status"] = "pending"
+        
         # Add permission info
         p["can_edit"] = can_edit_project(project, current_user)
         
@@ -571,6 +582,16 @@ async def get_project(project_id: str, current_user = Depends(get_current_user))
     result["progress"] = (result["completed_tasks"] / result["total_tasks"] * 100) if result["total_tasks"] > 0 else 0
     result["can_edit"] = can_edit_project(project, current_user)
     
+    # Auto-compute status based on task completion (unless on_hold)
+    stored_status = project.get("status", "active")
+    if stored_status != "on_hold":
+        if result["total_tasks"] == 0:
+            result["status"] = "pending"
+        elif result["completed_tasks"] == result["total_tasks"]:
+            result["status"] = "completed"
+        else:
+            result["status"] = "pending"
+    
     return result
 
 
@@ -606,6 +627,13 @@ async def update_project(
     if update_data:
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.projects.update_one({"id": project_id}, {"$set": update_data})
+        
+        # If due_date changed, update all project tasks' due_date
+        if "due_date" in update_data:
+            await db.tasks.update_many(
+                {"project_id": project_id},
+                {"$set": {"due_date": update_data["due_date"]}}
+            )
         
         # If client or category changed, update all project tasks
         if "client_name" in update_data or "category" in update_data:

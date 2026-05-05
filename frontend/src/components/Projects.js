@@ -27,6 +27,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const statusConfig = {
   draft: { label: 'Draft', color: 'bg-gray-100 text-gray-700', icon: FileText },
+  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
   active: { label: 'Active', color: 'bg-blue-100 text-blue-700', icon: PlayCircle },
   completed: { label: 'Completed', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   on_hold: { label: 'On Hold', color: 'bg-orange-100 text-orange-700', icon: PauseCircle },
@@ -657,6 +658,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
             className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Status</option>
+            <option value="pending">Pending</option>
             <option value="active">Active</option>
             <option value="completed">Completed</option>
             <option value="on_hold">On Hold</option>
