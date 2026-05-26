@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate } from '../lib/dateUtils';
 import { 
   Clock, 
   Calendar, 
@@ -394,7 +395,7 @@ const Timesheet = ({ users }) => {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-3">
                 {Object.entries(timesheetData.daily_summary).map(([date, data]) => (
                   <div key={date} className="bg-gray-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-500">{new Date(date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' })}</p>
+                    <p className="text-xs text-gray-500">{formatDate(date)}</p>
                     <p className="text-lg font-semibold text-gray-900">{formatHours(data.hours)}</p>
                     <p className="text-xs text-gray-500">{data.tasks} task{data.tasks !== 1 ? 's' : ''}</p>
                   </div>

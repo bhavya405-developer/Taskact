@@ -6,6 +6,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const EditTaskModal = ({ task, users, isOpen, onClose, onSave }) => {
+  const activeUsers = users.filter(u => u.active !== false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -212,7 +213,7 @@ const EditTaskModal = ({ task, users, isOpen, onClose, onSave }) => {
                 data-testid="edit-assignee-select"
               >
                 <option value="">Select assignee...</option>
-                {users.map(user => (
+                {activeUsers.map(user => (
                   <option key={user.id} value={user.id}>
                     {user.name}
                   </option>

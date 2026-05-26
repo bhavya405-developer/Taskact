@@ -10,6 +10,7 @@ const CreateTask = ({ users, onTaskCreated }) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [clients, setClients] = useState([]);
+  const activeUsers = users.filter(u => u.active !== false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -248,7 +249,7 @@ const CreateTask = ({ users, onTaskCreated }) => {
               required
             >
               <option value="">Select team member...</option>
-              {users.map(user => (
+              {activeUsers.map(user => (
                 <option key={user.id} value={user.id}>
                   {user.name}
                 </option>

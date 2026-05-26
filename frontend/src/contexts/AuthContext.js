@@ -21,6 +21,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  // Axios response interceptor - auto-logout on 401 (expired token)
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401 && token) {
+          // Token expired or invalid - auto logout and redirect to login
+          localStorage.removeItem('token');
+          localStorage.removeItem('tenant');
+          localStorage.removeItem('is_super_admin');
+          localStorage.removeItem('impersonation');
+          delete axios.defaults.headers.common['Authorization'];
+          setToken(null);
+          setUser(null);
+          setTenant(null);
+          setIsSuperAdminUser(false);
+          window.location.href = '/';
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, [token]);
+
   useEffect(() => {
     if (token) {
       // Set default Authorization header for all requests

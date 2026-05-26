@@ -3,6 +3,7 @@ import axios from 'axios';
 import UserProfileModal from './UserProfileModal';
 import { useAuth } from '../contexts/AuthContext';
 import { Trash2, UserX, UserCheck, Edit, AlertTriangle } from 'lucide-react';
+import { formatDate } from '../lib/dateUtils';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -157,15 +158,6 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
       setActionLoading(null);
       setConfirmAction(null);
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
   };
 
   const getUserTaskStats = (userId) => {

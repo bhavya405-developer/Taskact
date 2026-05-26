@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
 import EditTaskModal from './EditTaskModal';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate } from '../lib/dateUtils';
 import { 
   BarChart3, 
   Clock, 
@@ -90,14 +91,6 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
   
   const overdue_task_list = filterByPartner(overdue_tasks || recent_tasks.filter(task => task.status === 'overdue'));
   const due_7_days_list = filterByPartner(due_7_days_tasks || []);
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
 
   const getStatusDisplay = (status) => {
     const statusConfig = {
@@ -250,7 +243,7 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                           </div>
                           {task.due_date && (
                             <p className={`text-xs mt-1 font-medium ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-                              Due: {new Date(task.due_date).toLocaleDateString()}
+                              Due: {formatDate(task.due_date)}
                             </p>
                           )}
                         </div>
@@ -339,7 +332,7 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
                           </div>
                           {task.due_date && (
                             <p className={`text-xs mt-1 font-medium ${isDark ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                              Due: {new Date(task.due_date).toLocaleDateString()}
+                              Due: {formatDate(task.due_date)}
                             </p>
                           )}
                         </div>
@@ -446,7 +439,10 @@ const Dashboard = ({ users, tasks, onTaskUpdate }) => {
         onEdit={isPartner() ? handleEditTask : null}
         onDelete={isPartner() ? handleDeleteTask : null}
         isPartner={isPartner()}
-        onTaskUpdate={onTaskUpdate}
+        onTaskUpdate={async () => {
+          fetchDashboardData();
+          if (onTaskUpdate) onTaskUpdate();
+        }}
       />
 
       {/* Edit Task Modal */}

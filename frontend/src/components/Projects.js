@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate } from '../lib/dateUtils';
 import {
   FolderKanban, Plus, Search, ChevronDown, ChevronRight,
   User, Calendar, Clock, CheckCircle, XCircle, PlayCircle,
@@ -41,6 +42,7 @@ const priorityConfig = {
 
 const Projects = ({ users = [], clients = [], categories = [] }) => {
   const { isPartner, isSuperAdmin } = useAuth();
+  const activeUsers = users.filter(u => u.active !== false);
   const [projects, setProjects] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -709,7 +711,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                         {project.due_date && (
                           <span className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1" />
-                            {new Date(project.due_date).toLocaleDateString()}
+                            {formatDate(project.due_date)}
                           </span>
                         )}
                         <span className="flex items-center">
@@ -974,7 +976,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select team member to assign all tasks</option>
-                  {users.map(user => (
+                  {activeUsers.map(user => (
                     <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
                   ))}
                 </select>
@@ -1014,7 +1016,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                         className="text-xs px-2 py-1 border rounded"
                       >
                         <option value="">Assign to...</option>
-                        {users.map(user => (
+                        {activeUsers.map(user => (
                           <option key={user.id} value={user.id}>{user.name}</option>
                         ))}
                       </select>
@@ -1047,7 +1049,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="px-3 py-2 border rounded-lg text-sm"
                 >
                   <option value="">Assign to</option>
-                  {users.map(user => (
+                  {activeUsers.map(user => (
                     <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
@@ -1198,7 +1200,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select team member</option>
-                  {users.map(user => (
+                  {activeUsers.map(user => (
                     <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
                   ))}
                 </select>
@@ -1237,7 +1239,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                           data-testid={`existing-task-assignee-${task.id}`}
                         >
                           <option value="">Unassigned</option>
-                          {users.map(user => (
+                          {activeUsers.map(user => (
                             <option key={user.id} value={user.id}>{user.name}</option>
                           ))}
                         </select>
@@ -1303,7 +1305,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="px-3 py-2 border rounded-lg text-sm"
                 >
                   <option value="">Assign to</option>
-                  {users.map(user => (
+                  {activeUsers.map(user => (
                     <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
@@ -1415,7 +1417,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">No default assignee</option>
-                  {users.map(user => (
+                  {activeUsers.map(user => (
                     <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
                   ))}
                 </select>
@@ -1520,7 +1522,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                 <div>
                   <span className="text-gray-500">Due Date:</span>
                   <span className="ml-2 font-medium">
-                    {selectedProject.due_date ? new Date(selectedProject.due_date).toLocaleDateString() : '-'}
+                    {selectedProject.due_date ? formatDate(selectedProject.due_date) : '-'}
                   </span>
                 </div>
                 <div>
@@ -1643,7 +1645,7 @@ const Projects = ({ users = [], clients = [], categories = [] }) => {
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">No default assignee</option>
-                  {users.map(user => (
+                  {activeUsers.map(user => (
                     <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
                   ))}
                 </select>

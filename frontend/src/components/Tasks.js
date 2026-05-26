@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import TaskDetailModal from './TaskDetailModal';
 import EditTaskModal from './EditTaskModal';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate } from '../lib/dateUtils';
 import { Eye, Download, Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Lock } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -58,15 +59,6 @@ const Tasks = ({ tasks, users, onTaskUpdate }) => {
       urgent: { label: 'Urgent', class: 'priority-urgent' }
     };
     return priorityConfig[priority] || priorityConfig.medium;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No due date';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
   };
 
   const handleStatusChange = async (taskId, newStatus) => {

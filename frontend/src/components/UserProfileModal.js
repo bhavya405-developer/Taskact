@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate } from '../lib/dateUtils';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -493,7 +494,7 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
                     <div>
                       <span className="font-medium text-gray-700">Account Created:</span>
                       <p className="text-gray-900">
-                        {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                        {user?.created_at ? formatDate(user.created_at) : 'N/A'}
                       </p>
                     </div>
                     <div>

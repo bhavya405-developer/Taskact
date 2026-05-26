@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate as formatDateStd } from '../lib/dateUtils';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -213,7 +214,7 @@ const NotificationPanel = () => {
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)} hours ago`;
     } else {
-      return date.toLocaleDateString();
+      return formatDateStd(dateString);
     }
   };
 

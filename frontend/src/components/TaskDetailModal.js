@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, History, Trash2, Timer } from 'lucide-react';
 import axios from 'axios';
+import { formatDate, formatDateTime } from '../lib/dateUtils';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -97,17 +98,6 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
     return priorityConfig[priority] || priorityConfig.medium;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  // Format datetime to IST display
   const formatDateTimeIST = (dateString) => {
     if (!dateString) return 'Not set';
     const date = new Date(dateString);
@@ -115,7 +105,7 @@ const TaskDetailModal = ({ task, isOpen, onClose, onEdit, onDelete, isPartner, o
       timeZone: 'Asia/Kolkata',
       day: '2-digit',
       month: 'short',
-      year: 'numeric',
+      year: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true

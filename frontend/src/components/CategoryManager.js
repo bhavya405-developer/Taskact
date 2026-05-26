@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import BulkImportModal from './BulkImportModal';
 import { Upload, Plus, Edit, Trash2, FolderOpen } from 'lucide-react';
+import { formatDate } from '../lib/dateUtils';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -273,7 +274,7 @@ const CategoryManager = () => {
                           <p className="text-sm text-gray-600 mt-1">{category.description}</p>
                         )}
                         <p className="text-xs text-gray-500 mt-1">
-                          Created: {new Date(category.created_at).toLocaleDateString()}
+                          Created: {formatDate(category.created_at)}
                         </p>
                       </div>
                     </div>

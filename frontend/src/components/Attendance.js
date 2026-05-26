@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate as formatDateStd } from '../lib/dateUtils';
 import { 
   Clock, MapPin, LogIn, LogOut, Settings, AlertCircle, 
   CheckCircle, Navigation, Calendar, Users, Plus, Trash2, 
@@ -511,12 +512,7 @@ const Attendance = () => {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleDateString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatDateStd(timestamp);
   };
 
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
