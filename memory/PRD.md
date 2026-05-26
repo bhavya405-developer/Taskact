@@ -105,6 +105,13 @@
 - Overdue tasks panel
 - Upcoming tasks panel (Due in 7 days)
 - Team performance metrics (Partners)
+- FAB button for quick task creation
+- Auto-refreshes after task status changes ✅ (May 2026)
+
+### 2.10 UX Enhancements ✅ (May 2026)
+- **Date Format**: DD-MMM-YY format (e.g., "25-May-26") used consistently across all pages via shared utility `/app/frontend/src/lib/dateUtils.js`
+- **Deactivated Users**: Deactivated team members are hidden from all assign-to dropdowns. Reactivated members reappear automatically.
+- **Session Expiry**: Token expiry extended to 8 hours (workday). Axios interceptor auto-redirects to login on 401 (expired token), no manual refresh needed.
 
 ---
 
