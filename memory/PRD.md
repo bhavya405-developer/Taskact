@@ -14,9 +14,18 @@
 
 ### 2.1 Authentication & Authorization
 - **Multi-Tenant Login**: Users login with Company Code (4-8 alphanumeric) + Email + Password
-- **Role-Based Access**: Partner (admin), Associate (team member), Super Admin
+- **Multi-Tenant Email** ✅ (May 2026): Same email can exist in different tenants. Login and data are completely isolated per tenant.
+- **Role-Based Access**: Partner (admin), Associate Director, Associate (team member), Junior, Intern, Super Admin
 - **Admin Login**: Company Code **TASKACT1** for platform administrators
 - **Forgot Password**: OTP-based password reset via partner notification (Admin OTPs go to SCO1 partners)
+
+### 2.1.1 Associate Director Role ✅ (May 2026)
+- New role between Partner and Associate with elevated permissions
+- Partner can allocate specific team members to an Associate Director via `managed_members` field
+- AD can view/edit/monitor tasks and projects of their allocated team members
+- AD sees their own tasks + managed members' tasks on dashboard and task lists
+- Partners retain full control over ALL non-partner users including Associate Directors
+- AD cannot manage team members not allocated to them
 
 ### 2.2 Multi-Tenant Architecture ✅
 - **Tenant/Company Management**: Each company has unique code (e.g., SCO1)
