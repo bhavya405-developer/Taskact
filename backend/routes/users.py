@@ -176,11 +176,15 @@ async def update_user_profile(
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
-    # Check if email is being changed and if it already exists
+    # Check if email is being changed and if it already exists within the same tenant
     if "email" in update_data and update_data["email"] != existing_user["email"]:
-        existing_email = await db.users.find_one({"email": update_data["email"]})
+        tenant_id = existing_user.get("tenant_id")
+        email_query = {"email": update_data["email"]}
+        if tenant_id:
+            email_query["tenant_id"] = tenant_id
+        existing_email = await db.users.find_one(email_query)
         if existing_email:
-            raise HTTPException(status_code=400, detail="Email already exists")
+            raise HTTPException(status_code=400, detail="Email already exists in this organization")
     
     # Convert datetime fields to ISO strings
     update_data = prepare_for_mongo(update_data)

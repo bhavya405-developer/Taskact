@@ -6,7 +6,7 @@ import { formatDate } from '../lib/dateUtils';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = false }) => {
+const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = false, allUsers = [] }) => {
   const { isPartner } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -22,8 +22,12 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
     emergency_contact: '',
     skills: '',
     bio: '',
-    password: ''
+    password: '',
+    managed_members: []
   });
+
+  // Users allocatable to associate directors (non-partner, non-AD, active)
+  const allocatableUsers = allUsers.filter(u => u.active !== false && !['partner', 'associate_director', 'super_admin'].includes(u.role) && u.id !== user?.id);
 
   useEffect(() => {
     if (user && !isCreate) {
@@ -39,7 +43,8 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         emergency_contact: user.emergency_contact || '',
         skills: user.skills || '',
         bio: user.bio || '',
-        password: ''
+        password: '',
+        managed_members: user.managed_members || []
       });
     } else if (isCreate) {
       setFormData({
@@ -54,7 +59,8 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         emergency_contact: '',
         skills: '',
         bio: '',
-        password: ''
+        password: '',
+        managed_members: []
       });
     }
   }, [user, isCreate]);
@@ -112,6 +118,11 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
           }
         });
         
+        // Only include managed_members for associate_directors
+        if (userData.role !== 'associate_director') {
+          delete userData.managed_members;
+        }
+        
         await axios.post(`${API}/users`, userData);
       } else {
         // Update existing user profile
@@ -131,6 +142,11 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
             updateData[key] = null;
           }
         });
+        
+        // Only include managed_members for associate_directors
+        if (updateData.role !== 'associate_director') {
+          delete updateData.managed_members;
+        }
         
         await axios.put(`${API}/users/${user.id}`, updateData);
       }
@@ -306,6 +322,7 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
                       data-testid="role-select"
                     >
                       <option value="partner">Partner</option>
+                      <option value="associate_director">Associate Director</option>
                       <option value="associate">Associate</option>
                       <option value="junior">Junior</option>
                       <option value="intern">Intern</option>
@@ -324,6 +341,40 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
                     />
                   </div>
                 </div>
+
+                {/* Managed Members - only for Associate Directors */}
+                {formData.role === 'associate_director' && (
+                  <div className="mt-4">
+                    <label className="form-label">Allocate Team Members</label>
+                    <p className="text-xs text-gray-500 mb-2">Select team members this Associate Director can view/edit/monitor tasks for.</p>
+                    <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                      {allocatableUsers.length === 0 ? (
+                        <p className="text-sm text-gray-400">No team members available to allocate.</p>
+                      ) : (
+                        allocatableUsers.map(member => (
+                          <label key={member.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={formData.managed_members.includes(member.id)}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  managed_members: e.target.checked
+                                    ? [...prev.managed_members, member.id]
+                                    : prev.managed_members.filter(id => id !== member.id)
+                                }));
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              data-testid={`manage-member-${member.id}`}
+                            />
+                            <span className="text-sm text-gray-700">{member.name}</span>
+                            <span className="text-xs text-gray-400 capitalize">({member.role})</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Professional Information */}

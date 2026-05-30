@@ -83,6 +83,7 @@ class TaskPriority(str, Enum):
 
 class UserRole(str, Enum):
     PARTNER = "partner"
+    ASSOCIATE_DIRECTOR = "associate_director"
     ASSOCIATE = "associate"
     JUNIOR = "junior"
     INTERN = "intern"
@@ -105,6 +106,7 @@ class User(BaseModel):
     bio: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
+    managed_members: Optional[List[str]] = None  # List of user IDs managed by this associate_director
 
 class UserCreate(BaseModel):
     name: str
@@ -136,6 +138,7 @@ class UserResponse(BaseModel):
     bio: Optional[str] = None
     created_at: datetime
     active: bool
+    managed_members: Optional[List[str]] = None
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
@@ -1394,7 +1397,13 @@ async def bulk_import_clients(
 async def get_filters(current_user: UserResponse = Depends(get_current_user)):
     # Build query based on user role
     query = {}
-    if current_user.role != UserRole.PARTNER:
+    if current_user.role == UserRole.PARTNER:
+        pass  # See all
+    elif current_user.role == UserRole.ASSOCIATE_DIRECTOR:
+        user_doc = await db.users.find_one({"id": current_user.id})
+        managed_ids = user_doc.get("managed_members", []) if user_doc else []
+        query["assignee_id"] = {"$in": [current_user.id] + managed_ids}
+    else:
         query["assignee_id"] = current_user.id
     
     # Get unique client names
@@ -1415,7 +1424,13 @@ async def get_dashboard(current_user: UserResponse = Depends(get_current_user)):
     tenant_filter = {"tenant_id": current_user.tenant_id} if current_user.tenant_id else {}
     
     task_query = {**tenant_filter}
-    if current_user.role != UserRole.PARTNER:
+    if current_user.role == UserRole.PARTNER:
+        pass  # See all tasks in tenant
+    elif current_user.role == UserRole.ASSOCIATE_DIRECTOR:
+        user_doc = await db.users.find_one({"id": current_user.id})
+        managed_ids = user_doc.get("managed_members", []) if user_doc else []
+        task_query["assignee_id"] = {"$in": [current_user.id] + managed_ids}
+    else:
         task_query["assignee_id"] = current_user.id
     
     # Update overdue tasks before getting counts (only for this tenant)

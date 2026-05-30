@@ -275,6 +275,25 @@ async def get_tenant_id(current_user):
     return user_doc.get("tenant_id") if user_doc else None
 
 
+async def get_managed_member_ids(current_user):
+    """Get list of user IDs that this associate_director manages. Returns empty list for other roles."""
+    if current_user.role != "associate_director":
+        return []
+    user_doc = await db.users.find_one({"id": current_user.id})
+    return user_doc.get("managed_members", []) if user_doc else []
+
+
+def can_manage_task(current_user_role, task_assignee_id, current_user_id, managed_ids):
+    """Check if user can view/edit a task based on role and managed members."""
+    if current_user_role == UserRole.PARTNER:
+        return True
+    if current_user_role == "associate_director" and task_assignee_id in managed_ids:
+        return True
+    if task_assignee_id == current_user_id:
+        return True
+    return False
+
+
 # ==================== ROUTES ====================
 
 # Task Template and Bulk Import/Export endpoints (Partners only) - Must come before parameterized routes
@@ -876,8 +895,15 @@ async def get_tasks(
     if tenant_id:
         query["tenant_id"] = tenant_id
     
-    # Non-partners can only see their own tasks unless they're partners
-    if current_user.role != UserRole.PARTNER:
+    # Non-partners can only see their own tasks unless they're partners or associate_directors
+    if current_user.role == UserRole.PARTNER:
+        pass  # Partners see all tasks in tenant
+    elif current_user.role == "associate_director":
+        managed_ids = await get_managed_member_ids(current_user)
+        # Associate directors see their own tasks + managed members' tasks
+        viewable_ids = [current_user.id] + managed_ids
+        query["assignee_id"] = {"$in": viewable_ids}
+    else:
         query["assignee_id"] = current_user.id
     
     if status:
@@ -906,9 +932,11 @@ async def get_task(task_id: str, current_user=Depends(get_current_user)):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    # Check if user can view this task (partners can view all, others only their own)
-    if current_user.role != UserRole.PARTNER and task["assignee_id"] != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only view your own tasks")
+    # Check if user can view this task
+    if current_user.role != UserRole.PARTNER:
+        managed_ids = await get_managed_member_ids(current_user)
+        if not can_manage_task(current_user.role, task["assignee_id"], current_user.id, managed_ids):
+            raise HTTPException(status_code=403, detail="You don't have permission to view this task")
     
     return Task(**parse_from_mongo(task))
 
@@ -931,11 +959,18 @@ async def update_task(task_id: str, task_update: dict, current_user=Depends(get_
     if existing_task.get("status") == TaskStatus.COMPLETED and current_user.role != UserRole.PARTNER:
         raise HTTPException(status_code=403, detail="Cannot edit completed tasks. Completed tasks are immutable.")
     
-    # Check permissions: partners can edit any task, others can only update status of their own tasks
-    if current_user.role != UserRole.PARTNER:
+    # Check permissions: partners can edit any task, associate directors can edit managed members' tasks
+    if current_user.role == UserRole.PARTNER:
+        pass  # Full access
+    elif current_user.role == "associate_director":
+        managed_ids = await get_managed_member_ids(current_user)
+        if not can_manage_task(current_user.role, existing_task["assignee_id"], current_user.id, managed_ids):
+            raise HTTPException(status_code=403, detail="You don't have permission to edit this task")
+        # Associate directors can edit all fields of managed members' tasks
+    else:
         if existing_task["assignee_id"] != current_user.id:
             raise HTTPException(status_code=403, detail="You can only update your own tasks")
-        # Non-partners can only update status and actual_hours (for completing tasks)
+        # Non-partners/non-AD can only update status and actual_hours (for completing tasks)
         allowed_fields = {"status", "actual_hours"}
         update_fields = set(k for k, v in task_update.items() if v is not None)
         if not update_fields.issubset(allowed_fields):

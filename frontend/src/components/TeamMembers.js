@@ -180,12 +180,27 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
   const getRoleColor = (role) => {
     const roleColors = {
       partner: 'bg-purple-100 text-purple-800 border-purple-200',
+      associate_director: 'bg-indigo-100 text-indigo-800 border-indigo-200',
       associate: 'bg-blue-100 text-blue-800 border-blue-200',
       junior: 'bg-green-100 text-green-800 border-green-200',
       intern: 'bg-yellow-100 text-yellow-800 border-yellow-200'
     };
     return roleColors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
+
+  const getRoleLabel = (role) => {
+    const labels = {
+      partner: 'Partner',
+      associate_director: 'Associate Director',
+      associate: 'Associate',
+      junior: 'Junior',
+      intern: 'Intern'
+    };
+    return labels[role] || role;
+  };
+
+  // Get non-partner, non-AD users that can be allocated to an associate director
+  const allocatableUsers = users.filter(u => u.active !== false && !['partner', 'associate_director', 'super_admin'].includes(u.role));
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -294,6 +309,7 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
                 data-testid="member-role-select"
               >
                 <option value="partner">Partner</option>
+                <option value="associate_director">Associate Director</option>
                 <option value="associate">Associate</option>
                 <option value="junior">Junior</option>
                 <option value="intern">Intern</option>
@@ -393,8 +409,8 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
                 {/* Role and Department */}
                 <div className="mb-4 space-y-2">
                   <div className="flex items-center space-x-2">
-                    <span className={`badge ${getRoleColor(user.role)} capitalize`}>
-                      {user.role}
+                    <span className={`badge ${getRoleColor(user.role)}`}>
+                      {getRoleLabel(user.role)}
                     </span>
                     {user.department && (
                       <span className="badge bg-gray-100 text-gray-700 border-gray-200">
@@ -585,6 +601,7 @@ const TeamMembers = ({ users, tasks, onUserAdded }) => {
         onClose={handleCloseProfileModal}
         onUserUpdated={onUserAdded}
         isCreate={isCreateMode}
+        allUsers={users}
       />
     </div>
   );

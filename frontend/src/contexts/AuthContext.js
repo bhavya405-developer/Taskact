@@ -152,6 +152,10 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'partner' || isSuperAdminUser;
   };
 
+  const isAssociateDirector = () => {
+    return user?.role === 'associate_director';
+  };
+
   const isSuperAdmin = () => {
     return isSuperAdminUser;
   };
@@ -221,6 +225,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     isPartner,
+    isAssociateDirector,
     isSuperAdmin,
     isSuperAdminUser,
     loading,
