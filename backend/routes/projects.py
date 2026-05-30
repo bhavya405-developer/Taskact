@@ -338,15 +338,39 @@ async def delete_project_template(
 
 @router.get("/projects")
 async def get_projects(current_user = Depends(get_current_user)):
-    """Get all projects for the tenant"""
+    """Get all projects for the tenant, filtered by role visibility"""
     query = {}
     if current_user.get("tenant_id"):
         query["tenant_id"] = current_user["tenant_id"]
+    
+    is_partner = current_user["role"] in ["partner", "super_admin"]
+    is_ad = current_user["role"] == "associate_director"
+    
+    # For non-partners, find which projects have tasks assigned to viewable users
+    viewable_project_ids = None
+    if not is_partner:
+        if is_ad:
+            user_doc = await db.users.find_one({"id": current_user["id"]})
+            managed_ids = user_doc.get("managed_members", []) if user_doc else []
+            viewable_ids = [current_user["id"]] + managed_ids
+        else:
+            viewable_ids = [current_user["id"]]
+        
+        # Find project_ids that have tasks assigned to viewable users
+        task_query = {"assignee_id": {"$in": viewable_ids}, "project_id": {"$ne": None}}
+        if current_user.get("tenant_id"):
+            task_query["tenant_id"] = current_user["tenant_id"]
+        project_ids = await db.tasks.distinct("project_id", task_query)
+        viewable_project_ids = set(project_ids)
     
     projects = await db.projects.find(query).sort("created_at", -1).to_list(length=500)
     
     result = []
     for project in projects:
+        # Filter: non-partners only see projects with their tasks
+        if viewable_project_ids is not None and project["id"] not in viewable_project_ids:
+            continue
+        
         p = parse_from_mongo(project)
         
         # Get task counts for this project

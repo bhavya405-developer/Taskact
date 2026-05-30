@@ -107,6 +107,7 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     active: bool = True
     managed_members: Optional[List[str]] = None  # List of user IDs managed by this associate_director
+    visible_clients: Optional[List[str]] = None  # List of client IDs visible to this user (null = all)
 
 class UserCreate(BaseModel):
     name: str
@@ -139,6 +140,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     active: bool
     managed_members: Optional[List[str]] = None
+    visible_clients: Optional[List[str]] = None
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
@@ -1231,8 +1233,18 @@ async def get_clients(current_user: UserResponse = Depends(get_current_user)):
     query = {"active": True}
     if current_user.tenant_id:
         query["tenant_id"] = current_user.tenant_id
+    
     clients = await db.clients.find(query).sort("name", 1).to_list(length=5000)
-    return [Client(**parse_from_mongo(client)) for client in clients]
+    all_clients = [Client(**parse_from_mongo(client)) for client in clients]
+    
+    # For non-partners, filter by visible_clients if set
+    if current_user.role != UserRole.PARTNER:
+        user_doc = await db.users.find_one({"id": current_user.id})
+        visible_client_ids = user_doc.get("visible_clients") if user_doc else None
+        if visible_client_ids is not None:
+            all_clients = [c for c in all_clients if c.id in visible_client_ids]
+    
+    return all_clients
 
 @api_router.get("/clients/{client_id}", response_model=Client)
 async def get_client(client_id: str, current_user: UserResponse = Depends(get_current_user)):

@@ -10,6 +10,7 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
   const { isPartner } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [allClients, setAllClients] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,11 +24,19 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
     skills: '',
     bio: '',
     password: '',
-    managed_members: []
+    managed_members: [],
+    visible_clients: null
   });
 
   // Users allocatable to associate directors (non-partner, non-AD, active)
   const allocatableUsers = allUsers.filter(u => u.active !== false && !['partner', 'associate_director', 'super_admin'].includes(u.role) && u.id !== user?.id);
+
+  // Fetch all clients for visible_clients selection
+  useEffect(() => {
+    if (isOpen && isPartner()) {
+      axios.get(`${API}/clients`).then(res => setAllClients(res.data)).catch(() => {});
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (user && !isCreate) {
@@ -44,7 +53,8 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         skills: user.skills || '',
         bio: user.bio || '',
         password: '',
-        managed_members: user.managed_members || []
+        managed_members: user.managed_members || [],
+        visible_clients: user.visible_clients || null
       });
     } else if (isCreate) {
       setFormData({
@@ -123,6 +133,11 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
           delete userData.managed_members;
         }
         
+        // Partners don't need visible_clients restriction
+        if (userData.role === 'partner' || userData.role === 'super_admin') {
+          delete userData.visible_clients;
+        }
+        
         await axios.post(`${API}/users`, userData);
       } else {
         // Update existing user profile
@@ -146,6 +161,11 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
         // Only include managed_members for associate_directors
         if (updateData.role !== 'associate_director') {
           delete updateData.managed_members;
+        }
+        
+        // Partners don't need visible_clients restriction
+        if (updateData.role === 'partner' || updateData.role === 'super_admin') {
+          delete updateData.visible_clients;
         }
         
         await axios.put(`${API}/users/${user.id}`, updateData);
@@ -376,6 +396,69 @@ const UserProfileModal = ({ user, isOpen, onClose, onUserUpdated, isCreate = fal
                   </div>
                 )}
               </div>
+
+                {/* Visible Clients - for non-partner roles */}
+                {formData.role !== 'partner' && formData.role !== 'super_admin' && allClients.length > 0 && (
+                  <div className="mt-4">
+                    <label className="form-label">Visible Clients</label>
+                    <p className="text-xs text-gray-500 mb-2">Restrict which clients this user can see. Leave unconfigured to show all clients.</p>
+                    <div className="flex items-center gap-3 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, visible_clients: allClients.map(c => c.id) }))}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        data-testid="select-all-clients"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, visible_clients: [] }))}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        data-testid="unselect-all-clients"
+                      >
+                        Unselect All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, visible_clients: null }))}
+                        className="text-xs text-gray-600 hover:text-gray-800 font-medium"
+                        data-testid="reset-clients-visibility"
+                      >
+                        Show All (No Restriction)
+                      </button>
+                    </div>
+                    <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-1">
+                      {formData.visible_clients === null ? (
+                        <p className="text-sm text-green-600 font-medium">All clients visible (no restriction applied)</p>
+                      ) : (
+                        allClients.map(client => (
+                          <label key={client.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={formData.visible_clients?.includes(client.id) || false}
+                              onChange={(e) => {
+                                const currentList = formData.visible_clients || [];
+                                setFormData(prev => ({
+                                  ...prev,
+                                  visible_clients: e.target.checked
+                                    ? [...currentList, client.id]
+                                    : currentList.filter(id => id !== client.id)
+                                }));
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                              data-testid={`visible-client-${client.id}`}
+                            />
+                            <span className="text-sm text-gray-700">{client.name}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    {formData.visible_clients !== null && (
+                      <p className="text-xs text-gray-500 mt-1">{formData.visible_clients.length} of {allClients.length} clients selected</p>
+                    )}
+                  </div>
+                )}
 
               {/* Professional Information */}
               <div>
